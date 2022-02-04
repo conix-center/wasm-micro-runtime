@@ -221,6 +221,9 @@ struct WASMModuleInstance {
 #if WASM_ENABLE_MEMORY_PROFILING != 0
     uint32 max_aux_stack_used;
 #endif
+
+    /* Added for profiling */
+    uint64 opcode_table[256];
 };
 
 struct WASMInterpFrame;

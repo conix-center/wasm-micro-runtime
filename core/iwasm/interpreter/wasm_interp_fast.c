@@ -998,7 +998,8 @@ wasm_interp_dump_op_count()
 #if WASM_ENABLE_OPCODE_COUNTER != 0
 #define HANDLE_OP(opcode) HANDLE_##opcode : opcode_table[opcode].count++;
 #else
-#define HANDLE_OP(opcode) HANDLE_##opcode:
+/* #define HANDLE_OP(opcode) HANDLE_##opcode: */
+#define HANDLE_OP(opcode) HANDLE_##opcode : module->opcode_table[opcode]++;
 #endif
 #if WASM_CPU_SUPPORTS_UNALIGNED_ADDR_ACCESS != 0
 #define FETCH_OPCODE_AND_DISPATCH()                    \
