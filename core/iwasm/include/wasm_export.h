@@ -66,10 +66,16 @@ typedef struct WASMModuleCommon *wasm_module_t;
 /* Instantiated WASM module */
 struct WASMModuleInstanceCommon;
 typedef struct WASMModuleInstanceCommon *wasm_module_inst_t;
+typedef const struct WASMModuleInstanceCommon *const_wasm_module_inst_t;
 
 /* Function instance */
 typedef void WASMFunctionInstanceCommon;
 typedef WASMFunctionInstanceCommon *wasm_function_inst_t;
+
+/* Global instance */
+typedef void WASMGlobalInstanceCommon;
+typedef WASMGlobalInstanceCommon *wasm_global_inst_t;
+
 
 /* WASM section */
 typedef struct wasm_section_t {
@@ -406,6 +412,22 @@ wasm_runtime_lookup_wasi_start_function(wasm_module_inst_t module_inst);
 WASM_RUNTIME_API_EXTERN wasm_function_inst_t
 wasm_runtime_lookup_function(wasm_module_inst_t const module_inst,
                              const char *name, const char *signature);
+
+
+/**
+ * Lookup an exported function in the WASM module instance.
+ *
+ * @param module_inst the module instance
+ * @param name the name of the function
+ * @param signature the signature of the function, ignored currently
+ *
+ * @return the function instance found, NULL if not found
+ */
+WASM_RUNTIME_API_EXTERN wasm_global_inst_t
+wasm_runtime_lookup_global(wasm_module_inst_t const module_inst,
+                             const char *name);
+
+
 
 /**
  * Get parameter count of the function instance
@@ -940,6 +962,11 @@ wasm_runtime_get_user_data(wasm_exec_env_t exec_env);
  */
 WASM_RUNTIME_API_EXTERN void
 wasm_runtime_dump_mem_consumption(wasm_exec_env_t exec_env);
+
+WASM_RUNTIME_API_EXTERN void
+wasm_runtime_dump_module_inst_mem_consumption(
+  const_wasm_module_inst_t module_inst);
+
 
 /**
  * Dump runtime performance profiler data of each function
