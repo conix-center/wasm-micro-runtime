@@ -529,6 +529,21 @@ aot_deinstantiate(AOTModuleInstance *module_inst, bool is_sub_inst);
 AOTFunctionInstance *
 aot_lookup_function(const AOTModuleInstance *module_inst, const char *name,
                     const char *signature);
+
+/**
+ * Lookup an exported global in the AOT module instance.
+ *
+ * @param module_inst the module instance
+ * @param name the name of the function
+ * @param signature the signature of the function, use "i32"/"i64"/"f32"/"f64"
+ *        to represent the type of i32/i64/f32/f64, e.g. "(i32i64)" "(i32)f32"
+ *
+ * @return the function instance found
+ */
+AOTGlobal *
+aot_lookup_global(const AOTModuleInstance *module_inst, const char *name);
+
+
 /**
  * Call the given AOT function of a AOT module instance with
  * arguments.
