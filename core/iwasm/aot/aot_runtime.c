@@ -827,6 +827,37 @@ create_export_funcs(AOTModuleInstance *module_inst, AOTModule *module,
     return true;
 }
 
+
+static bool
+create_export_globals(AOTModuleInstance *module_inst, AOTModule *module,
+                      char *error_buf, uint32 error_buf_size)
+{
+    AOTExport *export = module->exports;
+    AOTExportGlobal *export_globals, *export_global;
+    uint32 i;
+    uint64 total_size = sizeof(AOTExportGlobal) * (uint64)(module_inst->export_global_count);
+
+    if (!(export_global = export_globals = 
+              runtime_malloc(total_size, error_buf, error_buf_size))) {
+        return false;
+    }
+
+    for (i = 0; i < module->export_count; i++, export++) {
+        if (export->kind == EXPORT_KIND_GLOBAL) {
+            export_global->name = export->name;
+            export_global->global = &module->globals[export->index];
+            export_global++;
+        }
+    }
+
+    bh_assert((uint32)(export_global - export_globals) == module_inst->export_global_count);
+    
+    module_inst->export_globals.ptr = export_globals;
+    return true;
+}
+
+
+
 static bool
 create_exports(AOTModuleInstance *module_inst, AOTModule *module,
                char *error_buf, uint32 error_buf_size)
@@ -853,7 +884,8 @@ create_exports(AOTModuleInstance *module_inst, AOTModule *module,
         }
     }
 
-    return create_export_funcs(module_inst, module, error_buf, error_buf_size);
+    return create_export_funcs(module_inst, module, error_buf, error_buf_size)
+        && create_export_globals(module_inst, module, error_buf, error_buf_size);
 }
 
 static bool
@@ -1134,6 +1166,9 @@ aot_deinstantiate(AOTModuleInstance *module_inst, bool is_sub_inst)
 
     if (module_inst->export_funcs.ptr)
         wasm_runtime_free(module_inst->export_funcs.ptr);
+  
+    if (module_inst->export_globals.ptr)
+        wasm_runtime_free(module_inst->export_globals.ptr);
 
     if (module_inst->func_ptrs.ptr)
         wasm_runtime_free(module_inst->func_ptrs.ptr);
@@ -1162,6 +1197,22 @@ aot_lookup_function(const AOTModuleInstance *module_inst, const char *name,
     (void)signature;
     return NULL;
 }
+
+
+AOTGlobal *
+aot_lookup_global(const AOTModuleInstance *module_inst, const char *name)
+{
+    uint32 i;
+    AOTExportGlobal *export_globals =
+        (AOTExportGlobal *)module_inst->export_globals.ptr;
+
+    for (i = 0; i < module_inst->export_global_count; i++)
+        if (!strcmp(export_globals[i].name, name))
+            return export_globals[i].global;
+
+    return NULL;
+}
+
 
 #ifdef OS_ENABLE_HW_BOUND_CHECK
 

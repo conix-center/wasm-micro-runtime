@@ -163,6 +163,14 @@ typedef struct AOTGlobal {
 } AOTGlobal;
 
 /**
+ * Export global variable
+ */
+typedef struct AOTExportGlobal {
+    char *name;
+    AOTGlobal *global;
+} AOTExportGlobal;
+
+/**
  * Import function
  */
 typedef struct AOTImportFunc {
