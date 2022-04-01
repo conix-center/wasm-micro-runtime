@@ -1247,55 +1247,33 @@ wasm_runtime_lookup_global(WASMModuleInstanceCommon *const module_inst,
 #if WASM_ENABLE_INTERP != 0
     if (module_inst->module_type == Wasm_Module_Bytecode) {
       const WASMModuleInstance* mod_inst = (const WASMModuleInstance*) module_inst;
-      for (uint32 i = 0; i < mod_inst->export_glob_count; i++) {
-        //printf("EXPORT GLOBAL: %s\n", mod_inst->export_globals[i].name);
-        //printf("Addr: %p\n", mod_inst->export_globals[i].global);
-      }
 
       WASMGlobalInstance *global_inst = wasm_lookup_global(mod_inst, name);
       if (global_inst) {
-        //uint8* global_addr = get_global_addr(mod_inst->global_data, global_inst);
-        //printf("Addr OOB: %p\n", global_inst);
-        //
-        uint8* global_addr = mod_inst->global_data + global_inst->data_offset;
-        //printf("Addr with offset: %p\n", global_addr);
         // global_addr gives the index in the data segment
-        printf("Value at Addr: %d\n", *((int32*) global_addr));
+        uint8* global_addr = mod_inst->global_data + global_inst->data_offset;
         // index into memory data
-        uint8* global_data_addr = mod_inst->default_memory->memory_data + (*((int32*) global_addr));
-        printf("Value at Data Addr: %d\n", *((uint32*) global_data_addr));
+        uint8* global_data_addr = mod_inst->default_memory->memory_data + (*((uint32*) global_addr));
+        return (WASMGlobalInstanceCommon*) global_data_addr;
       }
     }
 #endif
 #if WASM_ENABLE_AOT != 0
     if (module_inst->module_type == Wasm_Module_AoT) {
       const AOTModuleInstance* mod_inst = (const AOTModuleInstance*) module_inst;
-      printf("Number of Export Globals (AOT): %d\n", mod_inst->export_global_count);
+      /*printf("Number of Export Globals (AOT): %d\n", mod_inst->export_global_count);
       printf("Number of Export Total (AOT): %d\n", ((AOTModule*)(mod_inst->aot_module.ptr))->export_count);
       printf("Number of Global Total (AOT): %d\n", ((AOTModule*)(mod_inst->aot_module.ptr))->global_count);
       printf("Memory Count (AOT): %d\n", mod_inst->memory_count);
-
-      // AOTExportGlobal is analogous of WASMExportGlobInstance
-      AOTExportGlobal* exp_globals = (AOTExportGlobal*) mod_inst->export_globals.ptr;
-
-      for (uint32 i = 0; i < mod_inst->export_global_count; i++) {
-        printf("EXPORT GLOBAL: %s\n", exp_globals[i].name);
-        printf("Addr: %p\n", exp_globals[i].global);
-      }
+      */
 
       AOTGlobal *global_inst = aot_lookup_global(mod_inst, name);
       if (global_inst) {
-        printf("Global Inst offset: %d\n", global_inst->data_offset);
-        //uint8* global_addr = get_global_addr(mod_inst->global_data, global_inst);
-        //printf("Addr OOB: %p\n", global_inst);
-        //
-        uint8* global_addr = mod_inst->global_data.ptr + global_inst->data_offset;
-        //printf("Addr with offset: %p\n", global_addr);
         // global_addr gives the index in the data segment
-        printf("Value at Addr: %d\n", *((int32*) global_addr));
+        uint8* global_addr = mod_inst->global_data.ptr + global_inst->data_offset;
         // index into memory data
-        uint8* global_data_addr = mod_inst->global_table_data.memory_instances->memory_data.ptr + (*((int32*) global_addr));
-        printf("Value at Data Addr: %d\n", *((uint32*) global_data_addr));
+        uint8* global_data_addr = mod_inst->global_table_data.memory_instances->memory_data.ptr + (*((uint32*) global_addr));
+        return (WASMGlobalInstanceCommon*) global_data_addr;
       }
     }
 #endif
