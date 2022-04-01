@@ -1203,6 +1203,7 @@ AOTGlobal *
 aot_lookup_global(const AOTModuleInstance *module_inst, const char *name)
 {
     uint32 i;
+    // AOTExportGlobal is analogous of WASMExportGlobInstance
     AOTExportGlobal *export_globals =
         (AOTExportGlobal *)module_inst->export_globals.ptr;
 
