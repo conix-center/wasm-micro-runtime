@@ -30,6 +30,7 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/Transforms/Utils/LowerMemIntrinsics.h>
+#include <llvm/Transforms/Utils/LoopSimplify.h>
 #include <llvm/Transforms/Vectorize/LoopVectorize.h>
 #include <llvm/Transforms/Vectorize/LoadStoreVectorizer.h>
 #include <llvm/Transforms/Vectorize/SLPVectorizer.h>
@@ -48,6 +49,7 @@
 #endif
 
 #include "aot_llvm.h"
+#include "weighted-checkpoint.h"
 
 using namespace llvm;
 using namespace llvm::orc;
@@ -65,6 +67,9 @@ aot_check_simd_compatibility(const char *arch_c_str, const char *cpu_c_str);
 
 void
 aot_add_expand_memory_op_pass(LLVMPassManagerRef pass);
+
+void
+aot_add_instrumentation_pass(LLVMPassManagerRef pass);
 
 void
 aot_func_disable_tce(LLVMValueRef func);
@@ -256,6 +261,12 @@ void
 aot_add_expand_memory_op_pass(LLVMPassManagerRef pass)
 {
     unwrap(pass)->add(new ExpandMemoryOpPass());
+}
+
+void
+aot_add_instrumentation_pass(LLVMPassManagerRef pass)
+{
+    unwrap(pass)->add(new WeightedCheckpoint());
 }
 
 bool
@@ -497,6 +508,9 @@ aot_apply_llvm_new_pass_manager(AOTCompContext *comp_ctx)
         else {
             MPM.addPass(PB.buildPerModuleDefaultPipeline(OL));
         }
+
+        /* CUSTOM: Run Loop-Simplify as last pass for instrumentation */
+        MPM.addPass(createModuleToFunctionPassAdaptor(LoopSimplifyPass()));
     }
 
 #if WASM_ENABLE_LAZY_JIT == 0
