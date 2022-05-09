@@ -2742,6 +2742,33 @@ apply_passes_for_indirect_mode(AOTCompContext *comp_ctx)
     return true;
 }
 
+static bool
+apply_instrumentation_pass(AOTCompContext *comp_ctx) {
+    LLVMPassManagerRef common_pass_mgr;
+#if WASM_ENABLE_LAZY_JIT != 0
+    uint32 i;
+#endif
+
+    if (!(common_pass_mgr = LLVMCreatePassManager())) {
+        aot_set_last_error("create pass manager failed");
+        return false;
+    }
+
+    aot_add_instrumentation_pass(common_pass_mgr);
+
+#if WASM_ENABLE_LAZY_JIT == 0
+    LLVMRunPassManager(common_pass_mgr, comp_ctx->module);
+#else
+    for (i = 0; i < comp_ctx->func_ctx_count; i++) {
+        LLVMRunPassManager(common_pass_mgr, comp_ctx->modules[i]);
+    }
+#endif
+
+    LLVMDisposePassManager(common_pass_mgr);
+    return true;
+}
+
+
 bool
 aot_compile_wasm(AOTCompContext *comp_ctx)
 {
@@ -2808,7 +2835,13 @@ aot_compile_wasm(AOTCompContext *comp_ctx)
                     return false;
                 }
             }
+
         }
+    }
+
+    /* CUSTOM: Run instrumentation  */
+    if(!apply_instrumentation_pass(comp_ctx)) {
+        return false;
     }
 
 #if WASM_ENABLE_LAZY_JIT != 0

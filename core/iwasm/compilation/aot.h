@@ -194,6 +194,9 @@ typedef struct AOTImportFunc {
  */
 typedef struct AOTFunc {
     AOTFuncType *func_type;
+#if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
+    char* func_name;
+#endif
     uint32 func_type_index;
     uint32 local_count;
     uint8 *local_types;

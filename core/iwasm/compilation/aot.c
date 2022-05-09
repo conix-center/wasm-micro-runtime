@@ -351,6 +351,11 @@ aot_create_funcs(const WASMModule *module)
             }
 
         /* Resolve local variable info and code info */
+        //printf("AOT Function Creating: %s\n", func->field_name);
+#if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
+        funcs[i]->func_name = func->field_name;
+        //printf("Field name:%s\n", func->field_name);
+#endif
         funcs[i]->local_count = func->local_count;
         funcs[i]->local_types = func->local_types;
         funcs[i]->param_cell_num = func->param_cell_num;

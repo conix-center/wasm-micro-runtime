@@ -42,13 +42,13 @@ wasm_type_to_llvm_type(AOTLLVMTypes *llvm_types, uint8 wasm_type)
  */
 static LLVMValueRef
 aot_add_llvm_func(AOTCompContext *comp_ctx, LLVMModuleRef module,
-                  AOTFuncType *aot_func_type, uint32 func_index,
+                  AOTFuncType *aot_func_type, char* func_name, uint32 func_index,
                   LLVMTypeRef *p_func_type)
 {
     LLVMValueRef func = NULL;
     LLVMTypeRef *param_types, ret_type, func_type;
     LLVMValueRef local_value;
-    char func_name[32];
+    //char func_name[32];
     uint64 size;
     uint32 i, j = 0, param_count = (uint64)aot_func_type->param_count;
 
@@ -97,7 +97,6 @@ aot_add_llvm_func(AOTCompContext *comp_ctx, LLVMModuleRef module,
     }
 
     /* Add LLVM function */
-    snprintf(func_name, sizeof(func_name), "%s%d", AOT_FUNC_PREFIX, func_index);
     if (!(func = LLVMAddFunction(module, func_name, func_type))) {
         aot_set_last_error("add LLVM function failed.");
         goto fail;
@@ -624,9 +623,17 @@ aot_create_func_context(AOTCompData *comp_data, AOTCompContext *comp_ctx,
 #endif
 
     /* Add LLVM function */
+#if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
+    char* func_name;
+    func_name = func->func_name;
+#else
+    char func_name[32];
+    snprintf(func_name, sizeof(func_name), "%s%d", AOT_FUNC_PREFIX, func_index);
+#endif
+
     if (!(func_ctx->func =
               aot_add_llvm_func(comp_ctx, func_ctx->module, aot_func_type,
-                                func_index, &func_ctx->func_type)))
+                                func_name, func_index, &func_ctx->func_type)))
         goto fail;
 
     /* Create function's first AOTBlock */
