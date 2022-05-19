@@ -35,6 +35,8 @@ namespace
   std::vector<Value *> universal_blocks;
   std::map<Loop*, LoopInfoS> loop_info;
 
+  std::vector<string> instrumented_var_names_str;
+
   LoopInfo* LICP;
   Loop* current_loop;
   unsigned current_loop_depth;
@@ -100,6 +102,7 @@ namespace
       problem.run_iterations_loop(L, LICP, FORWARDS, BASIC_BLOCKS);
 
       universal_blocks.clear();
+      instrumented_loops.clear();
       for (auto &BB : L->blocks()) {
         // If block has not been processed, add
         if (processed_blocks.find(BB) == processed_blocks.end()) {
@@ -138,6 +141,7 @@ namespace
       outs() << "Loop: " << loop_name << " | Weight/Thresh: " << loop_weight << "/" << THRESHOLD;
       if (loop_weight > THRESHOLD) {
         loop_info[L].checkpointed = true;
+        instrumented_var_names_str.push_back(var_name);
         outs() << " ==> Inserting Checkpoint: \'" << var_name << "\'\n";
         Type* int64_type = Type::getInt64Ty(current_module->getContext());
         GlobalVariable* global_cnt = 

@@ -470,6 +470,12 @@ void
 aot_add_instrumentation_pass(LLVMPassManagerRef pass);
 
 void
+aot_get_instrumentation_vars(char*** vars, int* size);
+
+void
+aot_destroy_instrumentation_vars(char** vars);
+
+void
 aot_apply_llvm_new_pass_manager(AOTCompContext *comp_ctx);
 
 
