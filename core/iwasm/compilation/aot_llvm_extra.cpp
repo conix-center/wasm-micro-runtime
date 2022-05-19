@@ -72,6 +72,12 @@ void
 aot_add_instrumentation_pass(LLVMPassManagerRef pass);
 
 void
+aot_get_instrumentation_vars(char*** vars, int* size);
+
+void
+aot_destroy_instrumentation_vars(char** vars);
+
+void
 aot_func_disable_tce(LLVMValueRef func);
 
 void
@@ -262,6 +268,29 @@ aot_add_instrumentation_pass(LLVMPassManagerRef pass)
 {
     unwrap(pass)->add(new WeightedCheckpoint());
 }
+
+void
+aot_get_instrumentation_vars(char*** vars, int* size)
+{
+    int i = 0;
+    
+    *size = llvm::instrumented_var_names_str.size();
+    if (*size != 0) {
+      *vars = (char*) malloc((*size) * sizeof(char*));
+      for (auto &s : llvm::instrumented_var_names_str) {
+        (*vars)[i++] = s.c_str();
+      }
+    }
+    else {
+      *vars = NULL;
+    }
+}
+
+void
+aot_destroy_instrumentation_vars(char** vars) {
+    free(vars);
+}
+
 
 bool
 aot_check_simd_compatibility(const char *arch_c_str, const char *cpu_c_str)
