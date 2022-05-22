@@ -358,6 +358,9 @@ bool
 aot_compile_wasm(AOTCompContext *comp_ctx);
 
 bool
+aot_instrument_and_recompile_aot(AOTCompContext *comp_ctx);
+
+bool
 aot_emit_llvm_file(AOTCompContext *comp_ctx, const char *file_name);
 
 bool
