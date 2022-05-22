@@ -220,6 +220,70 @@ aot_create_globals(const WASMModule *module, uint32 global_data_start_offset,
     return globals;
 }
 
+static
+bool aot_augment_globals(AOTCompData *comp_data, char** var_names, int num_vars) {
+  uint32 i;
+  AOTGlobal *globals;
+
+  uint32 total_count = comp_data->global_count + num_vars;
+  uint64 size = sizeof(AOTGlobal) * ((uint64) total_count);
+  uint32 data_offset = comp_data->global_data_size;
+
+  if (size >= UINT32_MAX || !(globals = wasm_runtime_realloc(comp_data->globals, (uint32)size))) {
+      aot_set_last_error("allocate memory failed.");
+      return false;
+  }
+
+  
+  /* Create additional globals */
+  for (i = comp_data->global_count; i < total_count; i++) {
+        globals[i].type = VALUE_TYPE_I32;
+        globals[i].is_mutable = false;
+        globals[i].size = wasm_value_type_size(VALUE_TYPE_I32);
+
+        globals[i].init_expr.init_expr_type = INIT_EXPR_TYPE_I32_CONST;
+        globals[i].init_expr.u.u32 = 0;
+
+        ///* Calculate data offset */
+        globals[i].data_offset = data_offset;
+        data_offset += wasm_value_type_size(VALUE_TYPE_I32);
+  }
+
+  comp_data->globals = globals;
+  comp_data->global_count = total_count;
+  comp_data->global_data_size = data_offset;  
+  return true;
+}
+
+void 
+print_stats(AOTCompData *comp_data) {
+  printf("Count: %d\n", comp_data->global_count);
+  printf("Size: %d\n", comp_data->global_data_size);
+}
+
+void
+aot_augment_globals_and_exports(AOTCompData *comp_data, char** var_names, int num_vars) {
+  print_stats(comp_data);
+  //comp_data->global_count += 50;
+  //uint32 size = sizeof(AOTGlobal) * ((uint64)comp_data->global_count);
+  //comp_data->globals = wasm_runtime_realloc(comp_data->globals, (uint32)size);
+
+  //comp_data->global_data_size += 800;
+  /*AOTGlobal *globals;
+  uint32 size = sizeof(AOTGlobal) * (uint64)comp_data->global_count;
+  if (!(globals = wasm_runtime_malloc((uint32)size))) {
+    printf("ERROR\n");
+  }
+  memcpy(globals, comp_data->globals, size);
+  comp_data->globals = globals;*/
+  if (!aot_augment_globals(comp_data, var_names, num_vars)) {
+    printf("FAILED!\n");
+  }
+
+  print_stats(comp_data);
+}
+
+
 static void
 aot_destroy_func_types(AOTFuncType **func_types, uint32 count)
 {
@@ -354,7 +418,7 @@ aot_create_funcs(const WASMModule *module)
         //printf("AOT Function Creating: %s\n", func->field_name);
 #if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
         funcs[i]->func_name = func->field_name;
-        //printf("Field name:%s\n", func->field_name);
+        printf("Field name:%s\n", func->field_name);
 #endif
         funcs[i]->local_count = func->local_count;
         funcs[i]->local_types = func->local_types;

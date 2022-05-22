@@ -16,12 +16,22 @@
 #include <iostream>
 
 using namespace llvm;
+using namespace std;
 
-namespace {
+namespace llvm {
   std::map<Function*, uint32_t> fn_straight_line_weight;
   
   LoopInfo* LI;
 
+  /* Globals used for weighted checkpoint */
+  struct LoopInfoS {
+    uint32_t weight;
+    bool checkpointed;
+  };
+  std::map<BasicBlock*, bool> processed_blocks;
+  std::map<Loop*, LoopInfoS> loop_info;
+  std::vector<string> instrumented_var_names_str;
+  /* */
 
   uint32_t getInstructionWeight(Instruction* I) {
     uint32_t weight = 0;
@@ -146,7 +156,7 @@ namespace {
       }
     }
 
-    // Here, Meet is Union operator (OR)
+    // Here, Meet is Max
     static uint32_t meet(std::vector<uint32_t> ins)
     {
       uint32_t max = *std::max_element(ins.begin(), ins.end());
@@ -185,17 +195,21 @@ namespace {
           }
           // Declaration (external-function): set some constant weight
           else {
-            //outs() << "Declaration of " << F->getName() << "\n";
           }
         }
       }
 
       outs() << "\nEnd of Module Pass\n";
-      //for (auto const& it : fn_straight_line_weight) {
-      //  outs() << "Fn: " << it.first->getName() << "  Weight: " << it.second << "\n";
-      //}
+      clear_instrumentation_vars();
 
       return false;
+    }
+
+    void clear_instrumentation_vars() { 
+      instrumented_var_names_str.clear(); 
+      processed_blocks.clear();
+      loop_info.clear();
+      outs() << "Cleared vars for instrumentation\n";
     }
   };
 }

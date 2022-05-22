@@ -55,6 +55,7 @@ typedef struct AOTCompOption {
     bool enable_aux_stack_frame;
     bool disable_llvm_intrinsics;
     bool disable_llvm_lto;
+    bool instrument;
     uint32_t opt_level;
     uint32_t size_level;
     uint32_t output_format;
@@ -88,6 +89,11 @@ aot_get_last_error();
 
 uint32_t
 aot_get_plt_table_size();
+
+/* Instrumentation additions */
+bool
+aot_instrument_and_recompile_aot(aot_comp_context_t comp_ctx);
+/*                          */
 
 #ifdef __cplusplus
 }

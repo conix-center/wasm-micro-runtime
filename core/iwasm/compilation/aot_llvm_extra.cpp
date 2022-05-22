@@ -276,9 +276,9 @@ aot_get_instrumentation_vars(char*** vars, int* size)
     
     *size = llvm::instrumented_var_names_str.size();
     if (*size != 0) {
-      *vars = (char*) malloc((*size) * sizeof(char*));
+      *vars = (char**) malloc((*size) * sizeof(char*));
       for (auto &s : llvm::instrumented_var_names_str) {
-        (*vars)[i++] = s.c_str();
+        (*vars)[i++] = (char*) s.c_str();
       }
     }
     else {

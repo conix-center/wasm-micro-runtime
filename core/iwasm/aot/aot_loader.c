@@ -2923,9 +2923,6 @@ aot_load_from_comp_data(AOTCompData *comp_data, AOTCompContext *comp_ctx,
     module->global_count = comp_data->global_count;
     module->globals = comp_data->globals;
 
-    module->global_count = comp_data->global_count;
-    module->globals = comp_data->globals;
-
     module->global_data_size = comp_data->global_data_size;
 
     module->import_func_count = comp_data->import_func_count;
