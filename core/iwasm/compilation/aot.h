@@ -290,6 +290,9 @@ aot_create_comp_data(WASMModule *module);
 void
 aot_destroy_comp_data(AOTCompData *comp_data);
 
+void
+aot_augment_globals_and_exports(AOTCompData *comp_data, char** var_names, int num_vars);
+
 char *
 aot_get_last_error();
 

@@ -268,6 +268,9 @@ main(int argc, char *argv[])
 
             option.custom_sections_count = len;
         }
+        else if (!strcmp(argv[0], "--instrument")) {
+            option.instrument = true;
+        }
         else
             PRINT_HELP_AND_EXIT();
     }
@@ -359,12 +362,30 @@ main(int argc, char *argv[])
         goto fail4;
     }
 
+    if (!aot_emit_llvm_file(comp_ctx, "intermediate.llaot")) {
+        printf("%s\n", aot_get_last_error());
+        goto fail5;
+    }
+
     bh_print_time("Begin to compile");
 
     if (!aot_compile_wasm(comp_ctx)) {
         printf("%s\n", aot_get_last_error());
         goto fail5;
     }
+
+    /* Instrumentation Addition */
+    if (option.instrument) {
+      printf("Running instrumentation\n");
+      if (!aot_instrument_and_recompile_aot(comp_ctx)) {
+        printf("%s\n", aot_get_last_error());
+        goto fail5;
+      }
+    }
+
+    /***********************/
+
+
 
     switch (option.output_format) {
         case AOT_LLVMIR_UNOPT_FILE:

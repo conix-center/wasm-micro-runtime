@@ -22,21 +22,11 @@ using namespace llvm;
 using namespace std;
 
 
-namespace
+namespace llvm
 {
   static cl::opt<uint32_t> Threshold("threshold", cl::desc("Threshold for checkpointing"), cl::init(30));
 
-  struct LoopInfoS {
-    uint32_t weight;
-    bool checkpointed;
-  };
-
-  std::map<BasicBlock*, bool> processed_blocks;
   std::vector<Value *> universal_blocks;
-  std::map<Loop*, LoopInfoS> loop_info;
-
-  std::vector<string> instrumented_var_names_str;
-
   LoopInfo* LICP;
   Loop* current_loop;
   unsigned current_loop_depth;
@@ -97,12 +87,10 @@ namespace
 
       uint32_t top = 0;
       uint32_t entry = 0;
-      outs() << "Loop Name: " << L->getName().str() << "\n";
       problem.set(&transfer_fn, &meet, entry, top);
       problem.run_iterations_loop(L, LICP, FORWARDS, BASIC_BLOCKS);
 
       universal_blocks.clear();
-      instrumented_loops.clear();
       for (auto &BB : L->blocks()) {
         // If block has not been processed, add
         if (processed_blocks.find(BB) == processed_blocks.end()) {
@@ -111,11 +99,6 @@ namespace
         }
       }
       
-      /*outs() << "\nIR:\n";
-      for (auto &BB : universal_blocks) {
-        outs() << *BB << "\n";
-        outs() << "<----- " << problem.get_outs(BB, BASIC_BLOCKS) << " ---->\n";
-      }*/
 
       // Works because loop-simplified LL
       BasicBlock* latch = L->getLoopLatch();
@@ -143,6 +126,7 @@ namespace
         loop_info[L].checkpointed = true;
         instrumented_var_names_str.push_back(var_name);
         outs() << " ==> Inserting Checkpoint: \'" << var_name << "\'\n";
+        /*
         Type* int64_type = Type::getInt64Ty(current_module->getContext());
         GlobalVariable* global_cnt = 
             create_int_global(int64_type, var_name, current_module);
@@ -158,6 +142,7 @@ namespace
         //Value* inc = Builder.CreateAdd(li, one, ".lpchk.add");
         //StoreInst* si = Builder.CreateStore(inc, global_cnt);
         AtomicRMWInst* ai = Builder.CreateAtomicRMW(AtomicRMWInst::Add, global_cnt, one, MaybeAlign(), AtomicOrdering::AcquireRelease);
+        */
       }
       else {
         outs() << "\n";
@@ -167,7 +152,6 @@ namespace
     }
 
     virtual bool doFinalization() {
-      outs() << "Completed Pass!\n";
       return false;
     }
 
