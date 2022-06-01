@@ -1245,8 +1245,9 @@ aot_compile_op_call_indirect(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
                             LLVMGetInsertBlock(comp_ctx->builder));
 
     if (!(aot_emit_exception(comp_ctx, func_ctx, EXCE_UNDEFINED_ELEMENT, true,
-                             cmp_elem_idx, check_elem_idx_succ)))
+                             cmp_elem_idx, check_elem_idx_succ))) {
         goto fail;
+      }
 
     /* load data as i32* */
     if (!(offset = I32_CONST(get_tbl_inst_offset(comp_ctx, func_ctx, tbl_idx)
