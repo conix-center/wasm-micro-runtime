@@ -491,6 +491,12 @@ typedef struct WASMBranchBlock {
     uint32 cell_num;
 } WASMBranchBlock;
 
+
+char *
+const_str_list_insert(const uint8 *str, uint32 len, WASMModule *module,
+                      bool is_load_from_file_buf, char *error_buf,
+                      uint32 error_buf_size);
+
 /* Execution environment, e.g. stack info */
 /**
  * Align an unsigned value on a alignment boundary.

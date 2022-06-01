@@ -2794,7 +2794,7 @@ apply_instrumentation_pass(AOTCompContext *comp_ctx) {
 }
 
 bool
-aot_instrument_and_recompile_aot(AOTCompContext *comp_ctx) {
+aot_instrument_and_recompile_aot(AOTCompContext *comp_ctx, AOTCompOption *option) {
   int size;
   char **vars;
   /* Run instrumentation pass */
@@ -2808,18 +2808,24 @@ aot_instrument_and_recompile_aot(AOTCompContext *comp_ctx) {
     printf("%s\n", vars[i]);
   }
 
-  /*AOTCompData* c = comp_ctx->comp_data;
-  aot_destroy_comp_ctx(comp_ctx);
-  aot_destroy_comp_data(c);*/
-
   /* Patch variables in compilation data */
+  AOTCompData* new_comp_data;
+  AOTCompContext* new_comp_ctx;
+
+  new_comp_data = comp_ctx->comp_data;
   aot_augment_globals_and_exports(comp_ctx->comp_data, vars, size);
 
+  if (!(new_comp_ctx = aot_create_comp_context(new_comp_data, option))) {
+    printf("FAILED INSTRUMENTATION: Create context\n");
+    return false;
+  }
   /* Re-compile */
-  //if (!aot_compile_wasm(comp_ctx)) {
-  //  return false;
-  //}
+  if (!aot_compile_wasm(new_comp_ctx)) {
+    printf("FAILED INSTRUMENTATION: Compile\n");
+    return false;
+  }
 
+  comp_ctx = new_comp_ctx;
   return true;
 }
 

@@ -1551,10 +1551,14 @@ aot_emit_global_info(uint8 *buf, uint8 *buf_end, uint32 *p_offset,
     AOTGlobal *global = comp_data->globals;
 
     *p_offset = offset = align_uint(offset, 4);
+    //printf("OFFSET: %d\n", offset);
 
     EMIT_U32(comp_data->global_count);
 
+    printf("Emiiting %d globals\n", comp_data->global_count);
     for (i = 0; i < comp_data->global_count; i++, global++) {
+        //printf("OFFSET: %d\n", offset);
+        //printf("Global %d: Type (%d), Size(%d)\n", i, global->type, global->size);
         offset = align_uint(offset, 4);
         EMIT_U8(global->type);
         EMIT_U8(global->is_mutable);

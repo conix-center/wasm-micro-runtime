@@ -350,7 +350,7 @@ check_utf8_str(const uint8 *str, uint32 len)
     return (p == p_end);
 }
 
-static char *
+char *
 const_str_list_insert(const uint8 *str, uint32 len, WASMModule *module,
                       bool is_load_from_file_buf, char *error_buf,
                       uint32 error_buf_size)
