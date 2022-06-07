@@ -164,6 +164,10 @@ typedef struct AOTModule {
     /* total global variable size */
     uint32 global_data_size;
 
+    /* instrumentation info */
+    uint32 instrument_count;
+    char** instrument_vars;
+
     /* import function info */
     uint32 import_func_count;
     AOTImportFunc *import_funcs;
@@ -304,6 +308,12 @@ typedef struct AOTMemoryInstance {
     MemBound mem_bound_check_4bytes;
     MemBound mem_bound_check_8bytes;
     MemBound mem_bound_check_16bytes;
+
+    /* instrument info */
+    AOTPointer instrument_data;
+    char** instrument_vars;
+    uint32 instrument_count;
+
 } AOTMemoryInstance;
 
 typedef struct AOTTableInstance {
@@ -347,6 +357,10 @@ typedef struct AOTModuleInstance {
     AOTPointer func_ptrs;
     /* function type indexes */
     AOTPointer func_type_indexes;
+
+    /* instrument info: 
+     * Vars and count can be found in AOTModule */
+    AOTPointer instrument_data;
 
     /* export info */
     uint32 export_func_count;

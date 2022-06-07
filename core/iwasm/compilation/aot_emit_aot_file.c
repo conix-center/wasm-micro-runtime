@@ -453,12 +453,33 @@ get_globals_size(AOTGlobal *globals, uint32 global_count)
 }
 
 static uint32
+get_instrument_vars_size(AOTCompContext *comp_ctx, AOTCompData *comp_data)
+{
+    uint32 size = 0, i;
+
+    for (i = 0; i < comp_data->instrument_count; i++) {
+        size = align_uint(size, 2);
+        size += get_string_size(comp_ctx, comp_data->instrument_vars[i]);
+    }
+    return size;
+}
+
+static uint32
 get_global_info_size(AOTCompData *comp_data)
 {
     /* global count + globals */
     return (uint32)sizeof(uint32)
            + get_globals_size(comp_data->globals, comp_data->global_count);
 }
+
+static uint32
+get_instrument_info_size(AOTCompContext *comp_ctx, AOTCompData *comp_data)
+{
+    /* instrument count + instrument vars */
+    return (uint32)sizeof(uint32)
+           + get_instrument_vars_size(comp_ctx, comp_data);
+}
+
 
 static uint32
 get_import_func_size(AOTCompContext *comp_ctx, AOTImportFunc *import_func)
@@ -542,6 +563,9 @@ get_init_data_section_size(AOTCompContext *comp_ctx, AOTCompData *comp_data,
 
     size = align_uint(size, 4);
     size += get_global_info_size(comp_data);
+
+    size = align_uint(size, 4);
+    size += get_instrument_info_size(comp_ctx, comp_data);
 
     size = align_uint(size, 4);
     size += get_import_func_info_size(comp_ctx, comp_data);
@@ -1515,7 +1539,7 @@ aot_emit_global_info(uint8 *buf, uint8 *buf_end, uint32 *p_offset,
 
     EMIT_U32(comp_data->global_count);
 
-    printf("Emiiting %d globals\n", comp_data->global_count);
+    printf("Emitting %d globals\n", comp_data->global_count);
     for (i = 0; i < comp_data->global_count; i++, global++) {
         //printf("OFFSET: %d\n", offset);
         //printf("Global %d: Type (%d), Size(%d)\n", i, global->type, global->size);
@@ -1533,6 +1557,32 @@ aot_emit_global_info(uint8 *buf, uint8 *buf_end, uint32 *p_offset,
         aot_set_last_error("emit global info failed.");
         return false;
     }
+
+    *p_offset = offset;
+
+    return true;
+}
+
+static bool
+aot_emit_instrumentation_info(uint8 *buf, uint8 *buf_end, uint32 *p_offset,
+                     AOTCompContext *comp_ctx, AOTCompData *comp_data, AOTObjectData *obj_data)
+{
+    uint32 offset = *p_offset, i;
+
+    *p_offset = offset = align_uint(offset, 4);
+
+    EMIT_U32(comp_data->instrument_count);
+
+    for (i = 0; i < comp_data->instrument_count; i++) {
+        offset = align_uint(offset, 2);
+        EMIT_STR(comp_data->instrument_vars[i]);
+    }
+
+    if (offset - *p_offset != get_instrument_info_size(comp_ctx, comp_data)) {
+        aot_set_last_error("emit instrument info failed.");
+        return false;
+    }
+    printf("INstrument size: %d\n", get_instrument_info_size(comp_ctx, comp_data));
 
     *p_offset = offset;
 
@@ -1621,6 +1671,8 @@ aot_emit_init_data_section(uint8 *buf, uint8 *buf_end, uint32 *p_offset,
         || !aot_emit_import_global_info(buf, buf_end, &offset, comp_ctx,
                                         comp_data, obj_data)
         || !aot_emit_global_info(buf, buf_end, &offset, comp_data, obj_data)
+        || !aot_emit_instrumentation_info(buf, buf_end, &offset, comp_ctx,
+                                        comp_data, obj_data)
         || !aot_emit_import_func_info(buf, buf_end, &offset, comp_ctx,
                                       comp_data, obj_data))
         return false;
@@ -2728,6 +2780,7 @@ aot_emit_aot_file_buf(AOTCompContext *comp_ctx, AOTCompData *comp_data,
         return NULL;
 
     aot_file_size = get_aot_file_size(comp_ctx, comp_data, obj_data);
+    printf("AOT FILE SIZE: %d\n", aot_file_size);
 
     if (!(buf = aot_file_buf = wasm_runtime_malloc(aot_file_size))) {
         aot_set_last_error("allocate memory failed.");
