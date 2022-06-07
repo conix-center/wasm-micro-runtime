@@ -2133,6 +2133,8 @@ load_global_section(const uint8 *buf, const uint8 *buf_end, WASMModule *module,
                     return false;
                 }
             }
+            printf("Global %d : Type (%d), Mutable (%d), Init Expr (T:%d, I:%d)\n", i, global->type, global->is_mutable,
+                    global->init_expr.init_expr_type, global->init_expr.u.i32);
         }
     }
 
@@ -2605,6 +2607,7 @@ load_data_segment_section(const uint8 *buf, const uint8 *buf_end,
             CHECK_BUF(p, p_end, data_seg_len);
             dataseg->data = (uint8 *)p;
             p += data_seg_len;
+            printf("Data Segment %d : BaseOff (%u), Len (%u), First Elem (%lX)\n", i, dataseg->base_offset.u.i32, data_seg_len, *(uint64*)(dataseg->data));
         }
     }
 
@@ -3267,6 +3270,16 @@ load_from_sections(WASMModule *module, WASMSection *sections,
         }
 #endif
     }
+
+    printf("D: %d\n", module->aux_data_end_global_index);
+    printf("D: %d\n", module->aux_data_end);
+
+    printf("D: %d\n", module->aux_heap_base_global_index);
+    printf("D: %d\n", module->aux_heap_base);
+
+    printf("D: %d\n", module->aux_stack_top_global_index);
+    printf("D: %d\n", module->aux_stack_bottom);
+    printf("D: %d\n", module->aux_stack_size);
 
 #if WASM_ENABLE_MEMORY_TRACING != 0
     wasm_runtime_dump_module_mem_consumption((WASMModuleCommon *)module);

@@ -76,6 +76,8 @@ aot_create_mem_init_data_list(const WASMModule *module)
         data_list[i]->byte_count = module->data_segments[i]->data_length;
         memcpy(data_list[i]->bytes, module->data_segments[i]->data,
                module->data_segments[i]->data_length);
+        printf("Data Segment %d : BaseOff (%u), Len (%u), First Elem (%lX)\n", i, data_list[i]->offset.u.i32, 
+                data_list[i]->byte_count, *(uint64*)(data_list[i]->bytes));
     }
 
     return data_list;
@@ -237,16 +239,16 @@ bool aot_augment_globals(AOTCompData *comp_data, char** var_names, int num_vars)
   
   /* Create additional globals */
   for (i = comp_data->global_count; i < total_count; i++) {
-        //globals[i].type = VALUE_TYPE_I64;
+        globals[i].type = VALUE_TYPE_I32;
         globals[i].is_mutable = true;
-        globals[i].size = wasm_value_type_size(VALUE_TYPE_I64);
+        globals[i].size = wasm_value_type_size(VALUE_TYPE_I32);
 
-        globals[i].init_expr.init_expr_type = INIT_EXPR_TYPE_I64_CONST;
-        globals[i].init_expr.u.i64 = 0;
+        globals[i].init_expr.init_expr_type = INIT_EXPR_TYPE_I32_CONST;
+        globals[i].init_expr.u.i64 = 1234 + (i - comp_data->global_count);
 
-        ///* Calculate data offset */
+        /* Calculate data offset */
         globals[i].data_offset = data_offset;
-        data_offset += wasm_value_type_size(VALUE_TYPE_I64);
+        data_offset += wasm_value_type_size(VALUE_TYPE_I32);
   }
 
   comp_data->globals = globals;
@@ -634,6 +636,10 @@ aot_create_comp_data(WASMModule *module)
     comp_data->retain_func_index = module->retain_function;
 
     comp_data->wasm_module = module;
+
+    /* No instrumentation by default */
+    comp_data->instrument_count = 0;
+    comp_data->instrument_vars = NULL;
 
     return comp_data;
 

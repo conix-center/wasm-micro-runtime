@@ -142,6 +142,7 @@ global_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
         p += import_global->size;
     }
 
+    printf("Global Pointer Base: %d\n", *(uint32*)p);
     /* Initialize defined global data */
     for (i = 0; i < module->global_count; i++, global++) {
         bh_assert(global->data_offset
@@ -370,6 +371,9 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
     uint32 inc_page_count, aux_heap_base, global_idx;
     uint32 bytes_of_last_page, bytes_to_page_end;
     uint32 heap_offset = num_bytes_per_page * init_page_count;
+    printf("Heap offset: %d\n", heap_offset);
+    printf("Mem init pages: %d\n", init_page_count);
+    printf("Mem max pages: %d\n", max_page_count);
     uint64 total_size;
     uint8 *p = NULL, *global_addr;
 #ifdef OS_ENABLE_HW_BOUND_CHECK
@@ -406,6 +410,7 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
         && module->free_func_index != (uint32)-1) {
         /* Disable app heap, use malloc/free function exported
            by wasm app to allocate/free memory instead */
+        printf("APP HEAP DISABLED\n");
         heap_size = 0;
     }
 
@@ -455,6 +460,7 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
         }
         else {
             /* Insert app heap before new page */
+            printf("USING APP HEAP\n");
             inc_page_count =
                 (heap_size + num_bytes_per_page - 1) / num_bytes_per_page;
             heap_offset = num_bytes_per_page * init_page_count;
@@ -473,14 +479,25 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
             max_page_count = 65536;
     }
 
+    /* INSTRUMENT PAGE: Last page (after heap) */
+    uint32 instrument_base_offset = init_page_count * num_bytes_per_page;
+
+    uint32 instrument_page_count = 
+      ((module->instrument_count * sizeof(uint32)) + num_bytes_per_page - 1) / num_bytes_per_page;
+    init_page_count += instrument_page_count;
+
+
     LOG_VERBOSE("Memory instantiate:");
     LOG_VERBOSE("  page bytes: %u, init pages: %u, max pages: %u",
                 num_bytes_per_page, init_page_count, max_page_count);
     LOG_VERBOSE("  data offset: %u, stack size: %d", module->aux_data_end,
                 module->aux_stack_size);
-    LOG_VERBOSE("  heap offset: %u, heap size: %d\n", heap_offset, heap_size);
+    LOG_VERBOSE("  heap offset: %u, heap size: %d", heap_offset, heap_size);
+    LOG_VERBOSE("  instrument offset: %u, instrument size: %d\n", 
+                  instrument_base_offset, module->instrument_count * 4);
 
     total_size = (uint64)num_bytes_per_page * init_page_count;
+    printf("Total Size: %d\n", total_size);
 #if WASM_ENABLE_SHARED_MEMORY != 0
     if (is_shared_memory) {
         /* Allocate max page for shared memory */
@@ -495,6 +512,7 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
         return NULL;
     }
 #else
+    printf("Page Size: %d\n", page_size);
     total_size = (total_size + page_size - 1) & ~(page_size - 1);
 
     /* Totally 8G is mapped, the opcode load/store address range is 0 to 8G:
@@ -537,6 +555,10 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
     memory_inst->memory_data.ptr = p;
     memory_inst->memory_data_end.ptr = p + (uint32)total_size;
     memory_inst->memory_data_size = (uint32)total_size;
+    printf("Memory data size: %d\n", memory_inst->memory_data_size);
+
+    /* Init instrument info */
+    module_inst->instrument_data.ptr = p + instrument_base_offset;
 
     /* Initialize heap info */
     memory_inst->heap_data.ptr = p + heap_offset;
@@ -1227,9 +1249,21 @@ aot_lookup_global(const AOTModuleInstance *module_inst, const char *name)
     AOTExportGlobal *export_globals =
         (AOTExportGlobal *)module_inst->export_globals.ptr;
 
-    for (i = 0; i < module_inst->export_global_count; i++)
-        if (!strcmp(export_globals[i].name, name))
-            return export_globals[i].global;
+    for (i = 0; i < module_inst->export_global_count; i++) {
+        AOTGlobal* global_inst = export_globals[i].global;
+        uint8* global_addr = module_inst->global_data.ptr + global_inst->data_offset;
+        uint8* global_data_addr = module_inst->global_table_data.memory_instances->memory_data.ptr + (*((uint32*) global_addr));
+        printf("Export %d: %s; DataOff: %d; Addr = %u; Value = %lX\n", i, export_globals[i].name, global_inst->data_offset, *((uint32_t*)global_addr), *((uint64_t*)global_data_addr));
+        //if (!strcmp(export_globals[i].name, name))
+        //    return export_globals[i].global;
+    }
+    AOTModule *module = (AOTModule*)module_inst->aot_module.ptr;
+    printf("Instrument count: %d\n", module->instrument_count);
+    for (i = 0; i < module->instrument_count; i++) {
+      uint8* global_data_addr = module_inst->instrument_data.ptr + i*4;
+      printf("%d:%s | Val: %d\n", i, module->instrument_vars[i], (*((uint32*) global_data_addr)));
+    }
+    
 
     return NULL;
 }
