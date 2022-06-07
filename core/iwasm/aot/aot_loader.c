@@ -1211,6 +1211,7 @@ load_globals(const uint8 **p_buf, const uint8 *buf_end, AOTModule *module,
 
         globals[i].size = wasm_value_type_size(globals[i].type);
         globals[i].data_offset = data_offset;
+
         data_offset += globals[i].size;
         module->global_data_size += globals[i].size;
     }
@@ -1232,6 +1233,57 @@ load_global_info(const uint8 **p_buf, const uint8 *buf_end, AOTModule *module,
     /* load globals */
     if (module->global_count > 0
         && !load_globals(&buf, buf_end, module, error_buf, error_buf_size))
+        return false;
+
+    *p_buf = buf;
+    return true;
+fail:
+    return false;
+}
+
+
+static bool
+load_instrument_vars(const uint8 **p_buf, const uint8 *buf_end, AOTModule *module,
+             bool is_load_from_file_buf, char *error_buf, uint32 error_buf_size)
+{
+    const uint8 *buf = *p_buf;
+    uint64 size;
+    uint32 i;
+
+    /* Allocate memory */
+    size = sizeof(char*) * (uint64)module->instrument_count;
+    if (!(module->instrument_vars =
+              loader_malloc(size, error_buf, error_buf_size))) {
+        return false;
+    }
+
+    /* Create each instrument var */
+    for (i = 0; i < module->instrument_count; i++) {
+        read_string(buf, buf_end, module->instrument_vars[i]);
+    }
+    printf("Instrument Count: %d\n", module->instrument_count);
+    /*for (i = 0; i < module->instrument_count; i++) {
+      printf("Var %d: %s\n", i, module->instrument_vars[i]);
+    }*/
+
+    *p_buf = buf;
+    return true;
+fail:
+    return false;
+}
+
+static bool
+load_instrumentation_info(const uint8 **p_buf, const uint8 *buf_end, AOTModule *module,
+                 bool is_load_from_file_buf, char *error_buf, uint32 error_buf_size)
+{
+    const uint8 *buf = *p_buf;
+
+    read_uint32(buf, buf_end, module->instrument_count);
+
+    /* load globals */
+    if (module->global_count > 0
+        && !load_instrument_vars(&buf, buf_end, module,
+                is_load_from_file_buf, error_buf, error_buf_size))
         return false;
 
     *p_buf = buf;
@@ -1424,6 +1476,8 @@ load_init_data_section(const uint8 *buf, const uint8 *buf_end,
         || !load_import_global_info(&p, p_end, module, is_load_from_file_buf,
                                     error_buf, error_buf_size)
         || !load_global_info(&p, p_end, module, error_buf, error_buf_size)
+        || !load_instrumentation_info(&p, p_end, module, is_load_from_file_buf,
+                                    error_buf, error_buf_size)
         || !load_import_func_info(&p, p_end, module, is_load_from_file_buf,
                                   error_buf, error_buf_size))
         return false;
@@ -2924,6 +2978,9 @@ aot_load_from_comp_data(AOTCompData *comp_data, AOTCompContext *comp_ctx,
     module->globals = comp_data->globals;
 
     module->global_data_size = comp_data->global_data_size;
+
+    module->instrument_count = comp_data->instrument_count;
+    module->instrument_vars = comp_data->instrument_vars;
 
     module->import_func_count = comp_data->import_func_count;
     module->import_funcs = comp_data->import_funcs;

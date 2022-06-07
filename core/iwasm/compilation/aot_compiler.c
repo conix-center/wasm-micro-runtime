@@ -2777,8 +2777,10 @@ aot_instrument_and_recompile_aot(AOTCompContext *comp_ctx, AOTCompOption *option
   AOTCompData* new_comp_data;
   AOTCompContext* new_comp_ctx;
 
+  //aot_augment_globals_and_exports(comp_ctx->comp_data, vars, size);
   new_comp_data = comp_ctx->comp_data;
-  aot_augment_globals_and_exports(comp_ctx->comp_data, vars, size);
+  new_comp_data->instrument_count = size;
+  new_comp_data->instrument_vars = vars;
 
   if (!(new_comp_ctx = aot_create_comp_context(new_comp_data, option))) {
     printf("FAILED INSTRUMENTATION: Create context\n");
