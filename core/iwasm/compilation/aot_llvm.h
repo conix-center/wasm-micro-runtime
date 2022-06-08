@@ -468,7 +468,7 @@ void
 aot_add_expand_memory_op_pass(LLVMPassManagerRef pass);
 
 void
-aot_add_instrumentation_pass(LLVMPassManagerRef pass);
+aot_add_instrumentation_pass(LLVMPassManagerRef pass, AOTCompContext *comp_ctx);
 
 void
 aot_get_instrumentation_vars(char*** vars, int* size);

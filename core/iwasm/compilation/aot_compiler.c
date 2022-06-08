@@ -2750,7 +2750,7 @@ apply_instrumentation_pass(AOTCompContext *comp_ctx) {
         return false;
     }
 
-    aot_add_instrumentation_pass(common_pass_mgr);
+    aot_add_instrumentation_pass(common_pass_mgr, comp_ctx);
 
     LLVMRunPassManager(common_pass_mgr, comp_ctx->module);
 
@@ -2774,6 +2774,9 @@ aot_instrument_and_recompile_aot(AOTCompContext *comp_ctx, AOTCompOption *option
   }
 
   /* Patch variables in compilation data */
+  comp_ctx->comp_data->instrument_count = size;
+  comp_ctx->comp_data->instrument_vars = vars;
+  /*
   AOTCompData* new_comp_data;
   AOTCompContext* new_comp_ctx;
 
@@ -2786,13 +2789,14 @@ aot_instrument_and_recompile_aot(AOTCompContext *comp_ctx, AOTCompOption *option
     printf("FAILED INSTRUMENTATION: Create context\n");
     return false;
   }
-  /* Re-compile */
+
   if (!aot_compile_wasm(new_comp_ctx)) {
     printf("FAILED INSTRUMENTATION: Compile\n");
     return false;
   }
 
   comp_ctx = new_comp_ctx;
+  */
   return true;
 }
 
