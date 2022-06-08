@@ -16,6 +16,7 @@
 
 #include "Dataflow.h"
 #include "function-weight.h"
+#include "aot_llvm.h"
 #include "Global.h"
 
 using namespace llvm;
@@ -32,12 +33,16 @@ namespace llvm
   unsigned current_loop_depth;
   Module* current_module;
 
+  AOTCompContext* comp_ctx;
+  std::map<Value*, uint32_t> func_ctx_idx_map;  
+  
   class WeightedCheckpoint : public LoopPass
   {
 
   public:
 
     static char ID;
+
     WeightedCheckpoint() : LoopPass(ID) {}
 
     DataflowAnalysis<uint32_t> problem;
@@ -80,6 +85,7 @@ namespace llvm
     {
 
       // Initialization
+      Function* F = L->getHeader()->getParent();
       current_loop = L;
       current_loop_depth = L->getLoopDepth();
       current_module = L->getHeader()->getModule();
@@ -114,18 +120,63 @@ namespace llvm
       loop_info[L].checkpointed = false;
         
 
+      uint32_t fn_idx = func_ctx_idx_map[F];
       string prefix = "rtloop";
-      string fn_name = L->getHeader()->getParent()->getName().str();
+      string fn_name = F->getName().str();
       string loop_name = L->getName().str();
       string var_name = prefix + "_" + fn_name + "_" + loop_name;
 
       // Checkpoint above threshold
       uint32_t THRESHOLD = Threshold;
       outs() << "Loop: " << loop_name << " | Weight/Thresh: " << loop_weight << "/" << THRESHOLD;
+      outs() << " | AOTFnIdx: " << func_ctx_idx_map[F];
+
       if (loop_weight > THRESHOLD) {
         loop_info[L].checkpointed = true;
         instrumented_var_names_str.push_back(var_name);
         outs() << " ==> Inserting Checkpoint: \'" << var_name << "\'\n";
+
+        // Instrument
+        Type* int32_type = Type::getInt32Ty(current_module->getContext());
+        Type* int32_ptr_type = Type::getInt32PtrTy(current_module->getContext());
+        Type* int64_type = Type::getInt64Ty(current_module->getContext());
+        Type* int8_ptr_type = Type::getInt8PtrTy(current_module->getContext());
+        Type* int8_type = Type::getInt8Ty(current_module->getContext());
+
+        Constant* one = ConstantInt::get(int64_type, 1);
+        uint64_t inst_base = 196608;
+
+        // Builder
+        
+        Instruction* Inst = L->getHeader()->getFirstNonPHI();
+        IRBuilder<> Builder(Inst);
+
+        AOTFuncContext* func_ctx = comp_ctx->func_ctxes[fn_idx];
+        Value* m = (Value *)func_ctx->mem_info->mem_base_addr;
+
+        Value* mem_base_addr;
+        // 1. Get memory base address
+#if WASM_ENABLE_SHARED_MEMORY != 0
+        bool is_shared_memory = comp_ctx->comp_data->memories[0].memory_flags & 0x02;
+#endif
+        if (func_ctx->mem_space_unchanged
+#if WASM_ENABLE_SHARED_MEMORY != 0
+              || is_shared_memory
+#endif
+        ) {
+          mem_base_addr = m;
+        } else {
+          mem_base_addr = Builder.CreateLoad(int8_ptr_type, m, true, "prof_mem_base");
+        }
+
+        // 2. Get instrument address
+        Value* inst_addr = Builder.CreateConstInBoundsGEP1_64(int8_type, 
+                              mem_base_addr, inst_base + 4*(instrumented_var_names_str.size() - 1), "prof_addr");
+        Value* inst_addr_cast = Builder.CreateBitCast(inst_addr, int32_ptr_type, "prof_addr_cast");
+        LoadInst* li = Builder.CreateLoad(int32_type, inst_addr_cast, true, "lp_ld");
+        Value* inc = Builder.CreateAdd(li, one, "lp_add");
+        StoreInst* si = Builder.CreateStore(inc, inst_addr_cast);
+
         /*
         Type* int64_type = Type::getInt64Ty(current_module->getContext());
         GlobalVariable* global_cnt = 
