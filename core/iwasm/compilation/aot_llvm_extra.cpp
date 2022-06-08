@@ -69,7 +69,7 @@ void
 aot_add_expand_memory_op_pass(LLVMPassManagerRef pass);
 
 void
-aot_add_instrumentation_pass(LLVMPassManagerRef pass);
+aot_add_instrumentation_pass(LLVMPassManagerRef pass, AOTCompContext *comp_ctx);
 
 void
 aot_get_instrumentation_vars(char*** vars, int* size);
@@ -270,8 +270,17 @@ aot_add_expand_memory_op_pass(LLVMPassManagerRef pass)
 }
 
 void
-aot_add_instrumentation_pass(LLVMPassManagerRef pass)
+aot_add_instrumentation_pass(LLVMPassManagerRef pass, AOTCompContext *comp_ctx)
 {
+    // Set variables to communicate with instrumentation
+    llvm::comp_ctx = comp_ctx;
+
+    llvm::func_ctx_idx_map.clear();
+    for (uint32_t i = 0; i < comp_ctx->func_ctx_count; i++) {
+      llvm::Value* v = (llvm::Value*) comp_ctx->func_ctxes[i]->func;
+      llvm::func_ctx_idx_map[v] = i;
+    }
+
     unwrap(pass)->add(new WeightedCheckpoint());
 }
 
