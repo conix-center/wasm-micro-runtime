@@ -348,8 +348,13 @@ typedef struct AOTCompContext {
     /* Function contexts */
     AOTFuncContext **func_ctxes;
     uint32 func_ctx_count;
+
     char **custom_sections_wp;
     uint32 custom_sections_count;
+
+    /* Custom instrumentation variable */
+    uint32 mem_base_addr_offset_arg;
+
 } AOTCompContext;
 
 enum {

@@ -2811,6 +2811,7 @@ aot_instrument_and_recompile_aot(AOTCompContext *comp_ctx, AOTCompOption *option
   /* Patch variables in compilation data */
   comp_ctx->comp_data->instrument_count = size;
   comp_ctx->comp_data->instrument_vars = vars;
+
   /*
   AOTCompData* new_comp_data;
   AOTCompContext* new_comp_ctx;
@@ -2906,10 +2907,6 @@ aot_compile_wasm(AOTCompContext *comp_ctx)
         }
     }
 
-    /* CUSTOM: Run instrumentation  */
-    //if(!apply_instrumentation_pass(comp_ctx)) {
-    //    return false;
-    //}
 
 #if WASM_ENABLE_LAZY_JIT != 0
     orc_main_dylib = LLVMOrcLLJITGetMainJITDylib(comp_ctx->orc_lazyjit);

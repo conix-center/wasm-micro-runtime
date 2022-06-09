@@ -2078,6 +2078,22 @@ aot_create_comp_context(AOTCompData *comp_data, aot_comp_option_t option)
     if (comp_ctx->disable_llvm_intrinsics)
         aot_intrinsic_fill_capability_flags(comp_ctx);
 
+    /* Set offset args */
+#if WASM_ENABLE_SHARED_MEMORY != 0
+    bool is_shared_memory =
+        comp_ctx->comp_data->memories[0].memory_flags & 0x02 ? true : false;
+    if (is_shared_memory) {
+      comp_ctx->mem_base_addr_offset_arg = offsetof(AOTMemoryInstance, memory_data.ptr);
+    }
+    else
+#endif
+    {
+      comp_ctx->mem_base_addr_offset_arg = offsetof(AOTModuleInstance, global_table_data)
+                             + offsetof(AOTMemoryInstance, memory_data.ptr);
+    }
+
+
+
     ret = comp_ctx;
 
 fail:
