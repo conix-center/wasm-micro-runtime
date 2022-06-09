@@ -266,7 +266,8 @@ aot_add_expand_memory_op_pass(LLVMPassManagerRef pass)
 void
 aot_add_instrumentation_pass(LLVMPassManagerRef pass, AOTCompContext *comp_ctx)
 {
-    // Set variables to communicate with instrumentation
+    // Set offset to communicate with instrumentation
+    llvm::mem_base_addr_offset_arg = comp_ctx->mem_base_addr_offset_arg;
     llvm::comp_ctx = comp_ctx;
 
     llvm::func_ctx_idx_map.clear();
@@ -494,6 +495,7 @@ aot_apply_llvm_new_pass_manager(AOTCompContext *comp_ctx)
         FunctionPassManager FPM;
 
         /* Apply Vectorize related passes for AOT mode */
+        
         FPM.addPass(LoopVectorizePass());
         FPM.addPass(SLPVectorizerPass());
         FPM.addPass(LoadStoreVectorizerPass());

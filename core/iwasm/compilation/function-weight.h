@@ -20,6 +20,19 @@ using namespace std;
 
 namespace llvm {
   std::map<Function*, uint32_t> fn_straight_line_weight;
+  /* Used for WAMR memory information */
+  /* mem_base_addr_offset_arg set externally */
+  uint32_t mem_base_addr_offset_arg;
+  struct MemInfoWAMR {
+    Value* aot_inst_addr;
+    Value* aot_inst;
+    Value* mem_base_addr_offset;
+    Value* mem_base_addr_ptr;
+  };
+  std::map<Function*, MemInfoWAMR> fn_mem_info_wamr;
+
+  std::map<Function*, Value*> func_prof_context_map;
+  /* */
   
   LoopInfo* LI;
 
@@ -31,7 +44,7 @@ namespace llvm {
   std::map<BasicBlock*, bool> processed_blocks;
   std::map<Loop*, LoopInfoS> loop_info;
   std::vector<string> instrumented_var_names_str;
-  /* */
+
 
   uint32_t getInstructionWeight(Instruction* I) {
     uint32_t weight = 0;
@@ -165,6 +178,7 @@ namespace llvm {
 
     // Print output for each function
     bool runOnModule(Module &M) override {
+
       CallGraph CG = CallGraph(M);
       for (auto node = po_begin(&CG); node != po_end(&CG); ++node) {
         if (Function* F = node->getFunction()) {
@@ -209,6 +223,7 @@ namespace llvm {
       instrumented_var_names_str.clear(); 
       processed_blocks.clear();
       loop_info.clear();
+      func_prof_context_map.clear();
       outs() << "Cleared vars for instrumentation\n";
     }
   };

@@ -35,6 +35,7 @@ namespace llvm
 
   AOTCompContext* comp_ctx;
   std::map<Value*, uint32_t> func_ctx_idx_map;  
+
   
   class WeightedCheckpoint : public LoopPass
   {
@@ -71,14 +72,42 @@ namespace llvm
     }
 
 
+    /* Get base address to access memory array */
+    Value* getMemBaseAddrPtr(Function* F) {
+      if (func_prof_context_map.find(F) != func_prof_context_map.end()) {
+        return func_prof_context_map[F];
+      }
+      else {
+        Instruction* aot_inst_addr = F->getEntryBlock().getFirstNonPHI();
+        Instruction* insert_pt = aot_inst_addr->getNextNonDebugInstruction();
+        
+        // Types
+        Type* int8_type = Type::getInt8Ty(current_module->getContext());
+        Type* int8_ptr_type = Type::getInt8PtrTy(current_module->getContext());
+        Type* int8_2ptr_type = PointerType::getUnqual(int8_ptr_type);
+
+        // Insert profiling variables after
+        IRBuilder<> Builder(insert_pt);
+
+        Value* aot_inst = 
+          Builder.CreateAlignedLoad(int8_ptr_type, aot_inst_addr, MaybeAlign(8), "prof_aot_inst");
+        Value* mem_base_addr_offset = 
+          Builder.CreateConstInBoundsGEP1_64(int8_type, aot_inst, mem_base_addr_offset_arg, "prof_mem_base_addr_offset");
+        Value* mem_base_addr_ptr = 
+          Builder.CreateBitCast(mem_base_addr_offset, int8_2ptr_type, "prof_mem_base_addr_ptr");
+        Value* mem_base_addr =
+          Builder.CreateAlignedLoad(int8_ptr_type, mem_base_addr_ptr, MaybeAlign(8), "prof_mem_base_addr");
+
+        func_prof_context_map[F] = mem_base_addr;
+        return mem_base_addr;
+      }
+    }
+
+
     virtual bool doInitialization(Loop* L, LPPassManager &LPM) {
-      //outs() << "-------------------\n";
-      //outs() << getPassName().str() << " : " << L << "\n";
-      //outs() << "-------------------\n";
       string fn_name = L->getHeader()->getParent()->getName().str();
       return false;
     }
-
 
 
     virtual bool runOnLoop(Loop* L, LPPassManager &LPM)
@@ -93,6 +122,7 @@ namespace llvm
 
       uint32_t top = 0;
       uint32_t entry = 0;
+      outs() << "Loop: " << L->getName().str() << " | AOTFnIdx: " << func_ctx_idx_map[F] << "\n";
       problem.set(&transfer_fn, &meet, entry, top);
       problem.run_iterations_loop(L, LICP, FORWARDS, BASIC_BLOCKS);
 
@@ -108,6 +138,7 @@ namespace llvm
 
       // Works because loop-simplified LL
       BasicBlock* latch = L->getLoopLatch();
+      outs() << latch->getName().str() << "\n";
       uint32_t loop_weight = problem.get_outs(latch, BASIC_BLOCKS);
 
       // Add weights of all non-checkpointed loops inside
@@ -129,7 +160,6 @@ namespace llvm
       // Checkpoint above threshold
       uint32_t THRESHOLD = Threshold;
       outs() << "Loop: " << loop_name << " | Weight/Thresh: " << loop_weight << "/" << THRESHOLD;
-      outs() << " | AOTFnIdx: " << func_ctx_idx_map[F];
 
       if (loop_weight > THRESHOLD) {
         loop_info[L].checkpointed = true;
@@ -147,27 +177,11 @@ namespace llvm
         uint64_t inst_base = 196608;
 
         // Builder
-        
         Instruction* Inst = L->getHeader()->getFirstNonPHI();
         IRBuilder<> Builder(Inst);
 
-        AOTFuncContext* func_ctx = comp_ctx->func_ctxes[fn_idx];
-        Value* m = (Value *)func_ctx->mem_info->mem_base_addr;
-
-        Value* mem_base_addr;
         // 1. Get memory base address
-#if WASM_ENABLE_SHARED_MEMORY != 0
-        bool is_shared_memory = comp_ctx->comp_data->memories[0].memory_flags & 0x02;
-#endif
-        if (func_ctx->mem_space_unchanged
-#if WASM_ENABLE_SHARED_MEMORY != 0
-              || is_shared_memory
-#endif
-        ) {
-          mem_base_addr = m;
-        } else {
-          mem_base_addr = Builder.CreateLoad(int8_ptr_type, m, true, "prof_mem_base");
-        }
+        Value* mem_base_addr = getMemBaseAddrPtr(F);
 
         // 2. Get instrument address
         Value* inst_addr = Builder.CreateConstInBoundsGEP1_64(int8_type, 
@@ -177,6 +191,7 @@ namespace llvm
         Value* inc = Builder.CreateAdd(li, one, "lp_add");
         StoreInst* si = Builder.CreateStore(inc, inst_addr_cast);
 
+        outs() << "Value " << *mem_base_addr << "\n";
         /*
         Type* int64_type = Type::getInt64Ty(current_module->getContext());
         GlobalVariable* global_cnt = 
