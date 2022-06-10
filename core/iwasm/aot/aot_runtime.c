@@ -368,12 +368,17 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
     uint32 num_bytes_per_page = memory->num_bytes_per_page;
     uint32 init_page_count = memory->mem_init_page_count;
     uint32 max_page_count = memory->mem_max_page_count;
-    uint32 inc_page_count, aux_heap_base, global_idx;
+    uint32 inc_page_count = 0, aux_heap_base, global_idx;
     uint32 bytes_of_last_page, bytes_to_page_end;
     uint32 heap_offset = num_bytes_per_page * init_page_count;
-    printf("Heap offset: %d\n", heap_offset);
-    printf("Mem init pages: %d\n", init_page_count);
-    printf("Mem max pages: %d\n", max_page_count);
+
+    /* Location for instrumentation data */
+    uint32 instrument_base_offset = num_bytes_per_page * init_page_count;
+    uint32 instrument_page_count =
+              ((module->instrument_count * sizeof(uint32)) + num_bytes_per_page - 1) / num_bytes_per_page;
+
+    uint32 heap_page_count;
+
     uint64 total_size;
     uint8 *p = NULL, *global_addr;
 #ifdef OS_ENABLE_HW_BOUND_CHECK
@@ -412,9 +417,11 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
            by wasm app to allocate/free memory instead */
         printf("APP HEAP DISABLED\n");
         heap_size = 0;
+        inc_page_count = instrument_page_count;
     }
 
     if (init_page_count == max_page_count && init_page_count == 1) {
+        // TODO: Instrumentation here!
         /* If only one page and at most one page, we just append
            the app heap to the end of linear memory, enlarge the
            num_bytes_per_page, and don't change the page count*/
@@ -425,11 +432,16 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
                           "memory size must be at most 65536 pages (4GiB)");
             return NULL;
         }
+        inc_page_count = 0;
+        if (instrument_page_count > 0) {
+          LOG_WARNING("Instrumentation will not work: TODO FIX!");
+        }
     }
     else if (heap_size > 0) {
         if (module->aux_heap_base_global_index != (uint32)-1
             && module->aux_heap_base < num_bytes_per_page * init_page_count) {
             /* Insert app heap before __heap_base */
+            printf("USING EXPORTED HEAP\n");
             aux_heap_base = module->aux_heap_base;
             bytes_of_last_page = aux_heap_base % num_bytes_per_page;
             if (bytes_of_last_page == 0)
@@ -457,35 +469,36 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
                           + module->globals[global_idx].data_offset;
             *(uint32 *)global_addr = aux_heap_base;
             LOG_VERBOSE("Reset __heap_base global to %u", aux_heap_base);
+
+            /* Aux heap base is now the end of heap. Add instrument data in next page */
+            instrument_base_offset = num_bytes_per_page * (init_page_count + inc_page_count);
+            inc_page_count += instrument_page_count;
         }
         else {
             /* Insert app heap before new page */
             printf("USING APP HEAP\n");
-            inc_page_count =
+            heap_page_count =
                 (heap_size + num_bytes_per_page - 1) / num_bytes_per_page;
-            heap_offset = num_bytes_per_page * init_page_count;
-            heap_size = num_bytes_per_page * inc_page_count;
+            inc_page_count = instrument_page_count + heap_page_count; 
+                
+            // Instrument data before heap
+            heap_offset = num_bytes_per_page * (init_page_count + instrument_page_count);
+            heap_size = num_bytes_per_page * heap_page_count;
+
             if (heap_size > 0)
                 heap_size -= 1 * BH_KB;
         }
-        init_page_count += inc_page_count;
-        max_page_count += inc_page_count;
-        if (init_page_count > 65536) {
-            set_error_buf(error_buf, error_buf_size,
-                          "memory size must be at most 65536 pages (4GiB)");
-            return NULL;
-        }
-        if (max_page_count > 65536)
-            max_page_count = 65536;
     }
 
-    /* INSTRUMENT PAGE: Last page (after heap) */
-    uint32 instrument_base_offset = init_page_count * num_bytes_per_page;
-
-    uint32 instrument_page_count = 
-      ((module->instrument_count * sizeof(uint32)) + num_bytes_per_page - 1) / num_bytes_per_page;
-    init_page_count += instrument_page_count;
-
+    init_page_count += inc_page_count;
+    max_page_count += inc_page_count;
+    if (init_page_count > 65536) {
+        set_error_buf(error_buf, error_buf_size,
+                      "memory size must be at most 65536 pages (4GiB)");
+        return NULL;
+    }
+    if (max_page_count > 65536)
+        max_page_count = 65536;
 
     LOG_VERBOSE("Memory instantiate:");
     LOG_VERBOSE("  page bytes: %u, init pages: %u, max pages: %u",
