@@ -277,6 +277,9 @@ aot_add_instrumentation_pass(LLVMPassManagerRef pass, AOTCompContext *comp_ctx)
     }
 
     unwrap(pass)->add(new WeightedCheckpoint());
+    // Remove fully redundant expressions
+    // NOTE: This does not seem to remove redundant loads
+    unwrap(pass)->add(createGVNPass());
 }
 
 void
@@ -500,6 +503,7 @@ aot_apply_llvm_new_pass_manager(AOTCompContext *comp_ctx)
         FPM.addPass(SLPVectorizerPass());
         FPM.addPass(LoadStoreVectorizerPass());
 
+        //FPM.addPass(GVN());
         /*
         FPM.addPass(createFunctionToLoopPassAdaptor(LICMPass()));
         FPM.addPass(createFunctionToLoopPassAdaptor(LoopRotatePass()));

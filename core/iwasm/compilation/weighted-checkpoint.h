@@ -85,12 +85,22 @@ namespace llvm
         Type* int8_type = Type::getInt8Ty(current_module->getContext());
         Type* int8_ptr_type = Type::getInt8PtrTy(current_module->getContext());
         Type* int8_2ptr_type = PointerType::getUnqual(int8_ptr_type);
+        Type* int64_type = Type::getInt64Ty(current_module->getContext());
+        Type* int64_ptr_type = Type::getInt64PtrTy(current_module->getContext());
 
         // Insert profiling variables after
         IRBuilder<> Builder(insert_pt);
 
+        //Value* aot_inst = 
+        //  Builder.CreateAlignedLoad(int8_ptr_type, aot_inst_addr, MaybeAlign(8), "prof_aot_inst");
+
+        Value* aot_inst1 = 
+          Builder.CreateBitCast(aot_inst_addr, int64_ptr_type, "p0");
+        Value* aot_inst2 =
+          Builder.CreateAlignedLoad(int64_type, aot_inst1, MaybeAlign(8), "p1");
         Value* aot_inst = 
-          Builder.CreateAlignedLoad(int8_ptr_type, aot_inst_addr, MaybeAlign(8), "prof_aot_inst");
+          Builder.CreateIntToPtr(aot_inst2, int8_ptr_type, "prof_aot_inst");
+
         Value* mem_base_addr_offset = 
           Builder.CreateConstInBoundsGEP1_64(int8_type, aot_inst, mem_base_addr_offset_arg, "prof_mem_base_addr_offset");
         Value* mem_base_addr_ptr = 
@@ -115,6 +125,7 @@ namespace llvm
 
       // Initialization
       Function* F = L->getHeader()->getParent();
+      
       current_loop = L;
       current_loop_depth = L->getLoopDepth();
       current_module = L->getHeader()->getModule();
@@ -174,7 +185,8 @@ namespace llvm
         Type* int8_type = Type::getInt8Ty(current_module->getContext());
 
         Constant* one = ConstantInt::get(int64_type, 1);
-        uint64_t inst_base = 196608;
+        uint64_t inst_base = (comp_ctx->comp_data->memories[0].mem_init_page_count) *
+                              comp_ctx->comp_data->memories[0].num_bytes_per_page;
 
         // Builder
         Instruction* Inst = L->getHeader()->getFirstNonPHI();
@@ -192,23 +204,6 @@ namespace llvm
         StoreInst* si = Builder.CreateStore(inc, inst_addr_cast);
 
         outs() << "Value " << *mem_base_addr << "\n";
-        /*
-        Type* int64_type = Type::getInt64Ty(current_module->getContext());
-        GlobalVariable* global_cnt = 
-            create_int_global(int64_type, var_name, current_module);
-
-        if (global_cnt == nullptr) {
-          errs() << "Global already exists!\n";
-        }
-        Constant* one = ConstantInt::get(int64_type, 1);
-        
-        Instruction* Inst = L->getHeader()->getFirstNonPHI();
-        IRBuilder<> Builder(Inst);
-        //LoadInst* li = Builder.CreateLoad(int64_type, global_cnt, true, ".lpchk.ld");
-        //Value* inc = Builder.CreateAdd(li, one, ".lpchk.add");
-        //StoreInst* si = Builder.CreateStore(inc, global_cnt);
-        AtomicRMWInst* ai = Builder.CreateAtomicRMW(AtomicRMWInst::Add, global_cnt, one, MaybeAlign(), AtomicOrdering::AcquireRelease);
-        */
       }
       else {
         outs() << "\n";
@@ -218,6 +213,9 @@ namespace llvm
     }
 
     virtual bool doFinalization() {
+      uint64_t inst_base = (comp_ctx->comp_data->memories[0].mem_init_page_count) *
+                            comp_ctx->comp_data->memories[0].num_bytes_per_page;
+      outs() << "Inst base: " << inst_base << "\n";
       return false;
     }
 
