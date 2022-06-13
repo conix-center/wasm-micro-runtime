@@ -92,7 +92,7 @@ aot_get_plt_table_size();
 
 /* Instrumentation additions */
 bool
-aot_instrument_and_recompile_aot(aot_comp_context_t comp_ctx, aot_comp_option_t option);
+aot_instrument_aot(aot_comp_context_t comp_ctx, aot_comp_option_t option);
 /*                          */
 
 #ifdef __cplusplus

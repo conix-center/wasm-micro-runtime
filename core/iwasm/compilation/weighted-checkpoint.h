@@ -133,7 +133,6 @@ namespace llvm
 
       uint32_t top = 0;
       uint32_t entry = 0;
-      outs() << "Loop: " << L->getName().str() << " | AOTFnIdx: " << func_ctx_idx_map[F] << "\n";
       problem.set(&transfer_fn, &meet, entry, top);
       problem.run_iterations_loop(L, LICP, FORWARDS, BASIC_BLOCKS);
 
@@ -149,7 +148,6 @@ namespace llvm
 
       // Works because loop-simplified LL
       BasicBlock* latch = L->getLoopLatch();
-      outs() << latch->getName().str() << "\n";
       uint32_t loop_weight = problem.get_outs(latch, BASIC_BLOCKS);
 
       // Add weights of all non-checkpointed loops inside
@@ -163,19 +161,20 @@ namespace llvm
         
 
       uint32_t fn_idx = func_ctx_idx_map[F];
-      string prefix = "rtloop";
+      string prefix = "rtinstloop";
       string fn_name = F->getName().str();
       string loop_name = L->getName().str();
       string var_name = prefix + "_" + fn_name + "_" + loop_name;
 
       // Checkpoint above threshold
       uint32_t THRESHOLD = Threshold;
-      outs() << "Loop: " << loop_name << " | Weight/Thresh: " << loop_weight << "/" << THRESHOLD;
 
       if (loop_weight > THRESHOLD) {
         loop_info[L].checkpointed = true;
         instrumented_var_names_str.push_back(var_name);
-        outs() << " ==> Inserting Checkpoint: \'" << var_name << "\'\n";
+        outs() << "[#" << func_ctx_idx_map[F] << "] "  << loop_name 
+                  << " | W/T: " << loop_weight << "/" << THRESHOLD
+                  << " ==> Inserting Checkpoint: \'" << var_name << "\'\n";
 
         // Instrument
         Type* int32_type = Type::getInt32Ty(current_module->getContext());
@@ -202,20 +201,12 @@ namespace llvm
         LoadInst* li = Builder.CreateLoad(int32_type, inst_addr_cast, true, "lp_ld");
         Value* inc = Builder.CreateAdd(li, one, "lp_add");
         StoreInst* si = Builder.CreateStore(inc, inst_addr_cast);
-
-        outs() << "Value " << *mem_base_addr << "\n";
-      }
-      else {
-        outs() << "\n";
       }
       // Modifies the incoming Function.
       return true;
     }
 
     virtual bool doFinalization() {
-      uint64_t inst_base = (comp_ctx->comp_data->memories[0].mem_init_page_count) *
-                            comp_ctx->comp_data->memories[0].num_bytes_per_page;
-      outs() << "Inst base: " << inst_base << "\n";
       return false;
     }
 

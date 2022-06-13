@@ -295,11 +295,6 @@ main(int argc, char *argv[])
         goto fail4;
     }
 
-    /*if (!aot_emit_llvm_file(comp_ctx, "intermediate.llaot")) {
-        printf("%s\n", aot_get_last_error());
-        goto fail5;
-    }*/
-
     bh_print_time("Begin to compile");
 
     if (!aot_compile_wasm(comp_ctx)) {
@@ -309,8 +304,9 @@ main(int argc, char *argv[])
 
     /* Instrumentation Addition */
     if (option.instrument) {
-      printf("Running instrumentation\n");
-      if (!aot_instrument_and_recompile_aot(comp_ctx, &option)) {
+      bh_print_time("Running instrumentation");
+      printf("\n");
+      if (!aot_instrument_aot(comp_ctx, &option)) {
         printf("%s\n", aot_get_last_error());
         goto fail5;
       }

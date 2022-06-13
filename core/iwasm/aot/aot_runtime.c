@@ -126,7 +126,6 @@ global_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
         p += import_global->size;
     }
 
-    printf("Global Pointer Base: %d\n", *(uint32*)p);
     /* Initialize defined global data */
     for (i = 0; i < module->global_count; i++, global++) {
         bh_assert(global->data_offset
@@ -399,7 +398,7 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
         && module->free_func_index != (uint32)-1) {
         /* Disable app heap, use malloc/free function exported
            by wasm app to allocate/free memory instead */
-        printf("APP HEAP DISABLED\n");
+        LOG_VERBOSE("App Heap: DISABLED");
         heap_size = 0;
         inc_page_count = instrument_page_count;
     }
@@ -425,7 +424,7 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
         if (module->aux_heap_base_global_index != (uint32)-1
             && module->aux_heap_base < num_bytes_per_page * init_page_count) {
             /* Insert app heap before __heap_base */
-            printf("USING EXPORTED HEAP\n");
+            LOG_VERBOSE("App Heap: EXPORTED");
             aux_heap_base = module->aux_heap_base;
             bytes_of_last_page = aux_heap_base % num_bytes_per_page;
             if (bytes_of_last_page == 0)
@@ -460,7 +459,7 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
         }
         else {
             /* Insert app heap before new page */
-            printf("USING APP HEAP\n");
+            LOG_VERBOSE("App Heap: CREATED");
             heap_page_count =
                 (heap_size + num_bytes_per_page - 1) / num_bytes_per_page;
             inc_page_count = instrument_page_count + heap_page_count; 
@@ -494,7 +493,6 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
                   instrument_base_offset, module->instrument_count * 4);
 
     total_size = (uint64)num_bytes_per_page * init_page_count;
-    printf("Total Size: %d\n", total_size);
 #if WASM_ENABLE_SHARED_MEMORY != 0
     if (is_shared_memory) {
         /* Allocate max page for shared memory */
@@ -509,7 +507,6 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
         return NULL;
     }
 #else
-    printf("Page Size: %d\n", page_size);
     total_size = (total_size + page_size - 1) & ~(page_size - 1);
 
     /* Totally 8G is mapped, the opcode load/store address range is 0 to 8G:
@@ -543,6 +540,8 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
     memset(p, 0, (uint32)total_size);
 #endif /* end of OS_ENABLE_HW_BOUND_CHECK */
 
+    LOG_VERBOSE("Total Memory Size: %d kB", total_size >> 10);
+
     memory_inst->module_type = Wasm_Module_AoT;
     memory_inst->num_bytes_per_page = num_bytes_per_page;
     memory_inst->cur_page_count = init_page_count;
@@ -552,7 +551,6 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModule *module,
     memory_inst->memory_data.ptr = p;
     memory_inst->memory_data_end.ptr = p + (uint32)total_size;
     memory_inst->memory_data_size = (uint32)total_size;
-    printf("Memory data size: %d\n", memory_inst->memory_data_size);
 
     /* Init instrument info */
     module_inst->instrument_data.ptr = p + instrument_base_offset;
@@ -1246,7 +1244,9 @@ aot_lookup_global(const AOTModuleInstance *module_inst, const char *name)
         AOTGlobal* global_inst = export_globals[i].global;
         uint8* global_addr = module_inst->global_data.ptr + global_inst->data_offset;
         uint8* global_data_addr = module_inst->global_table_data.memory_instances->memory_data.ptr + (*((uint32*) global_addr));
-        printf("Export %d: %s; DataOff: %d; Addr = %u; Value = %lX\n", i, export_globals[i].name, global_inst->data_offset, *((uint32_t*)global_addr), *((uint64_t*)global_data_addr));
+        if (!strncmp(export_globals[i].name, "rtinst_", 7)) {
+          printf("%d:%s | Val: %d\n", i, export_globals[i].name, *((uint32_t*)global_addr));
+        }
         //if (!strcmp(export_globals[i].name, name))
         //    return export_globals[i].global;
     }

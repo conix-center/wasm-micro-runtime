@@ -2753,13 +2753,14 @@ apply_instrumentation_pass(AOTCompContext *comp_ctx) {
     aot_add_instrumentation_pass(common_pass_mgr, comp_ctx);
 
     LLVMRunPassManager(common_pass_mgr, comp_ctx->module);
+    printf("\n");
 
     LLVMDisposePassManager(common_pass_mgr);
     return true;
 }
 
 bool
-aot_instrument_and_recompile_aot(AOTCompContext *comp_ctx, AOTCompOption *option) {
+aot_instrument_aot(AOTCompContext *comp_ctx, AOTCompOption *option) {
   int size;
   char **vars;
   /* Run instrumentation pass */
@@ -2768,36 +2769,12 @@ aot_instrument_and_recompile_aot(AOTCompContext *comp_ctx, AOTCompOption *option
   }
   /* Get variables to patch */
   aot_get_instrumentation_vars(&vars, &size);
-  printf("\nGot %d instrumented vars!\n", size);
-  for (int i = 0; i < size; i++) {
-    printf("%s\n", vars[i]);
-  }
+  LOG_VERBOSE("Instrumented variable count: %d\n", size);
 
   /* Patch variables in compilation data */
   comp_ctx->comp_data->instrument_count = size;
   comp_ctx->comp_data->instrument_vars = vars;
 
-  /*
-  AOTCompData* new_comp_data;
-  AOTCompContext* new_comp_ctx;
-
-  //aot_augment_globals_and_exports(comp_ctx->comp_data, vars, size);
-  new_comp_data = comp_ctx->comp_data;
-  new_comp_data->instrument_count = size;
-  new_comp_data->instrument_vars = vars;
-
-  if (!(new_comp_ctx = aot_create_comp_context(new_comp_data, option))) {
-    printf("FAILED INSTRUMENTATION: Create context\n");
-    return false;
-  }
-
-  if (!aot_compile_wasm(new_comp_ctx)) {
-    printf("FAILED INSTRUMENTATION: Compile\n");
-    return false;
-  }
-
-  comp_ctx = new_comp_ctx;
-  */
   return true;
 }
 

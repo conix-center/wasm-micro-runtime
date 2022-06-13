@@ -1261,11 +1261,9 @@ load_instrument_vars(const uint8 **p_buf, const uint8 *buf_end, AOTModule *modul
     for (i = 0; i < module->instrument_count; i++) {
         read_string(buf, buf_end, module->instrument_vars[i]);
     }
-    printf("Instrument Count: %d\n", module->instrument_count);
-    /*for (i = 0; i < module->instrument_count; i++) {
-      printf("Var %d: %s\n", i, module->instrument_vars[i]);
-    }*/
 
+    LOG_DEBUG("Loaded %d instrumentation variables", module->instrument_count);
+    
     *p_buf = buf;
     return true;
 fail:
@@ -1281,7 +1279,7 @@ load_instrumentation_info(const uint8 **p_buf, const uint8 *buf_end, AOTModule *
     read_uint32(buf, buf_end, module->instrument_count);
 
     /* load globals */
-    if (module->global_count > 0
+    if (module->instrument_count > 0
         && !load_instrument_vars(&buf, buf_end, module,
                 is_load_from_file_buf, error_buf, error_buf_size))
         return false;
