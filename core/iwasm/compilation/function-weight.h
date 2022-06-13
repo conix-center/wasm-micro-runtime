@@ -213,8 +213,8 @@ namespace llvm {
         }
       }
 
-      outs() << "\nEnd of Module Pass\n";
       clear_instrumentation_vars();
+      outs() << "Function Weights Acquired: End of Module Pass\n";
 
       return false;
     }

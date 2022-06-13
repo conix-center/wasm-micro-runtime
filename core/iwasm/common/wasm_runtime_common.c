@@ -1261,12 +1261,6 @@ wasm_runtime_lookup_global(WASMModuleInstanceCommon *const module_inst,
 #if WASM_ENABLE_AOT != 0
     if (module_inst->module_type == Wasm_Module_AoT) {
       const AOTModuleInstance* mod_inst = (const AOTModuleInstance*) module_inst;
-      /*printf("Number of Export Globals (AOT): %d\n", mod_inst->export_global_count);
-      printf("Number of Export Total (AOT): %d\n", ((AOTModule*)(mod_inst->aot_module.ptr))->export_count);
-      printf("Number of Global Total (AOT): %d\n", ((AOTModule*)(mod_inst->aot_module.ptr))->global_count);
-      printf("Memory Count (AOT): %d\n", mod_inst->memory_count);
-      */
-
       AOTGlobal *global_inst = aot_lookup_global(mod_inst, name);
       if (global_inst) {
         // global_addr gives the index in the data segment

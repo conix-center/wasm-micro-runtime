@@ -1575,14 +1575,10 @@ aot_emit_global_info(uint8 *buf, uint8 *buf_end, uint32 *p_offset,
     AOTGlobal *global = comp_data->globals;
 
     *p_offset = offset = align_uint(offset, 4);
-    //printf("OFFSET: %d\n", offset);
 
     EMIT_U32(comp_data->global_count);
 
-    printf("Emitting %d globals\n", comp_data->global_count);
     for (i = 0; i < comp_data->global_count; i++, global++) {
-        //printf("OFFSET: %d\n", offset);
-        //printf("Global %d: Type (%d), Size(%d)\n", i, global->type, global->size);
         offset = align_uint(offset, 4);
         EMIT_U8(global->type);
         EMIT_U8(global->is_mutable);
@@ -1622,7 +1618,6 @@ aot_emit_instrumentation_info(uint8 *buf, uint8 *buf_end, uint32 *p_offset,
         aot_set_last_error("emit instrument info failed.");
         return false;
     }
-    printf("INstrument size: %d\n", get_instrument_info_size(comp_ctx, comp_data));
 
     *p_offset = offset;
 
@@ -2861,7 +2856,8 @@ aot_emit_aot_file_buf(AOTCompContext *comp_ctx, AOTCompData *comp_data,
         return NULL;
 
     aot_file_size = get_aot_file_size(comp_ctx, comp_data, obj_data);
-    printf("AOT FILE SIZE: %d\n", aot_file_size);
+    printf("\n");
+    LOG_VERBOSE("AoT File Size: %d", aot_file_size);
 
     if (!(buf = aot_file_buf = wasm_runtime_malloc(aot_file_size))) {
         aot_set_last_error("allocate memory failed.");

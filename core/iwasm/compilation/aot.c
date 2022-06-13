@@ -76,8 +76,6 @@ aot_create_mem_init_data_list(const WASMModule *module)
         data_list[i]->byte_count = module->data_segments[i]->data_length;
         memcpy(data_list[i]->bytes, module->data_segments[i]->data,
                module->data_segments[i]->data_length);
-        printf("Data Segment %d : BaseOff (%u), Len (%u), First Elem (%lX)\n", i, data_list[i]->offset.u.i32, 
-                data_list[i]->byte_count, *(uint64*)(data_list[i]->bytes));
     }
 
     return data_list;
@@ -290,28 +288,16 @@ bool aot_augment_exports(AOTCompData *comp_data, char** var_names, int num_vars,
   return true;
 }
 
-void 
-print_stats(AOTCompData *comp_data) {
-  printf("Count: %d\n", comp_data->global_count);
-  printf("Size: %d\n", comp_data->global_data_size);
-}
 
 void
 aot_augment_globals_and_exports(AOTCompData *comp_data, char** var_names, int num_vars) {
-  print_stats(comp_data);
   uint32 global_count_base = comp_data->import_global_count + comp_data->global_count;
   if (!aot_augment_globals(comp_data, var_names, num_vars)) {
-    printf("FAILED!\n");
+    LOG_ERROR("FAILED!");
   }
   if (!aot_augment_exports(comp_data, var_names, num_vars, global_count_base)) {
-    printf("FAILED EXPORT\n");
+    LOG_ERROR("FAILED EXPORT");
   }
-  /*AOTExport* e = comp_data->wasm_module->exports;
-  for (int i = 0; i < comp_data->wasm_module->export_count; i++) {
-    if (e[i].kind == EXPORT_KIND_GLOBAL)
-    printf("Export %d: %s, %d\n", i, e[i].name, e[i].index);
-  }*/
-  print_stats(comp_data);
 }
 
 
@@ -446,10 +432,8 @@ aot_create_funcs(const WASMModule *module)
             }
 
         /* Resolve local variable info and code info */
-        //printf("AOT Function Creating: %s\n", func->field_name);
 #if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
         funcs[i]->func_name = func->field_name;
-        printf("Field name:%s\n", func->field_name);
 #endif
         funcs[i]->local_count = func->local_count;
         funcs[i]->local_types = func->local_types;
@@ -690,6 +674,9 @@ aot_destroy_comp_data(AOTCompData *comp_data)
 
     if (comp_data->funcs)
         aot_destroy_funcs(comp_data->funcs, comp_data->func_count);
+
+    if (comp_data->instrument_vars)
+        wasm_runtime_free(comp_data->instrument_vars);
 
     if (comp_data->aot_name_section_buf)
         wasm_runtime_free(comp_data->aot_name_section_buf);

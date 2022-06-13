@@ -75,9 +75,6 @@ void
 aot_get_instrumentation_vars(char*** vars, int* size);
 
 void
-aot_destroy_instrumentation_vars(char** vars);
-
-void
 aot_func_disable_tce(LLVMValueRef func);
 
 void
@@ -284,7 +281,6 @@ aot_add_instrumentation_pass(LLVMPassManagerRef pass, AOTCompContext *comp_ctx)
 
     unwrap(pass)->add(new WeightedCheckpoint());
     // Remove fully redundant expressions
-    // NOTE: This does not seem to remove redundant loads
     unwrap(pass)->add(createGVNPass());
 }
 
@@ -295,7 +291,7 @@ aot_get_instrumentation_vars(char*** vars, int* size)
     
     *size = llvm::instrumented_var_names_str.size();
     if (*size != 0) {
-      *vars = (char**) malloc((*size) * sizeof(char*));
+      *vars = (char**) wasm_runtime_malloc((*size) * sizeof(char*));
       for (auto &s : llvm::instrumented_var_names_str) {
         (*vars)[i++] = (char*) s.c_str();
       }
@@ -303,11 +299,6 @@ aot_get_instrumentation_vars(char*** vars, int* size)
     else {
       *vars = NULL;
     }
-}
-
-void
-aot_destroy_instrumentation_vars(char** vars) {
-    free(vars);
 }
 
 
