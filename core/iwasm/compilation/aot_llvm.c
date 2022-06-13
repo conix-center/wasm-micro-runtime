@@ -623,12 +623,10 @@ aot_create_func_context(AOTCompData *comp_data, AOTCompContext *comp_ctx,
 #endif
 
     /* Add LLVM function */
-#if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
-    char* func_name;
-    func_name = func->func_name;
-#else
     char func_name[32];
     snprintf(func_name, sizeof(func_name), "%s%d", AOT_FUNC_PREFIX, func_index);
+#if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
+    LOG_VERBOSE("Fn [%s] : #%d", func->func_name, func_index);
 #endif
 
     if (!(func_ctx->func =
