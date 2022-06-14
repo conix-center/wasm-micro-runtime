@@ -3,6 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "function-weight.h"
+#include "bh_log.h"
 
 using namespace llvm;
 using namespace std;
@@ -25,7 +26,6 @@ namespace llvm {
     uint32_t weight = 0;
     unsigned opcode = I->getOpcode();
     Type* type = I->getType();
-    //outs() << "Inst weight: " << *I << "\n";
     switch(opcode) {
       /* Integer Arithmetic */
       case Instruction::Add:
@@ -84,18 +84,15 @@ namespace llvm {
           Function* fun = CI->getCalledFunction();
           // Indirect call: Const val
           if (!fun) {
-            //outs() << "Indirect call!\n";
             weight = 10000;
           }
           else {
             // External function: Const val
             if (fun->isDeclaration()) {
-              //outs() << "Declaration fn\n";
               weight = 10000;
             }
             // Direct call: Lookup map
             else { 
-              //outs() << "Direct call!\n";
               weight = fn_straight_line_weight[fun];
             }
           }
@@ -157,7 +154,6 @@ bool FunctionWeight::runOnModule(Module &M) {
   CallGraph CG = CallGraph(M);
   for (auto node = po_begin(&CG); node != po_end(&CG); ++node) {
     if (Function* F = node->getFunction()) {
-      //outs() << "Found function: " << F->getName() << "\n";
       if (!F->isDeclaration()) {
         // Run loop info pass
         fn_straight_line_weight[F] = 0;
@@ -189,7 +185,7 @@ bool FunctionWeight::runOnModule(Module &M) {
   }
 
   clear_instrumentation_vars();
-  outs() << "Function Weights Acquired: End of Module Pass\n";
+  LOG_VERBOSE("Function Weights Acquired: End of Module Pass");
 
   return false;
 }
@@ -199,6 +195,6 @@ void FunctionWeight::clear_instrumentation_vars() {
   processed_blocks.clear();
   loop_info.clear();
   func_prof_context_map.clear();
-  outs() << "Cleared vars for instrumentation\n";
+  LOG_VERBOSE("Cleared vars for instrumentation");
 }
 
