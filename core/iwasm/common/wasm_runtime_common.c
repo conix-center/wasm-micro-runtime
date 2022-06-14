@@ -1234,6 +1234,28 @@ wasm_runtime_lookup_global(WASMModuleInstanceCommon *const module_inst,
 }
 
 
+uint8*
+wasm_runtime_get_instrumentation_info(WASMModuleInstanceCommon *const module_inst, 
+                                     char ***names, uint32 *size) {
+#if WASM_ENABLE_INTERP != 0
+  if (module_inst->module_type == Wasm_Module_Bytecode) {
+    LOG_ERROR("Instrumentation not implemented for WASM Bytecode (only for AoT)");
+  }
+#endif
+#if WASM_ENABLE_AOT != 0
+  if (module_inst->module_type == Wasm_Module_AoT) {
+    const AOTModuleInstance* mod_inst = (const AOTModuleInstance*) module_inst;
+
+    uint8* instrument_data = mod_inst->instrument_data.ptr;
+    AOTModule *module = (AOTModule*)mod_inst->aot_module.ptr;
+    *size = module->instrument_count;
+    *names = module->instrument_vars;
+    return instrument_data;
+  }
+#endif
+  return NULL;
+}
+              
 
 #if WASM_ENABLE_REF_TYPES != 0
 /* (uintptr_t)externref -> (uint32_t)index */

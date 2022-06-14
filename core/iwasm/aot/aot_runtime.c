@@ -1241,22 +1241,16 @@ aot_lookup_global(const AOTModuleInstance *module_inst, const char *name)
         (AOTExportGlobal *)module_inst->export_globals.ptr;
 
     for (i = 0; i < module_inst->export_global_count; i++) {
+        /*
         AOTGlobal* global_inst = export_globals[i].global;
         uint8* global_addr = module_inst->global_data.ptr + global_inst->data_offset;
         uint8* global_data_addr = module_inst->global_table_data.memory_instances->memory_data.ptr + (*((uint32*) global_addr));
         if (!strncmp(export_globals[i].name, "rtinst_", 7)) {
           printf("%d:%s | Val: %d\n", i, export_globals[i].name, *((uint32_t*)global_addr));
-        }
-        //if (!strcmp(export_globals[i].name, name))
-        //    return export_globals[i].global;
+        }*/
+        if (!strcmp(export_globals[i].name, name))
+            return export_globals[i].global;
     }
-    AOTModule *module = (AOTModule*)module_inst->aot_module.ptr;
-    printf("Instrument count: %d\n", module->instrument_count);
-    for (i = 0; i < module->instrument_count; i++) {
-      uint8* global_data_addr = module_inst->instrument_data.ptr + i*4;
-      printf("%d:%s | Val: %d\n", i, module->instrument_vars[i], (*((uint32*) global_data_addr)));
-    }
-    
 
     return NULL;
 }

@@ -309,11 +309,6 @@ typedef struct AOTMemoryInstance {
     MemBound mem_bound_check_8bytes;
     MemBound mem_bound_check_16bytes;
 
-    /* instrument info */
-    AOTPointer instrument_data;
-    char** instrument_vars;
-    uint32 instrument_count;
-
 } AOTMemoryInstance;
 
 typedef struct AOTTableInstance {

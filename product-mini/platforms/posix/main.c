@@ -459,12 +459,26 @@ main(int argc, char *argv[])
         goto fail3;
     }
 
+
     if (is_repl_mode)
         app_instance_repl(wasm_module_inst);
     else if (func_name)
         app_instance_func(wasm_module_inst, func_name);
     else
         app_instance_main(wasm_module_inst);
+
+    /* Instrumentation print */
+    char** instrument_names;
+    uint32_t size;
+    uint8_t* instrument_base = wasm_runtime_get_instrumentation_info(wasm_module_inst, &instrument_names, &size);
+    if (size != 0) {
+      LOG_VERBOSE("Instrument Data Final:");
+      for (uint32_t i = 0; i < size; i++) {
+        // 32-bit vars = 4 byte
+        uint8* var_addr = instrument_base + i*4;
+        LOG_VERBOSE("  %d:%s | Val: %d", i, instrument_names[i], *((uint32_t*)var_addr));
+      }
+    }
 
     /* destroy the module instance */
     wasm_runtime_deinstantiate(wasm_module_inst);

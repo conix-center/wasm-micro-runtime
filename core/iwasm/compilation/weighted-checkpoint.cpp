@@ -146,12 +146,14 @@ bool WeightedCheckpoint::runOnLoop(Loop* L, LPPassManager &LPM) {
   // Checkpoint above threshold
   uint32_t THRESHOLD = Threshold;
 
-  if (loop_weight > THRESHOLD || true) {
+  if (loop_weight > THRESHOLD) {
     loop_info[L].checkpointed = true;
     instrumented_var_names_str.push_back(var_name);
-    outs() << "[#" << func_ctx_idx_map[F] << "] "  << loop_name 
-              << " | W/T: " << loop_weight << "/" << THRESHOLD
-              << " ==> Inserting Checkpoint: \'" << var_name << "\'\n";
+
+    //LOG_VERBOSE("[#%d %s]\t| W/T: %d/%d ==> Inserting Checkpoint: \'%s\'",
+    //            func_ctx_idx_map[F], loop_name.c_str(), loop_weight, THRESHOLD, var_name.c_str());
+    LOG_VERBOSE("Checkpoint (#%d %s)\t | W/T: %d/%d",
+                func_ctx_idx_map[F], loop_name.c_str(), loop_weight, THRESHOLD);
 
     // Instrument
     Type* int32_type = Type::getInt32Ty(current_module->getContext());
