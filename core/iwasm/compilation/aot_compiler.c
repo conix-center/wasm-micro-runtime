@@ -2753,7 +2753,6 @@ apply_instrumentation_pass(AOTCompContext *comp_ctx) {
     aot_add_instrumentation_pass(common_pass_mgr, comp_ctx);
 
     LLVMRunPassManager(common_pass_mgr, comp_ctx->module);
-    printf("\n");
 
     LLVMDisposePassManager(common_pass_mgr);
     return true;
@@ -2769,7 +2768,7 @@ aot_instrument_aot(AOTCompContext *comp_ctx, AOTCompOption *option) {
   }
   /* Get variables to patch */
   aot_get_instrumentation_vars(&vars, &size);
-  LOG_VERBOSE("Instrumented variable count: %d\n", size);
+  printf("Instrumented variable count: %d\n", size);
 
   /* Patch variables in compilation data */
   comp_ctx->comp_data->instrument_count = size;

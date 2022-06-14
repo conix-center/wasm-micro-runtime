@@ -1262,7 +1262,7 @@ load_instrument_vars(const uint8 **p_buf, const uint8 *buf_end, AOTModule *modul
         read_string(buf, buf_end, module->instrument_vars[i]);
     }
 
-    LOG_DEBUG("Loaded %d instrumentation variables", module->instrument_count);
+    LOG_VERBOSE("Loaded %d instrumentation variables", module->instrument_count);
     
     *p_buf = buf;
     return true;

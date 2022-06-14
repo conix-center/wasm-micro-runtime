@@ -423,6 +423,18 @@ WASM_RUNTIME_API_EXTERN wasm_global_inst_t
 wasm_runtime_lookup_global(wasm_module_inst_t const module_inst,
                              const char *name);
 
+/**
+ * Lookup an exported function in the WASM module instance.
+ *
+ * @param module_inst the module instance
+ * @param name the name of the function
+ * @param signature the signature of the function, ignored currently
+ *
+ * @return the function instance found, NULL if not found
+ */
+WASM_RUNTIME_API_EXTERN uint8*
+wasm_runtime_get_instrumentation_info(wasm_module_inst_t const module_inst,
+                                    char ***names, uint32_t *size);
 
 
 /**
