@@ -428,13 +428,15 @@ wasm_runtime_lookup_global(wasm_module_inst_t const module_inst,
                              const char *name);
 
 /**
- * Lookup an exported function in the WASM module instance.
+ * Get instrumentation variables and values in the WASM module instance
+ * Each variable is a 32-bit value
  *
  * @param module_inst the module instance
- * @param name the name of the function
- * @param signature the signature of the function, ignored currently
+ * @param names function sets this param to point to the names (strings) of the generated 
+ *              instrumentation variables (only for debugging/reference)
+ * @param size function sets the pointer to the number of instrumented variables
  *
- * @return the function instance found, NULL if not found
+ * @return A base array pointer to the instrumentation data
  */
 WASM_RUNTIME_API_EXTERN uint8*
 wasm_runtime_get_instrumentation_info(wasm_module_inst_t const module_inst,
