@@ -1300,6 +1300,7 @@ wasm_runtime_get_instrumentation_info(WASMModuleInstanceCommon *const module_ins
 }
               
 
+
 uint32
 wasm_func_get_param_count(WASMFunctionInstanceCommon *const func_inst,
                           WASMModuleInstanceCommon *const module_inst)

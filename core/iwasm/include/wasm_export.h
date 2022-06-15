@@ -443,6 +443,7 @@ wasm_runtime_get_instrumentation_info(wasm_module_inst_t const module_inst,
                                     char ***names, uint32_t *size);
 
 
+
 /**
  * Get parameter count of the function instance
  *
@@ -490,6 +491,7 @@ WASM_RUNTIME_API_EXTERN void
 wasm_func_get_result_types(wasm_function_inst_t const func_inst,
                            wasm_module_inst_t const module_inst,
                            wasm_valkind_t *result_types);
+
 
 /**
  * Create execution environment for a WASM module instance.
