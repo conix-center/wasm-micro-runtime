@@ -1281,6 +1281,8 @@ wasm_runtime_get_instrumentation_info(WASMModuleInstanceCommon *const module_ins
 #if WASM_ENABLE_INTERP != 0
   if (module_inst->module_type == Wasm_Module_Bytecode) {
     LOG_ERROR("Instrumentation not implemented for WASM Bytecode (only for AoT)");
+    *size = 0;
+    *names = NULL;
   }
 #endif
 #if WASM_ENABLE_AOT != 0
