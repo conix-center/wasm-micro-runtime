@@ -1146,6 +1146,7 @@ wasm_runtime_is_built_in_module(const char *module_name)
     return (!strcmp("env", module_name) || !strcmp("wasi_unstable", module_name)
             || !strcmp("wasi_snapshot_preview1", module_name)
             || !strcmp("instrument", module_name)
+            || !strcmp("wali", module_name)
 #if WASM_ENABLE_SPEC_TEST != 0
             || !strcmp("spectest", module_name)
 #endif
