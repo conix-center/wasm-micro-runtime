@@ -848,20 +848,10 @@ main(int argc, char *argv[])
       NSYMBOL ( __syscall_SYS_write,    wali_syscall_write, "(iii)i" ),
       NSYMBOL ( __syscall_SYS_getcwd,   wali_syscall_getcwd, "(ii)i" ),
       NSYMBOL ( __syscall_SYS_chdir,    wali_syscall_chdir, "(i)i"),
+      NSYMBOL ( __syscall_SYS_mkdir,    wali_syscall_mkdir, "(ii)i"),
       // Threads
       NSYMBOL ( __get_tp, wali__get_tp, "()i" )
     };
-    /*
-    static NativeSymbol wali_native_symbols[] = {
-      // Syscalls
-      EXPORT_WASM_API_WITH_SIG ( __syscall_SYS_write,  "(iii)i" ),
-      EXPORT_WASM_API_WITH_SIG ( __syscall_SYS_getcwd, "(ii)i" ),
-      EXPORT_WASM_API_WITH_SIG ( __syscall_SYS_chdir,  "(i)i" ),
-      EXPORT_WASM_API_WITH_SIG ( __syscall_SYS_myfork, "()i" ),
-      // Threads
-      EXPORT_WASM_API_WITH_SIG ( __get_tp, "()i" )
-    };
-    */
 
 
     memset(&init_args, 0, sizeof(RuntimeInitArgs));
@@ -904,12 +894,6 @@ main(int argc, char *argv[])
         return -1;
     }
     const char* module_name = "env";
-    /*
-    static NativeSymbol native_symbols[] = {
-      EXPORT_WASM_API_WITH_SIG2 ( __wasm_call_dtors, "()"),
-      EXPORT_WASM_API_WITH_SIG2 ( __wasi_proc_exit, "(i)")
-    };
-    */
     static NativeSymbol native_symbols[] = {
       NSYMBOL ( __wasm_call_dtors,  wali__wasm_call_dtors, "()"),
       NSYMBOL ( __wasi_proc_exit,   wali__wasi_proc_exit, "(i)")

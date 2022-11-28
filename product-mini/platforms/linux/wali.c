@@ -75,29 +75,33 @@ static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long
 #define PW(f)  LOG_WARNING("WALI: " # f);
 #define SC(f)  LOG_WARNING("WALI: SC | " # f);
 
+uint32 psize;
+#define MEM_ADDR(addr_res, wasm_addr) \
+  uint8_t* addr_res = wasm_runtime_get_memory_ptr(get_module_inst(exec_env), &psize) + wasm_addr;
+
 /***** WALI Methods *******/
 int wali_syscall_write (wasm_exec_env_t exec_env, int a1, int a2, int a3) {
   SC(write);
-  uint32_t size;
-  uint8_t* base_addr = wasm_runtime_get_memory_ptr(get_module_inst(exec_env), &size);
-  uint8_t* addr2 = a2 + base_addr;
+  MEM_ADDR(addr2, a2);
   return __syscall3(SYS_write, a1, addr2, a3);
 }
 
 int wali_syscall_getcwd (wasm_exec_env_t exec_env, int a1, int a2) {
   SC(getcwd);
-  uint32_t size;
-  uint8_t* base_addr = wasm_runtime_get_memory_ptr(get_module_inst(exec_env), &size);
-  uint8_t* addr1 = a1 + base_addr;
+  MEM_ADDR(addr1, a1);
   return __syscall2(SYS_getcwd, addr1, a2);
 }
 
 int wali_syscall_chdir (wasm_exec_env_t exec_env, int a1) {
   SC(chdir);
-  uint32_t size;
-  uint8_t* base_addr = wasm_runtime_get_memory_ptr(get_module_inst(exec_env), &size);
-  uint8_t* addr1 = a1 + base_addr;
+  MEM_ADDR(addr1, a1);
   return __syscall1(SYS_chdir, addr1);
+}
+
+int wali_syscall_mkdir (wasm_exec_env_t exec_env, int a1, int a2) {
+  SC(mkdir);
+  MEM_ADDR(addr1, a1);
+  return __syscall2(SYS_mkdir, addr1, a2);
 }
 
 /***** Non-syscall methods *****/
