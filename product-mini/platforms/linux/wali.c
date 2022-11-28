@@ -72,56 +72,53 @@ static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long
 #define __syscall6(n, a1, a2, a3, a4, a5, a6) __syscall6(n, (long)a1, (long)a2, (long)a3, (long)a4, (long)a5, (long)a6)
 
 
-
+#define PW(f)  LOG_WARNING("WALI: " # f);
+#define SC(f)  LOG_WARNING("WALI: SC | " # f);
 
 /***** WALI Methods *******/
-int __syscall_SYS_write_wrapper (wasm_exec_env_t exec_env, int a1, int a2, int a3) {
-  LOG_WARNING("Wrapper: SYS_write");
+int wali_syscall_write (wasm_exec_env_t exec_env, int a1, int a2, int a3) {
+  SC(write);
   uint32_t size;
   uint8_t* base_addr = wasm_runtime_get_memory_ptr(get_module_inst(exec_env), &size);
   uint8_t* addr2 = a2 + base_addr;
   return __syscall3(SYS_write, a1, addr2, a3);
 }
 
-int __syscall_SYS_getcwd_wrapper (wasm_exec_env_t exec_env, int a1, int a2) {
-  LOG_WARNING("Wrapper: SYS_getcwd");
+int wali_syscall_getcwd (wasm_exec_env_t exec_env, int a1, int a2) {
+  SC(getcwd);
   uint32_t size;
   uint8_t* base_addr = wasm_runtime_get_memory_ptr(get_module_inst(exec_env), &size);
   uint8_t* addr1 = a1 + base_addr;
   return __syscall2(SYS_getcwd, addr1, a2);
 }
 
-int __syscall_SYS_chdir_wrapper (wasm_exec_env_t exec_env, int a1) {
-  LOG_WARNING("Wrapper: SYS_chdir");
+int wali_syscall_chdir (wasm_exec_env_t exec_env, int a1) {
+  SC(chdir);
   uint32_t size;
   uint8_t* base_addr = wasm_runtime_get_memory_ptr(get_module_inst(exec_env), &size);
   uint8_t* addr1 = a1 + base_addr;
   return __syscall1(SYS_chdir, addr1);
 }
 
-int __syscall_SYS_myfork_wrapper (wasm_exec_env_t exec_env) {
-  LOG_WARNING("Wrapper: SYS_myfork");
-  return __syscall0(SYS_fork);
+/***** Non-syscall methods *****/
+uintptr_t wali__get_tp (wasm_exec_env_t exec_env) {
+  uintptr_t tp;
+	__asm__ ("mov %%fs:0,%0" : "=r" (tp) );
+  PW(get_tp);
+	return tp;
+}
+
+void wali__wasm_call_dtors(wasm_exec_env_t exec_env) {
+  PW(wasm_call_dtors);
+}
+
+void wali__wasi_proc_exit(wasm_exec_env_t exec_env, int v) {
+  PW(exit);
+  exit(1);
 }
 
 /*************************/
 
-/***** Non-syscall methods *****/
-uintptr_t __get_tp_wrapper (wasm_exec_env_t exec_env) {
-  uintptr_t tp;
-	__asm__ ("mov %%fs:0,%0" : "=r" (tp) );
-  LOG_WARNING("Wrapper: get_tp (%ld)", tp);
-	return tp;
-}
-
-void __wasm_call_dtors_wrapper() {
-  LOG_WARNING("Wrapper: wasm-call_dtors");
-}
-
-int __wasi_proc_exit_wrapper() {
-  LOG_WARNING("Wrapper: exit");
-  exit(1);
-}
 
 
 
