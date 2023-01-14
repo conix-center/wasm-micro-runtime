@@ -10,7 +10,7 @@ long wali_syscall_fstat (wasm_exec_env_t exec_env, long a1, long a2);
 long wali_syscall_lstat (wasm_exec_env_t exec_env, long a1, long a2);
 long wali_syscall_poll (wasm_exec_env_t exec_env, long a1, long a2, long a3);
 long wali_syscall_lseek (wasm_exec_env_t exec_env, long a1, long a2, long a3);
-long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6);
+long wali_syscall_mmap2 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6);
 long wali_syscall_mprotect (wasm_exec_env_t exec_env, long a1, long a2, long a3);
 long wali_syscall_munmap (wasm_exec_env_t exec_env, long a1, long a2);
 long wali_syscall_brk (wasm_exec_env_t exec_env, long a1);
@@ -333,7 +333,7 @@ long wali_syscall_pwritev2 (wasm_exec_env_t exec_env);
 long wali_syscall_pkey_mprotect (wasm_exec_env_t exec_env);
 long wali_syscall_pkey_alloc (wasm_exec_env_t exec_env);
 long wali_syscall_pkey_free (wasm_exec_env_t exec_env);
-long wali_syscall_statx (wasm_exec_env_t exec_env);
+long wali_syscall_statx (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5);
 long wali_syscall_io_pgetevents (wasm_exec_env_t exec_env);
 long wali_syscall_rseq (wasm_exec_env_t exec_env);
 

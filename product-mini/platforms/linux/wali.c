@@ -124,6 +124,13 @@ long wali_syscall_stat (wasm_exec_env_t exec_env, long a1, long a2) {
   return retval;
 }
 
+long wali_syscall_statx (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
+  SC(statx);
+  Addr addr2 = MEM_ADDR(a2);
+  Addr addr5 = MEM_ADDR(a5);
+  return __syscall5(SYS_statx, a1, addr2, a3, a4, addr5);
+}
+
 /***** Non-syscall methods *****/
 uintptr_t wali__get_tp (wasm_exec_env_t exec_env) {
   uintptr_t tp;

@@ -849,6 +849,9 @@ main(int argc, char *argv[])
       NSYMBOL ( __syscall_SYS_getcwd,   wali_syscall_getcwd, "(ii)i" ),
       NSYMBOL ( __syscall_SYS_chdir,    wali_syscall_chdir, "(i)i"),
       NSYMBOL ( __syscall_SYS_mkdir,    wali_syscall_mkdir, "(ii)i"),
+      NSYMBOL ( __syscall_SYS_fork,     wali_syscall_fork, "()i"),
+      NSYMBOL ( __syscall_SYS_stat,     wali_syscall_stat, "(ii)i"),
+      NSYMBOL ( __syscall_SYS_statx,    wali_syscall_statx, "(iiiii)i"),
       // Threads
       NSYMBOL ( __get_tp, wali__get_tp, "()i" )
     };
