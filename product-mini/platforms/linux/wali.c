@@ -72,8 +72,8 @@ static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long
 #define __syscall6(n, a1, a2, a3, a4, a5, a6) __syscall6(n, (long)a1, (long)a2, (long)a3, (long)a4, (long)a5, (long)a6)
 
 
-#define PW(f)  LOG_DEBUG("WALI: " # f);
-#define SC(f)  LOG_DEBUG("WALI: SC | " # f);
+#define PW(f)  LOG_VERBOSE("WALI: " # f);
+#define SC(f)  LOG_VERBOSE("WALI: SC | " # f);
 
 uint32 psize;
 typedef uint8_t* Addr;
@@ -102,13 +102,25 @@ long wali_syscall_open (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 
 // 3
 long wali_syscall_close (wasm_exec_env_t exec_env, long a1) {
-  SC(cloes);
+  SC(close);
   return __syscall1 (SYS_close, a1);
 }
 
 // 4
 long wali_syscall_stat (wasm_exec_env_t exec_env, long a1, long a2) {
   SC(stat);
+  return __syscall2(SYS_stat, MADDR(a1), MADDR(a2));
+}
+
+// 5
+long wali_syscall_fstat (wasm_exec_env_t exec_env, long a1, long a2) {
+  SC(fstat);
+  return __syscall2(SYS_stat, a1, MADDR(a2));
+}
+
+// 6
+long wali_syscall_lstat (wasm_exec_env_t exec_env, long a1, long a2) {
+  SC(lstat);
   return __syscall2(SYS_stat, MADDR(a1), MADDR(a2));
 }
 

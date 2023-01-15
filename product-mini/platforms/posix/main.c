@@ -850,6 +850,8 @@ main(int argc, char *argv[])
       NSYMBOL ( __syscall_SYS_open,     wali_syscall_open, "(iii)i" ),
       NSYMBOL ( __syscall_SYS_close,    wali_syscall_close, "(i)i" ),
       NSYMBOL ( __syscall_SYS_stat,     wali_syscall_stat, "(ii)i"),
+      NSYMBOL ( __syscall_SYS_fstat,    wali_syscall_fstat, "(ii)i"),
+      NSYMBOL ( __syscall_SYS_lstat,    wali_syscall_lstat, "(ii)i"),
       NSYMBOL ( __syscall_SYS_fork,     wali_syscall_fork, "()i"),
       NSYMBOL ( __syscall_SYS_getcwd,   wali_syscall_getcwd, "(ii)i" ),
       NSYMBOL ( __syscall_SYS_chdir,    wali_syscall_chdir, "(i)i"),
