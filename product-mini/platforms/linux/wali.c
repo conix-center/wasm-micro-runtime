@@ -72,64 +72,76 @@ static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long
 #define __syscall6(n, a1, a2, a3, a4, a5, a6) __syscall6(n, (long)a1, (long)a2, (long)a3, (long)a4, (long)a5, (long)a6)
 
 
-#define PW(f)  LOG_WARNING("WALI: " # f);
-#define SC(f)  LOG_WARNING("WALI: SC | " # f);
+#define PW(f)  LOG_DEBUG("WALI: " # f);
+#define SC(f)  LOG_DEBUG("WALI: SC | " # f);
 
 uint32 psize;
 typedef uint8_t* Addr;
-#define MEM_ADDR(wasm_addr) ({  \
+#define MADDR(wasm_addr) ({  \
   wasm_runtime_get_memory_ptr(get_module_inst(exec_env), &psize) + wasm_addr; \
 })
 
 /***** WALI Methods *******/
+// 0
+long wali_syscall_read (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
+  SC(read);
+  return __syscall3 (SYS_read, a1, MADDR(a2), a3);
+}
+
+// 1
 long wali_syscall_write (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
-  Addr addr2 = MEM_ADDR(a2);
-  return __syscall3(SYS_write, a1, addr2, a3);
+  SC(write);
+  return __syscall3 (SYS_write, a1, MADDR(a2), a3);
 }
 
-long wali_syscall_getcwd (wasm_exec_env_t exec_env, long a1, long a2) {
-  SC(getcwd);
-  Addr addr1 = MEM_ADDR(a1);
-  return __syscall2(SYS_getcwd, addr1, a2);
+// 2
+long wali_syscall_open (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
+  SC(open);
+  return __syscall3 (SYS_open, MADDR(a1), a2, a3);
 }
 
-long wali_syscall_chdir (wasm_exec_env_t exec_env, long a1) {
-  SC(chdir);
-  Addr addr1 = MEM_ADDR(a1);
-  return __syscall1(SYS_chdir, addr1);
+// 3
+long wali_syscall_close (wasm_exec_env_t exec_env, long a1) {
+  SC(cloes);
+  return __syscall1 (SYS_close, a1);
 }
 
-long wali_syscall_mkdir (wasm_exec_env_t exec_env, long a1, long a2) {
-  SC(mkdir);
-  Addr addr1 = MEM_ADDR(a1);
-  return __syscall2(SYS_mkdir, addr1, a2);
+// 4
+long wali_syscall_stat (wasm_exec_env_t exec_env, long a1, long a2) {
+  SC(stat);
+  return __syscall2(SYS_stat, MADDR(a1), MADDR(a2));
 }
 
+// 57
 long wali_syscall_fork (wasm_exec_env_t exec_env) {
   SC(fork);
   return __syscall0(SYS_fork);
 }
 
-long wali_syscall_stat (wasm_exec_env_t exec_env, long a1, long a2) {
-  SC(stat);
-  Addr addr1 = MEM_ADDR(a1);
-  Addr addr2 = MEM_ADDR(a2);
-
-  //struct stat sb;
-  int retval = __syscall2(SYS_stat, addr1, addr2);
-  for (int i = 0; i < sizeof(struct stat); i++) {
-    printf("%02x", ((char*)(addr2))[i]);
-  }
-  printf("\n");
-  return retval;
+// 79
+long wali_syscall_getcwd (wasm_exec_env_t exec_env, long a1, long a2) {
+  SC(getcwd);
+  return __syscall2(SYS_getcwd, MADDR(a1), a2);
 }
 
+// 80
+long wali_syscall_chdir (wasm_exec_env_t exec_env, long a1) {
+  SC(chdir);
+  return __syscall1(SYS_chdir, MADDR(a1));
+}
+
+// 83
+long wali_syscall_mkdir (wasm_exec_env_t exec_env, long a1, long a2) {
+  SC(mkdir);
+  return __syscall2(SYS_mkdir, MADDR(a1), a2);
+}
+
+// 332
 long wali_syscall_statx (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
   SC(statx);
-  Addr addr2 = MEM_ADDR(a2);
-  Addr addr5 = MEM_ADDR(a5);
-  return __syscall5(SYS_statx, a1, addr2, a3, a4, addr5);
+  return __syscall5(SYS_statx, a1, MADDR(a2), a3, a4, MADDR(a5));
 }
+
 
 /***** Non-syscall methods *****/
 uintptr_t wali__get_tp (wasm_exec_env_t exec_env) {
