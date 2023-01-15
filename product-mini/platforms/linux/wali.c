@@ -72,8 +72,10 @@ static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long
 #define __syscall6(n, a1, a2, a3, a4, a5, a6) __syscall6(n, (long)a1, (long)a2, (long)a3, (long)a4, (long)a5, (long)a6)
 
 
-#define PW(f)  LOG_VERBOSE("WALI: " # f);
-#define SC(f)  LOG_VERBOSE("WALI: SC | " # f);
+#define PW(f)  LOG_VERBOSE("WALI: " # f)
+#define SC(f)  LOG_VERBOSE("WALI: SC | " # f)
+#define ERRSC(f,...) \
+  LOG_ERROR("WALI: SC \"" # f "\" not implemented correctly yet! " __VA_ARGS__)
 
 uint32 psize;
 typedef uint8_t* Addr;
@@ -109,19 +111,28 @@ long wali_syscall_close (wasm_exec_env_t exec_env, long a1) {
 // 4
 long wali_syscall_stat (wasm_exec_env_t exec_env, long a1, long a2) {
   SC(stat);
+  ERRSC(stat, "Use statx instead");
   return __syscall2(SYS_stat, MADDR(a1), MADDR(a2));
 }
 
 // 5
 long wali_syscall_fstat (wasm_exec_env_t exec_env, long a1, long a2) {
   SC(fstat);
-  return __syscall2(SYS_stat, a1, MADDR(a2));
+  ERRSC(fstat, "Use statx instead");
+  return __syscall2(SYS_fstat, a1, MADDR(a2));
 }
 
 // 6
 long wali_syscall_lstat (wasm_exec_env_t exec_env, long a1, long a2) {
   SC(lstat);
-  return __syscall2(SYS_stat, MADDR(a1), MADDR(a2));
+  ERRSC(lstat, "Use statx instead");
+  return __syscall2(SYS_lstat, MADDR(a1), MADDR(a2));
+}
+
+// 35
+long wali_syscall_nanosleep (wasm_exec_env_t exec_env, long a1, long a2) {
+  SC(nanosleep);
+  return __syscall2(SYS_nanosleep, MADDR(a1), MADDR(a2));
 }
 
 // 57
