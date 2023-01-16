@@ -146,12 +146,11 @@ long wali_syscall_lseek (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 }
 
 // 9
-/*
-long wali_syscall_mmap2 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
-	SC(mmap2);
-	ERRSC(mmap2);
-	return __syscall6(SYS_mmap2, MADDR(a1), a2, a3, a4, a5, a6);
-}*/
+long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
+	SC(mmap);
+	ERRSC(mmap);
+	return __syscall6(SYS_mmap, MADDR(a1), a2, a3, a4, a5, a6);
+}
 
 // 10
 long wali_syscall_mprotect (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
@@ -576,12 +575,11 @@ long wali_syscall_getdents64 (wasm_exec_env_t exec_env, long a1, long a2, long a
 }
 
 // 221
-/*
 long wali_syscall_fadvise (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(fadvise);
 	ERRSC(fadvise);
-	return __syscall4(SYS_fadvise, a1, a2, a3, a4);
-}*/
+	return __syscall4(SYS_fadvise64, a1, a2, a3, a4);
+}
 
 // 257
 long wali_syscall_openat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
