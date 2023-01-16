@@ -234,7 +234,7 @@ long wali_syscall_access (wasm_exec_env_t exec_env, long a1, long a2) {
 	return __syscall2(SYS_access, MADDR(a1), a2);
 }
 
-// 22 TODO
+// 22 
 long wali_syscall_pipe (wasm_exec_env_t exec_env, long a1) {
 	SC(pipe);
 	return __syscall1(SYS_pipe, MADDR(a1));
@@ -275,17 +275,15 @@ long wali_syscall_madvise (wasm_exec_env_t exec_env, long a1, long a2, long a3) 
 	return __syscall3(SYS_madvise, MADDR(a1), a2, a3);
 }
 
-// 32 TODO
+// 32 
 long wali_syscall_dup (wasm_exec_env_t exec_env, long a1) {
 	SC(dup);
-	ERRSC(dup);
 	return __syscall1(SYS_dup, a1);
 }
 
-// 33 TODO
+// 33 
 long wali_syscall_dup2 (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(dup2);
-	ERRSC(dup2);
 	return __syscall2(SYS_dup2, a1, a2);
 }
 
@@ -302,10 +300,9 @@ long wali_syscall_alarm (wasm_exec_env_t exec_env, long a1) {
 	return __syscall1(SYS_alarm, a1);
 }
 
-// 39 TODO
+// 39 
 long wali_syscall_getpid (wasm_exec_env_t exec_env) {
 	SC(getpid);
-	ERRSC(getpid);
 	return __syscall0(SYS_getpid);
 }
 
@@ -420,17 +417,15 @@ long wali_syscall_wait4 (wasm_exec_env_t exec_env, long a1, long a2, long a3, lo
 	return __syscall4(SYS_wait4, a1, MADDR(a2), a3, MADDR(a4));
 }
 
-// 62 TODO
+// 62 
 long wali_syscall_kill (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(kill);
-	ERRSC(kill);
 	return __syscall2(SYS_kill, a1, a2);
 }
 
-// 63 TODO
+// 63 
 long wali_syscall_uname (wasm_exec_env_t exec_env, long a1) {
 	SC(uname);
-	ERRSC(uname);
 	return __syscall1(SYS_uname, MADDR(a1));
 }
 
@@ -620,10 +615,9 @@ long wali_syscall_eventfd2 (wasm_exec_env_t exec_env, long a1, long a2) {
 	return __syscall2(SYS_eventfd2, a1, a2);
 }
 
-// 293 TODO
+// 293 
 long wali_syscall_pipe2 (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(pipe2);
-	ERRSC(pipe2);
 	return __syscall2(SYS_pipe2, MADDR(a1), a2);
 }
 
