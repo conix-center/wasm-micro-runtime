@@ -429,10 +429,9 @@ long wali_syscall_uname (wasm_exec_env_t exec_env, long a1) {
 	return __syscall1(SYS_uname, MADDR(a1));
 }
 
-// 72 TODO
+// 72 
 long wali_syscall_fcntl (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(fcntl);
-	ERRSC(fcntl);
 	return __syscall3(SYS_fcntl, a1, a2, a3);
 }
 
@@ -443,10 +442,9 @@ long wali_syscall_flock (wasm_exec_env_t exec_env, long a1, long a2) {
 	return __syscall2(SYS_flock, a1, a2);
 }
 
-// 74 TODO
+// 74 
 long wali_syscall_fsync (wasm_exec_env_t exec_env, long a1) {
 	SC(fsync);
-	ERRSC(fsync);
 	return __syscall1(SYS_fsync, a1);
 }
 
@@ -468,73 +466,63 @@ long wali_syscall_mkdir (wasm_exec_env_t exec_env, long a1, long a2) {
 	return __syscall2(SYS_mkdir, MADDR(a1), a2);
 }
 
-// 84 TODO
+// 84 
 long wali_syscall_rmdir (wasm_exec_env_t exec_env, long a1) {
 	SC(rmdir);
-	ERRSC(rmdir);
 	return __syscall1(SYS_rmdir, MADDR(a1));
 }
 
-// 86 TODO
+// 86 
 long wali_syscall_link (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(link);
-	ERRSC(link);
 	return __syscall2(SYS_link, MADDR(a1), MADDR(a2));
 }
 
-// 87 TODO
+// 87 
 long wali_syscall_unlink (wasm_exec_env_t exec_env, long a1) {
 	SC(unlink);
-	ERRSC(unlink);
 	return __syscall1(SYS_unlink, MADDR(a1));
 }
 
-// 88 TODO
+// 88 
 long wali_syscall_symlink (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(symlink);
-	ERRSC(symlink);
 	return __syscall2(SYS_symlink, MADDR(a1), MADDR(a2));
 }
 
-// 89 TODO
+// 89 
 long wali_syscall_readlink (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(readlink);
-	ERRSC(readlink);
 	return __syscall3(SYS_readlink, MADDR(a1), MADDR(a2), a3);
 }
 
-// 90 TODO
+// 90 
 long wali_syscall_chmod (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(chmod);
-	ERRSC(chmod);
 	return __syscall2(SYS_chmod, MADDR(a1), a2);
 }
 
-// 91 TODO
+// 91 
 long wali_syscall_fchmod (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(fchmod);
-	ERRSC(fchmod);
 	return __syscall2(SYS_fchmod, a1, a2);
 }
 
-// 92 TODO
+// 92 
 long wali_syscall_chown (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(chown);
-	ERRSC(chown);
 	return __syscall3(SYS_chown, MADDR(a1), a2, a3);
 }
 
-// 93 TODO
+// 93 
 long wali_syscall_fchown (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(fchown);
-	ERRSC(fchown);
 	return __syscall3(SYS_fchown, a1, a2, a3);
 }
 
-// 95 TODO
+// 95 
 long wali_syscall_umask (wasm_exec_env_t exec_env, long a1) {
 	SC(umask);
-	ERRSC(umask);
 	return __syscall1(SYS_umask, a1);
 }
 
