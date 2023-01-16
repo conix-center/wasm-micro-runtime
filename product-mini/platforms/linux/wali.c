@@ -138,10 +138,9 @@ long wali_syscall_poll (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	return __syscall3(SYS_poll, MADDR(a1), a2, a3);
 }
 
-// 8 TODO
+// 8 TODO: Change to I64 return value
 long wali_syscall_lseek (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(lseek);
-	ERRSC(lseek);
 	return __syscall3(SYS_lseek, a1, a2, a3);
 }
 
@@ -229,17 +228,15 @@ long wali_syscall_writev (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	return __syscall3(SYS_writev, a1, MADDR(a2), a3);
 }
 
-// 21 TODO
+// 21 
 long wali_syscall_access (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(access);
-	ERRSC(access);
 	return __syscall2(SYS_access, MADDR(a1), a2);
 }
 
 // 22 TODO
 long wali_syscall_pipe (wasm_exec_env_t exec_env, long a1) {
 	SC(pipe);
-	ERRSC(pipe);
 	return __syscall1(SYS_pipe, MADDR(a1));
 }
 
