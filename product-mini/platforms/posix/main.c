@@ -931,6 +931,8 @@ main(int argc, char *argv[])
 			NSYMBOL (     __syscall_SYS_fstatfs,      wali_syscall_fstatfs,      "(ii)i" ),
 			NSYMBOL (  __syscall_SYS_getdents64,   wali_syscall_getdents64,     "(iii)i" ),
 			NSYMBOL (     __syscall_SYS_fadvise,      wali_syscall_fadvise,    "(iIIi)i" ),
+			NSYMBOL ( __syscall_SYS_clock_gettime, wali_syscall_clock_gettime,      "(ii)i" ),
+			NSYMBOL ( __syscall_SYS_clock_nanosleep, wali_syscall_clock_nanosleep,    "(iiii)i" ),
 			NSYMBOL (      __syscall_SYS_openat,       wali_syscall_openat,    "(iiii)i" ),
 			NSYMBOL (    __syscall_SYS_unlinkat,     wali_syscall_unlinkat,     "(iii)i" ),
 			NSYMBOL (   __syscall_SYS_faccessat,    wali_syscall_faccessat,    "(iiii)i" ),

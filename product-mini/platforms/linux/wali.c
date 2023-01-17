@@ -561,6 +561,18 @@ long wali_syscall_fadvise (wasm_exec_env_t exec_env, long a1, long a2, long a3, 
 	return __syscall4(SYS_fadvise64, a1, a2, a3, a4);
 }
 
+// 228 
+long wali_syscall_clock_gettime (wasm_exec_env_t exec_env, long a1, long a2) {
+	SC(clock_gettime);
+	return __syscall2(SYS_clock_gettime, a1, MADDR(a2));
+}
+
+// 230 
+long wali_syscall_clock_nanosleep (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
+	SC(clock_nanosleep);
+	return __syscall4(SYS_clock_nanosleep, a1, a2, MADDR(a3), MADDR(a4));
+}
+
 // 257 TODO
 long wali_syscall_openat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(openat);
