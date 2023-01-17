@@ -526,10 +526,9 @@ long wali_syscall_umask (wasm_exec_env_t exec_env, long a1) {
 	return __syscall1(SYS_umask, a1);
 }
 
-// 132 TODO
+// 132 
 long wali_syscall_utime (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(utime);
-	ERRSC(utime);
 	return __syscall2(SYS_utime, MADDR(a1), MADDR(a2));
 }
 
@@ -547,10 +546,9 @@ long wali_syscall_fstatfs (wasm_exec_env_t exec_env, long a1, long a2) {
 	return __syscall2(SYS_fstatfs, a1, MADDR(a2));
 }
 
-// 217 TODO
+// 217 
 long wali_syscall_getdents64 (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(getdents64);
-	ERRSC(getdents64);
 	return __syscall3(SYS_getdents64, a1, MADDR(a2), a3);
 }
 
@@ -573,42 +571,37 @@ long wali_syscall_clock_nanosleep (wasm_exec_env_t exec_env, long a1, long a2, l
 	return __syscall4(SYS_clock_nanosleep, a1, a2, MADDR(a3), MADDR(a4));
 }
 
-// 257 TODO
+// 257 
 long wali_syscall_openat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(openat);
-	ERRSC(openat);
 	return __syscall4(SYS_openat, a1, MADDR(a2), a3, a4);
 }
 
-// 263 TODO
+// 263 
 long wali_syscall_unlinkat (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(unlinkat);
-	ERRSC(unlinkat);
 	return __syscall3(SYS_unlinkat, a1, MADDR(a2), a3);
 }
 
-// 269 TODO
+// 269 
 long wali_syscall_faccessat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(faccessat);
-	ERRSC(faccessat);
 	return __syscall4(SYS_faccessat, a1, MADDR(a2), a3, a4);
 }
 
-// 280 TODO
+// 280 
 long wali_syscall_utimensat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(utimensat);
-	ERRSC(utimensat);
 	return __syscall4(SYS_utimensat, a1, MADDR(a2), MADDR(a3), a4);
 }
 
-// 284 TODO
+// 284 
 long wali_syscall_eventfd (wasm_exec_env_t exec_env, long a1) {
 	SC(eventfd);
-	ERRSC(eventfd);
 	return __syscall1(SYS_eventfd, a1);
 }
 
-// 290 TODO
+// 290 
 long wali_syscall_eventfd2 (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(eventfd2);
 	ERRSC(eventfd2);
