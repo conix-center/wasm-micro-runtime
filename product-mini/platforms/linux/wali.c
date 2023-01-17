@@ -306,101 +306,87 @@ long wali_syscall_getpid (wasm_exec_env_t exec_env) {
 	return __syscall0(SYS_getpid);
 }
 
-// 41 TODO
+// 41 
 long wali_syscall_socket (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(socket);
-	ERRSC(socket);
 	return __syscall3(SYS_socket, a1, a2, a3);
 }
 
-// 42 TODO
+// 42 
 long wali_syscall_connect (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(connect);
-	ERRSC(connect);
 	return __syscall3(SYS_connect, a1, MADDR(a2), a3);
 }
 
-// 43 TODO
+// 43 
 long wali_syscall_accept (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(accept);
-	ERRSC(accept);
-	return __syscall3(SYS_accept, a1, MADDR(a2), a3);
+	return __syscall3(SYS_accept, a1, MADDR(a2), MADDR(a3));
 }
 
-// 44 TODO
+// 44 
 long wali_syscall_sendto (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(sendto);
-	ERRSC(sendto);
 	return __syscall4(SYS_sendto, a1, MADDR(a2), a3, a4);
 }
 
-// 45 TODO
+// 45 
 long wali_syscall_recvfrom (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
 	SC(recvfrom);
-	ERRSC(recvfrom);
 	return __syscall6(SYS_recvfrom, a1, MADDR(a2), a3, a4, MADDR(a5), MADDR(a6));
 }
 
-// 46 TODO
+// 46 
 long wali_syscall_sendmsg (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(sendmsg);
-	ERRSC(sendmsg);
 	return __syscall3(SYS_sendmsg, a1, MADDR(a2), a3);
 }
 
-// 47 TODO
+// 47 
 long wali_syscall_recvmsg (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(recvmsg);
-	ERRSC(recvmsg);
 	return __syscall3(SYS_recvmsg, a1, MADDR(a2), a3);
 }
 
-// 48 TODO
+// 48 
 long wali_syscall_shutdown (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(shutdown);
-	ERRSC(shutdown);
 	return __syscall2(SYS_shutdown, a1, a2);
 }
 
-// 49 TODO
+// 49 
 long wali_syscall_bind (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(bind);
-	ERRSC(bind);
 	return __syscall3(SYS_bind, a1, MADDR(a2), a3);
 }
 
-// 50 TODO
+// 50 
 long wali_syscall_listen (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(listen);
-	ERRSC(listen);
 	return __syscall2(SYS_listen, a1, a2);
 }
 
-// 51 TODO
+// 51 
 long wali_syscall_getsockname (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(getsockname);
-	ERRSC(getsockname);
 	return __syscall3(SYS_getsockname, a1, MADDR(a2), MADDR(a3));
 }
 
-// 52 TODO
+// 52 
 long wali_syscall_getpeername (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(getpeername);
-	ERRSC(getpeername);
 	return __syscall3(SYS_getpeername, a1, MADDR(a2), MADDR(a3));
 }
 
-// 54 TODO
+// 54 
 long wali_syscall_setsockopt (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
 	SC(setsockopt);
-	ERRSC(setsockopt);
 	return __syscall5(SYS_setsockopt, a1, a2, a3, MADDR(a4), a5);
 }
 
-// 55 TODO
+// 55 
 long wali_syscall_getsockopt (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
 	SC(getsockopt);
-	ERRSC(getsockopt);
 	return __syscall5(SYS_getsockopt, a1, a2, a3, MADDR(a4), MADDR(a5));
 }
 
