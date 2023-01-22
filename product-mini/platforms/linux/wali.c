@@ -85,6 +85,18 @@ typedef uint8_t* Addr;
   wasm_runtime_get_memory_ptr(get_module_inst(exec_env), &psize) + wasm_addr; \
 })
 
+#define RD_FIELD(ptr, ty) ({  \
+  ty val; \
+  memcpy(&val, ptr, sizeof(ty));  \
+  ptr += sizeof(ty);  \
+  val;  \
+})
+
+#define RD_FIELD_ADDR(ptr) ({ \
+  MADDR (RD_FIELD(ptr, uint32_t));  \
+})
+
+
 /***** WALI Methods *******/
 // 0
 long wali_syscall_read (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
@@ -196,8 +208,7 @@ long wali_syscall_rt_sigreturn (wasm_exec_env_t exec_env, long a1) {
 // 16 TODO
 long wali_syscall_ioctl (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(ioctl);
-	ERRSC(ioctl);
-	return __syscall3(SYS_ioctl, a1, a2, a3);
+	return __syscall3(SYS_ioctl, a1, a2, MADDR(a3));
 }
 
 // 17 TODO
@@ -221,11 +232,18 @@ long wali_syscall_readv (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	return __syscall3(SYS_readv, a1, MADDR(a2), a3);
 }
 
-// 20 TODO
+// 20 
 long wali_syscall_writev (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(writev);
-	ERRSC(writev);
-	return __syscall3(SYS_writev, a1, MADDR(a2), a3);
+  Addr wasm_iov = MADDR(a2);
+  int iov_cnt = a3;
+  
+  struct iovec new_iov[4];
+  for (int i = 0; i < iov_cnt; i++) {
+    new_iov[i].iov_base = RD_FIELD_ADDR(wasm_iov);
+    new_iov[i].iov_len = RD_FIELD(wasm_iov, int32_t);
+  }
+	return __syscall3(SYS_writev, a1, new_iov, a3);
 }
 
 // 21 
