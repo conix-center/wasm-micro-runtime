@@ -177,23 +177,31 @@ long wali_syscall_lseek (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	return __syscall3(SYS_lseek, a1, a2, a3);
 }
 
-
-#define PA_ALIGN_MMAP_ADDR(base) ({ \
-  (Addr) (((long)(base + psize) & ~(NATIVE_PAGESIZE - 1)) + NATIVE_PAGESIZE); \
+/*
+#define PA_ALIGN_MMAP_ADDR() ({ \
+  Addr base = MADDR(0); \
+  base + psize;
+})
+*/
+/* Get page aligned address after memory to mmap; since base is mapped it's already aligned, 
+* and psize is a multiple of 64kB */
+#define PA_ALIGN_MMAP_ADDR() ({ \
+  Addr base = MADDR(0); \
+  long pageoff = (long)(base + psize) & (NATIVE_PAGESIZE - 1); \
+  Addr palign = base + psize - pageoff; \
+  if (pageoff) { palign += NATIVE_PAGESIZE; } \
+  palign; \
 })
 
 // 9 
 long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
 	SC(mmap);
   //wasm_module_inst_t module = get_module_inst(exec_env);
-  Addr base_addr = MADDR(a1);
-  /* Get page aligned address after memory to mmap */
-  Addr pa_aligned_addr = base_addr + psize; // PA_ALIGN_MMAP_ADDR(base_addr);
-  ERR("Mmap pagelen: %d", MMAP_PAGELEN);
-  ERR("Pa aligned addr: %p", pa_aligned_addr);
+  Addr base_addr = MADDR(0);
+  Addr pa_aligned_addr = PA_ALIGN_MMAP_ADDR();
   Addr mmap_addr = pa_aligned_addr + MMAP_PAGELEN * NATIVE_PAGESIZE;
 
-  ERR("Mem -- Base: %p | End: %p | Mmap Addr: %p", base_addr, base_addr + psize, mmap_addr);
+  ERR("Mem Base: %p | Mem End: %p | Mmap Addr: %p", base_addr, base_addr + psize, mmap_addr);
   Addr mem_addr = (Addr) __syscall6(SYS_mmap, mmap_addr, a2, a3, MAP_FIXED|a4, a5, a6);
   long retval =  WADDR(mem_addr);
   if (retval >= 0) {
@@ -214,13 +222,13 @@ long wali_syscall_mprotect (wasm_exec_env_t exec_env, long a1, long a2, long a3)
 long wali_syscall_munmap (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(munmap);
   Addr mmap_addr = MADDR(a1);
+  Addr mmap_addr_end = (Addr)(mmap_addr + a2);
   /* Reclaim some mmap space if end region is unmapped */
   Addr pa_aligned_addr = PA_ALIGN_MMAP_ADDR();
-  Addr mmap_addr_end = (Addr)(mmap_addr + a2);
   int end_page = (mmap_addr_end - pa_aligned_addr + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE;
   if (end_page == MMAP_PAGELEN) {
-    ERR("End page unmapped!");
     MMAP_PAGELEN -= ((a2 + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE);
+    ERR("End page unmapped | New MMAP_PAGELEN: %d", MMAP_PAGELEN);
   }
 	return __syscall2(SYS_munmap, MADDR(a1), a2);
 }
