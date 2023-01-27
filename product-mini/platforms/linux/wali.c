@@ -30,6 +30,15 @@ uint32 psize;
   MADDR (RD_FIELD(ptr, uint32_t));  \
 })
 
+/* Get page aligned address after memory to mmap; since base is mapped it's already aligned, 
+* and psize is a multiple of 64kB but rounding added for safety */
+#define PA_ALIGN_MMAP_ADDR() ({ \
+  Addr base = MADDR(0); \
+  long pageoff = (long)(base + psize) & (NATIVE_PAGESIZE - 1); \
+  Addr palign = base + psize - pageoff; \
+  if (pageoff) { palign += NATIVE_PAGESIZE; } \
+  palign; \
+})
 
 typedef uint8_t* Addr;
 
@@ -183,15 +192,6 @@ long wali_syscall_lseek (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
   base + psize;
 })
 */
-/* Get page aligned address after memory to mmap; since base is mapped it's already aligned, 
-* and psize is a multiple of 64kB but rounding added for safety */
-#define PA_ALIGN_MMAP_ADDR() ({ \
-  Addr base = MADDR(0); \
-  long pageoff = (long)(base + psize) & (NATIVE_PAGESIZE - 1); \
-  Addr palign = base + psize - pageoff; \
-  if (pageoff) { palign += NATIVE_PAGESIZE; } \
-  palign; \
-})
 
 // 9 
 long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
@@ -235,8 +235,9 @@ long wali_syscall_munmap (wasm_exec_env_t exec_env, long a1, long a2) {
 // 12 TODO
 long wali_syscall_brk (wasm_exec_env_t exec_env, long a1) {
 	SC(brk);
-	ERRSC(brk);
-	return __syscall1(SYS_brk, MADDR(a1));
+	ERRSC(brk, "brk syscall is nop in WASM right now");
+	return 0; 
+  //__syscall1(SYS_brk, MADDR(a1));
 }
 
 // 13 TODO
