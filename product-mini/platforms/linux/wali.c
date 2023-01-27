@@ -1,8 +1,45 @@
-#include "bh_platform.h"
 #include <stdlib.h>
 #include <sys/syscall.h>
+#include <sys/mman.h>
+
+#include "bh_platform.h"
+#include "wasm_export.h"
+#include "aot_export.h"
 
 #include "wali.h"
+
+#define ERR(fmt, ...) LOG_VERBOSE("WALI: " fmt, ## __VA_ARGS__)
+
+uint32 psize;
+#define MADDR(wasm_addr) ({  \
+  wasm_runtime_get_memory_ptr(get_module_inst(exec_env), &psize) + wasm_addr;   \
+})
+
+#define WADDR(mem_addr) ({  \
+  mem_addr - wasm_runtime_get_memory_ptr(get_module_inst(exec_env), &psize);  \
+})
+
+#define RD_FIELD(ptr, ty) ({  \
+  ty val; \
+  memcpy(&val, ptr, sizeof(ty));  \
+  ptr += sizeof(ty);  \
+  val;  \
+})
+
+#define RD_FIELD_ADDR(ptr) ({ \
+  MADDR (RD_FIELD(ptr, uint32_t));  \
+})
+
+
+typedef uint8_t* Addr;
+
+uint32_t NATIVE_PAGESIZE = 0;
+int MMAP_PAGELEN = 0;
+
+void wali_init_native() {
+  NATIVE_PAGESIZE = sysconf(_SC_PAGE_SIZE);
+  MMAP_PAGELEN = 0;
+}
 
 static __inline long __syscall0(long n)
 {
@@ -79,22 +116,6 @@ static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long
   return -1;  \
 }
 
-uint32 psize;
-typedef uint8_t* Addr;
-#define MADDR(wasm_addr) ({  \
-  wasm_runtime_get_memory_ptr(get_module_inst(exec_env), &psize) + wasm_addr; \
-})
-
-#define RD_FIELD(ptr, ty) ({  \
-  ty val; \
-  memcpy(&val, ptr, sizeof(ty));  \
-  ptr += sizeof(ty);  \
-  val;  \
-})
-
-#define RD_FIELD_ADDR(ptr) ({ \
-  MADDR (RD_FIELD(ptr, uint32_t));  \
-})
 
 
 /***** WALI Methods *******/
@@ -156,11 +177,30 @@ long wali_syscall_lseek (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	return __syscall3(SYS_lseek, a1, a2, a3);
 }
 
-// 9 TODO
+
+#define PA_ALIGN_MMAP_ADDR(base) ({ \
+  (Addr) (((long)(base + psize) & ~(NATIVE_PAGESIZE - 1)) + NATIVE_PAGESIZE); \
+})
+
+// 9 
 long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
 	SC(mmap);
-	ERRSC(mmap);
-	return __syscall6(SYS_mmap, MADDR(a1), a2, a3, a4, a5, a6);
+  //wasm_module_inst_t module = get_module_inst(exec_env);
+  Addr base_addr = MADDR(a1);
+  /* Get page aligned address after memory to mmap */
+  Addr pa_aligned_addr = base_addr + psize; // PA_ALIGN_MMAP_ADDR(base_addr);
+  ERR("Mmap pagelen: %d", MMAP_PAGELEN);
+  ERR("Pa aligned addr: %p", pa_aligned_addr);
+  Addr mmap_addr = pa_aligned_addr + MMAP_PAGELEN * NATIVE_PAGESIZE;
+
+  ERR("Mem -- Base: %p | End: %p | Mmap Addr: %p", base_addr, base_addr + psize, mmap_addr);
+  Addr mem_addr = (Addr) __syscall6(SYS_mmap, mmap_addr, a2, a3, MAP_FIXED|a4, a5, a6);
+  long retval =  WADDR(mem_addr);
+  if (retval >= 0) {
+    MMAP_PAGELEN += ((a2 + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE);
+  }
+  ERR("Retval: %ld", retval);
+  return retval;
 }
 
 // 10 TODO
@@ -170,10 +210,18 @@ long wali_syscall_mprotect (wasm_exec_env_t exec_env, long a1, long a2, long a3)
 	return __syscall3(SYS_mprotect, MADDR(a1), a2, a3);
 }
 
-// 11 TODO
+// 11 
 long wali_syscall_munmap (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(munmap);
-	ERRSC(munmap);
+  Addr mmap_addr = MADDR(a1);
+  /* Reclaim some mmap space if end region is unmapped */
+  Addr pa_aligned_addr = PA_ALIGN_MMAP_ADDR();
+  Addr mmap_addr_end = (Addr)(mmap_addr + a2);
+  int end_page = (mmap_addr_end - pa_aligned_addr + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE;
+  if (end_page == MMAP_PAGELEN) {
+    ERR("End page unmapped!");
+    MMAP_PAGELEN -= ((a2 + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE);
+  }
 	return __syscall2(SYS_munmap, MADDR(a1), a2);
 }
 

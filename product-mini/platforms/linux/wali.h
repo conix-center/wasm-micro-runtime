@@ -1,5 +1,8 @@
 #include "wasm_export.h"
 
+/** Init function **/
+void wali_init_native ();
+
 /** Syscalls **/
 long wali_syscall_read (wasm_exec_env_t exec_env, long a1, long a2, long a3);
 long wali_syscall_write (wasm_exec_env_t exec_env, long a1, long a2, long a3);

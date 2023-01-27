@@ -950,6 +950,7 @@ main(int argc, char *argv[])
     memset(&init_args, 0, sizeof(RuntimeInitArgs));
 
     /* Register WALI symbols */
+    wali_init_native();
     init_args.native_symbols = wali_native_symbols;
     init_args.n_native_symbols = sizeof(wali_native_symbols) / sizeof(NativeSymbol);
     init_args.native_module_name = "wali";
