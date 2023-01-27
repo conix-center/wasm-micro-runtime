@@ -8,6 +8,8 @@
 
 #include "wali.h"
 
+#define WASM_PAGESIZE 65536
+
 #define ERR(fmt, ...) LOG_VERBOSE("WALI: " fmt, ## __VA_ARGS__)
 
 uint32 psize;
@@ -44,10 +46,14 @@ typedef uint8_t* Addr;
 
 uint32_t NATIVE_PAGESIZE = 0;
 int MMAP_PAGELEN = 0;
+int WASM_PAGELEN = 0;
+int WASM_TO_NATIVE_PAGE = 0;
 
 void wali_init_native() {
   NATIVE_PAGESIZE = sysconf(_SC_PAGE_SIZE);
   MMAP_PAGELEN = 0;
+  WASM_PAGELEN = 0;
+  WASM_TO_NATIVE_PAGE = WASM_PAGESIZE / NATIVE_PAGESIZE;
 }
 
 static __inline long __syscall0(long n)
@@ -196,18 +202,33 @@ long wali_syscall_lseek (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 // 9 
 long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
 	SC(mmap);
-  //wasm_module_inst_t module = get_module_inst(exec_env);
   Addr base_addr = MADDR(0);
   Addr pa_aligned_addr = PA_ALIGN_MMAP_ADDR();
   Addr mmap_addr = pa_aligned_addr + MMAP_PAGELEN * NATIVE_PAGESIZE;
+  long fd = (long)((int)a5);
 
   ERR("Mem Base: %p | Mem End: %p | Mmap Addr: %p", base_addr, base_addr + psize, mmap_addr);
-  Addr mem_addr = (Addr) __syscall6(SYS_mmap, mmap_addr, a2, a3, MAP_FIXED|a4, a5, a6);
-  long retval =  WADDR(mem_addr);
-  if (retval >= 0) {
-    MMAP_PAGELEN += ((a2 + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE);
+  Addr mem_addr = (Addr) __syscall6(SYS_mmap, mmap_addr, a2, a3, MAP_FIXED|a4, fd, a6);
+  if (mem_addr == MAP_FAILED) {
+    LOG_ERROR("Failed to mmap!\n");
+    return (long) MAP_FAILED;
   }
+  long retval =  WADDR(mem_addr);
   ERR("Retval: %ld", retval);
+  /* On success */
+  if (retval >= 0) {
+    int num_pages = ((a2 + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE);
+    MMAP_PAGELEN += num_pages;
+    /* Expand wasm memory if needed */
+    if (MMAP_PAGELEN > WASM_PAGELEN * WASM_TO_NATIVE_PAGE) {
+      int new_wasm_pagelen = ((MMAP_PAGELEN + WASM_TO_NATIVE_PAGE - 1) / WASM_TO_NATIVE_PAGE);
+      int inc_wasm_pages = new_wasm_pagelen - WASM_PAGELEN;
+      ERR("WASM Page | Old: %d, New: %d", WASM_PAGELEN, new_wasm_pagelen);
+      wasm_module_inst_t module = get_module_inst(exec_env);
+      wasm_enlarge_memory(module, inc_wasm_pages);
+      WASM_PAGELEN += inc_wasm_pages;
+    }
+  }
   return retval;
 }
 
@@ -225,6 +246,7 @@ long wali_syscall_munmap (wasm_exec_env_t exec_env, long a1, long a2) {
   /* Reclaim some mmap space if end region is unmapped */
   Addr pa_aligned_addr = PA_ALIGN_MMAP_ADDR();
   int end_page = (mmap_addr_end - pa_aligned_addr + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE;
+  ERR("End page: %d | MMAP_PAGELEN: %d", end_page, MMAP_PAGELEN);
   if (end_page == MMAP_PAGELEN) {
     MMAP_PAGELEN -= ((a2 + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE);
     ERR("End page unmapped | New MMAP_PAGELEN: %d", MMAP_PAGELEN);
