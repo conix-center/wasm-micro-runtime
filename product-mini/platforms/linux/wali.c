@@ -184,7 +184,7 @@ long wali_syscall_lseek (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 })
 */
 /* Get page aligned address after memory to mmap; since base is mapped it's already aligned, 
-* and psize is a multiple of 64kB */
+* and psize is a multiple of 64kB but rounding added for safety */
 #define PA_ALIGN_MMAP_ADDR() ({ \
   Addr base = MADDR(0); \
   long pageoff = (long)(base + psize) & (NATIVE_PAGESIZE - 1); \
@@ -211,10 +211,9 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
   return retval;
 }
 
-// 10 TODO
+// 10
 long wali_syscall_mprotect (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(mprotect);
-	ERRSC(mprotect);
 	return __syscall3(SYS_mprotect, MADDR(a1), a2, a3);
 }
 
@@ -230,7 +229,7 @@ long wali_syscall_munmap (wasm_exec_env_t exec_env, long a1, long a2) {
     MMAP_PAGELEN -= ((a2 + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE);
     ERR("End page unmapped | New MMAP_PAGELEN: %d", MMAP_PAGELEN);
   }
-	return __syscall2(SYS_munmap, MADDR(a1), a2);
+	return __syscall2(SYS_munmap, mmap_addr, a2);
 }
 
 // 12 TODO
