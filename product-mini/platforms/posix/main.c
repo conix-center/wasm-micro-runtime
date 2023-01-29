@@ -930,7 +930,7 @@ main(int argc, char *argv[])
 
       // Atomics
       NSYMBOL ( a_cas, wali_a_cas, "(iii)i" ),
-      NSYMBOL ( a_cas_p, wali_a_cas_p, "(iii)" ),
+      NSYMBOL ( a_cas_p, wali_a_cas_p, "(iii)i" ),
       NSYMBOL ( a_swap, wali_a_swap, "(ii)i" ),
       NSYMBOL ( a_fetch_add, wali_a_fetch_add, "(ii)i" ),
       NSYMBOL ( a_and, wali_a_and, "(ii)" ),

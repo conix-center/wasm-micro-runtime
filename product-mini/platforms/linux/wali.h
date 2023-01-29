@@ -348,7 +348,7 @@ void wali__wasi_proc_exit (wasm_exec_env_t exec_env, long v);
 
 /** Atomics **/
 int wali_a_cas (wasm_exec_env_t exec_env, long p, int t, int s);
-void wali_a_cas_p (wasm_exec_env_t exec_env, long p, long t, long s);
+void* wali_a_cas_p (wasm_exec_env_t exec_env, long p, long t, long s);
 int wali_a_swap (wasm_exec_env_t exec_env, long p, int v);
 int wali_a_fetch_add (wasm_exec_env_t exec_env, long p, int v);
 void wali_a_and (wasm_exec_env_t exec_env, long p, int v);

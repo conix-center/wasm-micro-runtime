@@ -731,7 +731,7 @@ int wali_a_cas (wasm_exec_env_t exec_env, long p, int t, int s) {
 
 }
 
-void wali_a_cas_p (wasm_exec_env_t exec_env, long p, long t, long s) {
+void* wali_a_cas_p (wasm_exec_env_t exec_env, long p, long t, long s) {
   ATOM(a_cas_p);
   Addr tm = MADDR(t);
 	__asm__( "lock ; cmpxchg %3, %1"
