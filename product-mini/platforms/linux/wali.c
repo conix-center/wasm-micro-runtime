@@ -36,7 +36,7 @@ uint32 psize;
 * and psize is a multiple of 64kB but rounding added for safety */
 #define PA_ALIGN_MMAP_ADDR() ({ \
   Addr base = MADDR(0); \
-  Addr punalign = base + BASE_MEMSIZE;  \
+  Addr punalign = base + wasm_runtime_get_base_memory_size(get_module_inst(exec_env));  \
   long pageoff = (long)(punalign) & (NATIVE_PAGESIZE - 1); \
   Addr palign = punalign - pageoff; \
   if (pageoff) { palign += NATIVE_PAGESIZE; } \
@@ -201,11 +201,7 @@ long wali_syscall_lseek (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
 	SC(mmap);
   ERR("mmap args | a1: %ld, a2: %ld, a3: %ld, a4: %ld, a5: %ld, a6: %ld | MMAP_PAGELEN: %d", a1, a2, a3, a4, a5, a6, MMAP_PAGELEN);
-  /* Base memend set on fresh mmap */
   Addr base_addr = MADDR(0);
-  if (MMAP_PAGELEN == 0) {
-    BASE_MEMSIZE = psize;
-  }
   Addr pa_aligned_addr = PA_ALIGN_MMAP_ADDR();
   Addr mmap_addr = pa_aligned_addr + MMAP_PAGELEN * NATIVE_PAGESIZE;
 
@@ -228,7 +224,7 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
       int inc_wasm_pages = new_wasm_pagelen - WASM_PAGELEN;
       ERR("WASM Page | Old: %d, New: %d", WASM_PAGELEN, new_wasm_pagelen);
       wasm_module_inst_t module = get_module_inst(exec_env);
-      wasm_enlarge_memory(module, inc_wasm_pages);
+      wasm_runtime_enlarge_memory(module, inc_wasm_pages, true);
       WASM_PAGELEN += inc_wasm_pages;
     }
   }
