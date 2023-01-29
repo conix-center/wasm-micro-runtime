@@ -36,8 +36,9 @@ uint32 psize;
 * and psize is a multiple of 64kB but rounding added for safety */
 #define PA_ALIGN_MMAP_ADDR() ({ \
   Addr base = MADDR(0); \
-  long pageoff = (long)(base + psize) & (NATIVE_PAGESIZE - 1); \
-  Addr palign = base + psize - pageoff; \
+  Addr punalign = base + BASE_MEMSIZE;  \
+  long pageoff = (long)(punalign) & (NATIVE_PAGESIZE - 1); \
+  Addr palign = punalign - pageoff; \
   if (pageoff) { palign += NATIVE_PAGESIZE; } \
   palign; \
 })
@@ -48,12 +49,15 @@ uint32_t NATIVE_PAGESIZE = 0;
 int MMAP_PAGELEN = 0;
 int WASM_PAGELEN = 0;
 int WASM_TO_NATIVE_PAGE = 0;
+uint32_t BASE_MEMSIZE = 0;
 
 void wali_init_native() {
   NATIVE_PAGESIZE = sysconf(_SC_PAGE_SIZE);
   MMAP_PAGELEN = 0;
   WASM_PAGELEN = 0;
   WASM_TO_NATIVE_PAGE = WASM_PAGESIZE / NATIVE_PAGESIZE;
+  // Set in mmap
+  BASE_MEMSIZE = 0;
 }
 
 static __inline long __syscall0(long n)
@@ -192,27 +196,26 @@ long wali_syscall_lseek (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	return __syscall3(SYS_lseek, a1, a2, a3);
 }
 
-/*
-#define PA_ALIGN_MMAP_ADDR() ({ \
-  Addr base = MADDR(0); \
-  base + psize;
-})
-*/
 
 // 9 
 long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
 	SC(mmap);
+  ERR("mmap args | a1: %ld, a2: %ld, a3: %ld, a4: %ld, a5: %ld, a6: %ld | MMAP_PAGELEN: %d", a1, a2, a3, a4, a5, a6, MMAP_PAGELEN);
+  /* Base memend set on fresh mmap */
   Addr base_addr = MADDR(0);
+  if (MMAP_PAGELEN == 0) {
+    BASE_MEMSIZE = psize;
+  }
   Addr pa_aligned_addr = PA_ALIGN_MMAP_ADDR();
   Addr mmap_addr = pa_aligned_addr + MMAP_PAGELEN * NATIVE_PAGESIZE;
-  long fd = (long)((int)a5);
 
   ERR("Mem Base: %p | Mem End: %p | Mmap Addr: %p", base_addr, base_addr + psize, mmap_addr);
-  Addr mem_addr = (Addr) __syscall6(SYS_mmap, mmap_addr, a2, a3, MAP_FIXED|a4, fd, a6);
+  Addr mem_addr = (Addr) __syscall6(SYS_mmap, mmap_addr, a2, a3, MAP_FIXED|a4, (int)a5, a6);
   if (mem_addr == MAP_FAILED) {
     LOG_ERROR("Failed to mmap!\n");
     return (long) MAP_FAILED;
   }
+
   long retval =  WADDR(mem_addr);
   ERR("Retval: %ld", retval);
   /* On success */
