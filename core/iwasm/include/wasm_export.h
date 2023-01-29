@@ -580,6 +580,17 @@ wasm_runtime_lookup_function(wasm_module_inst_t const module_inst,
                              const char *name, const char *signature);
 
 /**
+ * WALI: Get the size of the base memory (without mmaped data)
+ *
+ * @param module_inst the module instance
+ *
+ * @return size of base memory
+ */
+WASM_RUNTIME_API_EXTERN uint32_t
+wasm_runtime_get_base_memory_size(wasm_module_inst_t const module_inst);
+
+
+/**
  * Get parameter count of the function instance
  *
  * @param func_inst the function instance

@@ -86,6 +86,8 @@ struct WASMMemoryInstance {
     uint32 num_bytes_per_page;
     /* Current page count */
     uint32 cur_page_count;
+    /* Base page count (without mmap memory) */
+    uint32 base_page_count;
     /* Maximum page count */
     uint32 max_page_count;
     /* Memory data size */
