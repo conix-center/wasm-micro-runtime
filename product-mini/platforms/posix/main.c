@@ -845,20 +845,6 @@ main(int argc, char *argv[])
 
     static NativeSymbol wali_native_symbols[] = {
       // Syscalls
-      //NSYMBOL ( __syscall_SYS_read,     wali_syscall_read, "(iii)i" ),
-      //NSYMBOL ( __syscall_SYS_write,    wali_syscall_write, "(iii)i" ),
-      //NSYMBOL ( __syscall_SYS_open,     wali_syscall_open, "(iii)i" ),
-      //NSYMBOL ( __syscall_SYS_close,    wali_syscall_close, "(i)i" ),
-      //NSYMBOL ( __syscall_SYS_stat,     wali_syscall_stat, "(ii)i"),
-      //NSYMBOL ( __syscall_SYS_fstat,    wali_syscall_fstat, "(ii)i"),
-      //NSYMBOL ( __syscall_SYS_lstat,    wali_syscall_lstat, "(ii)i"),
-      //NSYMBOL ( __syscall_SYS_nanosleep,wali_syscall_nanosleep, "(ii)i"),
-      //NSYMBOL ( __syscall_SYS_fork,     wali_syscall_fork, "()i"),
-      //NSYMBOL ( __syscall_SYS_getcwd,   wali_syscall_getcwd, "(ii)i" ),
-      //NSYMBOL ( __syscall_SYS_chdir,    wali_syscall_chdir, "(i)i"),
-      //NSYMBOL ( __syscall_SYS_mkdir,    wali_syscall_mkdir, "(ii)i"),
-      //NSYMBOL ( __syscall_SYS_statx,    wali_syscall_statx, "(iiiii)i"),
-
 			NSYMBOL (        __syscall_SYS_read,         wali_syscall_read,     "(iii)i" ),
 			NSYMBOL (       __syscall_SYS_write,        wali_syscall_write,     "(iii)i" ),
 			NSYMBOL (        __syscall_SYS_open,         wali_syscall_open,     "(iii)i" ),
@@ -942,8 +928,30 @@ main(int argc, char *argv[])
 			NSYMBOL (       __syscall_SYS_pipe2,        wali_syscall_pipe2,      "(ii)i" ),
 			NSYMBOL (       __syscall_SYS_statx,        wali_syscall_statx,   "(iiiii)i" ),
 
+      // Atomics
+      NSYMBOL ( a_cas, wali_a_cas, "(iii)i" ),
+      NSYMBOL ( a_cas_p, wali_a_cas_p, "(iii)" ),
+      NSYMBOL ( a_swap, wali_a_swap, "(ii)i" ),
+      NSYMBOL ( a_fetch_add, wali_a_fetch_add, "(ii)i" ),
+      NSYMBOL ( a_and, wali_a_and, "(ii)" ),
+      NSYMBOL ( a_or, wali_a_or, "(ii)" ),
+      NSYMBOL ( a_and_64, wali_a_and_64, "(ii)" ),
+      NSYMBOL ( a_or_64, wali_a_or_64, "(ii)" ),
+
+      NSYMBOL ( a_inc, wali_a_inc, "(i)" ),
+      NSYMBOL ( a_dec, wali_a_dec, "(i)" ),
+      NSYMBOL ( a_store, wali_a_store, "(ii)" ),
+      
+      NSYMBOL ( a_barrier, wali_a_barrier, "()" ),
+      NSYMBOL ( a_spin, wali_a_spin, "()" ),
+      NSYMBOL ( a_crash, wali_a_crash, "()" ),
+
+      NSYMBOL ( a_ctz_64, wali_a_ctz_64, "(I)i" ),
+      NSYMBOL ( a_clz_64, wali_a_clz_64, "(I)i" ),
+
       // Threads
       NSYMBOL ( __get_tp, wali__get_tp, "()i" )
+
     };
 
 

@@ -346,5 +346,25 @@ uintptr_t wali__get_tp (wasm_exec_env_t exec_env);
 void wali__wasm_call_dtors (wasm_exec_env_t exec_env);
 void wali__wasi_proc_exit (wasm_exec_env_t exec_env, long v);
 
-/****/
+/** Atomics **/
+int wali_a_cas (wasm_exec_env_t exec_env, long p, int t, int s);
+void wali_a_cas_p (wasm_exec_env_t exec_env, long p, long t, long s);
+int wali_a_swap (wasm_exec_env_t exec_env, long p, int v);
+int wali_a_fetch_add (wasm_exec_env_t exec_env, long p, int v);
+void wali_a_and (wasm_exec_env_t exec_env, long p, int v);
+void wali_a_or (wasm_exec_env_t exec_env, long p, int v);
+void wali_a_and_64 (wasm_exec_env_t exec_env, long p, long v);
+void wali_a_or_64 (wasm_exec_env_t exec_env, long p, long v);
 
+void wali_a_inc (wasm_exec_env_t exec_env, long p);
+void wali_a_dec (wasm_exec_env_t exec_env, long p);
+void wali_a_store (wasm_exec_env_t exec_env, long p, int x);
+
+void wali_a_barrier (wasm_exec_env_t exec_env);
+void wali_a_spin (wasm_exec_env_t exec_env);
+void wali_a_crash (wasm_exec_env_t exec_env);
+
+int wali_a_ctz_64 (wasm_exec_env_t exec_env, long x);
+int wali_a_clz_64 (wasm_exec_env_t exec_env, long x);
+
+/** **/
