@@ -13,12 +13,18 @@
 #define ERR(fmt, ...) LOG_VERBOSE("WALI: " fmt, ## __VA_ARGS__)
 
 uint32 psize;
+#define BASE_ADDR() ({  \
+  (Addr) wasm_runtime_addr_app_to_native(get_module_inst(exec_env), 0); \
+})
+
 #define MADDR(wasm_addr) ({  \
-  wasm_runtime_get_memory_ptr(get_module_inst(exec_env), &psize) + wasm_addr;   \
+  Addr addr = wasm_addr ? (Addr) wasm_runtime_addr_app_to_native(get_module_inst(exec_env), wasm_addr) : NULL;  \
+  if (addr == NULL) { ERR("NULL ADDRESS!\n"); } \
+  addr; \
 })
 
 #define WADDR(mem_addr) ({  \
-  mem_addr - wasm_runtime_get_memory_ptr(get_module_inst(exec_env), &psize);  \
+  wasm_runtime_addr_native_to_app(get_module_inst(exec_env), mem_addr); \
 })
 
 #define RD_FIELD(ptr, ty) ({  \
@@ -29,13 +35,14 @@ uint32 psize;
 })
 
 #define RD_FIELD_ADDR(ptr) ({ \
-  MADDR (RD_FIELD(ptr, uint32_t));  \
+  uint32_t field = RD_FIELD(ptr, uint32_t); \
+  MADDR (field);  \
 })
 
 /* Get page aligned address after memory to mmap; since base is mapped it's already aligned, 
 * and psize is a multiple of 64kB but rounding added for safety */
 #define PA_ALIGN_MMAP_ADDR() ({ \
-  Addr base = MADDR(0); \
+  Addr base = BASE_ADDR(); \
   Addr punalign = base + wasm_runtime_get_base_memory_size(get_module_inst(exec_env));  \
   long pageoff = (long)(punalign) & (NATIVE_PAGESIZE - 1); \
   Addr palign = punalign - pageoff; \
@@ -199,21 +206,20 @@ long wali_syscall_lseek (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
 	SC(mmap);
   ERR("mmap args | a1: %ld, a2: %ld, a3: %ld, a4: %ld, a5: %ld, a6: %ld | MMAP_PAGELEN: %d", a1, a2, a3, a4, a5, a6, MMAP_PAGELEN);
-  Addr base_addr = MADDR(0);
+  Addr base_addr = BASE_ADDR();
   Addr pa_aligned_addr = PA_ALIGN_MMAP_ADDR();
   Addr mmap_addr = pa_aligned_addr + MMAP_PAGELEN * NATIVE_PAGESIZE;
 
+  wasm_runtime_get_memory_ptr(get_module_inst(exec_env), &psize); 
   ERR("Mem Base: %p | Mem End: %p | Mmap Addr: %p", base_addr, base_addr + psize, mmap_addr);
+
   Addr mem_addr = (Addr) __syscall6(SYS_mmap, mmap_addr, a2, a3, MAP_FIXED|a4, (int)a5, a6);
   if (mem_addr == MAP_FAILED) {
     LOG_ERROR("Failed to mmap!\n");
     return (long) MAP_FAILED;
   }
-
-  long retval =  WADDR(mem_addr);
-  ERR("Retval: %ld", retval);
   /* On success */
-  if (retval >= 0) {
+  else {
     int num_pages = ((a2 + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE);
     MMAP_PAGELEN += num_pages;
     /* Expand wasm memory if needed */
@@ -226,6 +232,8 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
       WASM_PAGELEN += inc_wasm_pages;
     }
   }
+  long retval =  WADDR(mem_addr);
+  ERR("Retval: %ld", retval);
   return retval;
 }
 
@@ -259,11 +267,40 @@ long wali_syscall_brk (wasm_exec_env_t exec_env, long a1) {
   //__syscall1(SYS_brk, MADDR(a1));
 }
 
+void sa_handler_wali(int signo) {
+  ERR("Signal \'%s\' triggered SA_HANDLER", strsignal(signo));
+}
+void sa_sigaction_wali(int signo, siginfo_t* siginfo, void *ucontext) {
+  ERR("Signal \'%s\' triggered SA_SIGACTION", strsignal(signo));
+}
+struct sigaction* copy_sigaction (wasm_exec_env_t exec_env, Addr wasm_act, struct sigaction *act) {
+  if (wasm_act == NULL) { return NULL; }
+  RD_FIELD_ADDR(wasm_act);
+  act->sa_handler = sa_handler_wali;
+
+  RD_FIELD_ADDR(wasm_act);
+  act->sa_sigaction = sa_sigaction_wali;
+
+  act->sa_mask = RD_FIELD(wasm_act, sigset_t);
+  act->sa_flags = RD_FIELD(wasm_act, int);
+  
+  RD_FIELD_ADDR(wasm_act);
+  act->sa_restorer = NULL;
+  return act;
+}
 // 13 TODO
 long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(rt_sigaction);
-	ERRSC(rt_sigaction);
-	return __syscall4(SYS_rt_sigaction, a1, MADDR(a2), MADDR(a3), a4);
+  ERR("rt_sigaction args | a1: %ld, a2: %ld, a3: %ld, a4: %ld", a1, a2, a3, a4);
+  Addr wasm_act  = MADDR(a2);
+  Addr wasm_oldact = MADDR(a3);
+  struct sigaction act = {0};
+  struct sigaction oldact = {0};
+
+  struct sigaction *act_pt = copy_sigaction(exec_env, wasm_act, &act);
+  struct sigaction *oldact_pt = copy_sigaction(exec_env, wasm_oldact, &oldact);
+  printf("Calling RT_SIGACTION!\n");
+	return __syscall4(SYS_rt_sigaction, a1, act_pt, oldact_pt, a4);
 }
 
 // 14 TODO
@@ -313,12 +350,14 @@ long wali_syscall_writev (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
   Addr wasm_iov = MADDR(a2);
   int iov_cnt = a3;
   
-  struct iovec new_iov[4];
+  struct iovec *new_iov = (struct iovec*) malloc(iov_cnt * sizeof(struct iovec));
   for (int i = 0; i < iov_cnt; i++) {
     new_iov[i].iov_base = RD_FIELD_ADDR(wasm_iov);
     new_iov[i].iov_len = RD_FIELD(wasm_iov, int32_t);
   }
-	return __syscall3(SYS_writev, a1, new_iov, a3);
+	long retval = __syscall3(SYS_writev, a1, new_iov, a3);
+  free(new_iov);
+  return retval;
 }
 
 // 21 
