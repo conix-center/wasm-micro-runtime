@@ -166,21 +166,18 @@ long wali_syscall_close (wasm_exec_env_t exec_env, long a1) {
 // 4 
 long wali_syscall_stat (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(stat);
-	ERRSC(stat, "Use statx instead");
 	return __syscall2(SYS_stat, MADDR(a1), MADDR(a2));
 }
 
 // 5 
 long wali_syscall_fstat (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(fstat);
-	ERRSC(fstat, "Use statx instead");
 	return __syscall2(SYS_fstat, a1, MADDR(a2));
 }
 
 // 6 
 long wali_syscall_lstat (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(lstat);
-	ERRSC(lstat, "Use statx instead");
 	return __syscall2(SYS_lstat, MADDR(a1), MADDR(a2));
 }
 
