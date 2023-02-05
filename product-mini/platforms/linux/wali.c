@@ -160,7 +160,7 @@ long wali_syscall_poll (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	return __syscall3(SYS_poll, MADDR(a1), a2, a3);
 }
 
-// 8 TODO: Change to I64 return value
+// 8 
 long wali_syscall_lseek (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(lseek);
 	return __syscall3(SYS_lseek, a1, a2, a3);
@@ -237,7 +237,7 @@ void sa_handler_wali(int signo) {
   printf("Signal \'%s\' triggered SIGACTION_HANDLER\n", strsignal(signo));
 }
 void sa_restorer() { __syscall0(SYS_rt_sigreturn); }
-// 13 TODO
+// 13 
 long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(rt_sigaction);
   ERR("rt_sigaction args | a1: %ld, a2: %ld, a3: %ld, a4: %ld", a1, a2, a3, a4);
@@ -250,7 +250,6 @@ long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long
     copy_ksigaction(exec_env, wasm_act, &act, sa_handler_wali, sa_restorer);
   struct k_sigaction *oldact_pt = 
     copy_ksigaction(exec_env, wasm_oldact, &oldact, sa_handler_wali, sa_restorer);
-  printf("Calling RT_SIGACTION!\n");
 	return __syscall4(SYS_rt_sigaction, a1, act_pt, oldact_pt, a4);
 }
 
@@ -261,14 +260,14 @@ long wali_syscall_rt_sigprocmask (wasm_exec_env_t exec_env, long a1, long a2, lo
 	return __syscall4(SYS_rt_sigprocmask, a1, MADDR(a2), MADDR(a3), a4);
 }
 
-// 15 TODO
+// 15 Note: Handled within sa_restorer
 long wali_syscall_rt_sigreturn (wasm_exec_env_t exec_env, long a1) {
 	SC(rt_sigreturn);
-	ERRSC(rt_sigreturn);
+	ERRSC(rt_sigreturn, "rt_sigreturn should never be called by the user!");
 	return __syscall1(SYS_rt_sigreturn, a1);
 }
 
-// 16 TODO
+// 16 
 long wali_syscall_ioctl (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(ioctl);
 	return __syscall3(SYS_ioctl, a1, a2, MADDR(a3));
@@ -340,14 +339,13 @@ long wali_syscall_mremap (wasm_exec_env_t exec_env, long a1, long a2, long a3, l
 	return __syscall5(SYS_mremap, MADDR(a1), a2, a3, a4, a5);
 }
 
-// 26 TODO
+// 26 
 long wali_syscall_msync (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(msync);
-	ERRSC(msync);
 	return __syscall3(SYS_msync, MADDR(a1), a2, a3);
 }
 
-// 28 TODO
+// 28 
 long wali_syscall_madvise (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(madvise);
 	ERRSC(madvise);
@@ -372,10 +370,9 @@ long wali_syscall_nanosleep (wasm_exec_env_t exec_env, long a1, long a2) {
 	return __syscall2(SYS_nanosleep, MADDR(a1), MADDR(a2));
 }
 
-// 37 TODO
+// 37 
 long wali_syscall_alarm (wasm_exec_env_t exec_env, long a1) {
 	SC(alarm);
-	ERRSC(alarm);
 	return __syscall1(SYS_alarm, a1);
 }
 

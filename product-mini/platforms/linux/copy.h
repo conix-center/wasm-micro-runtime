@@ -45,14 +45,16 @@ struct iovec* copy_iovec(wasm_exec_env_t exec_env, Addr wasm_iov, int iov_cnt) {
 
 
 
-
 /* Copy Sigaction structure: Function pointers are padded */
 struct k_sigaction* copy_ksigaction (wasm_exec_env_t exec_env, Addr wasm_act, 
     struct k_sigaction *act, void (*handler)(int), void(*restorer)(void)) {
   if (wasm_act == NULL) { return NULL; }
 
-  RD_FIELD_ADDR(wasm_act);
-  act->handler = handler;
+  if ( (void (*)(int))(RD_FIELD_ADDR(wasm_act)) == SIG_DFL) {
+    act->handler = SIG_DFL;
+  } else {
+    act->handler = handler;
+  }
 
   act->flags = RD_FIELD(wasm_act, unsigned long);
   
