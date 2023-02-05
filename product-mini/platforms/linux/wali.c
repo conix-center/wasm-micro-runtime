@@ -2,42 +2,8 @@
 #include <sys/syscall.h>
 #include <sys/mman.h>
 
-#include "bh_platform.h"
-#include "wasm_export.h"
-#include "aot_export.h"
-
 #include "wali.h"
-
-#define WASM_PAGESIZE 65536
-
-#define ERR(fmt, ...) LOG_VERBOSE("WALI: " fmt, ## __VA_ARGS__)
-
-uint32 psize;
-#define BASE_ADDR() ({  \
-  (Addr) wasm_runtime_addr_app_to_native(get_module_inst(exec_env), 0); \
-})
-
-#define MADDR(wasm_addr) ({  \
-  Addr addr = wasm_addr ? (Addr) wasm_runtime_addr_app_to_native(get_module_inst(exec_env), wasm_addr) : NULL;  \
-  if (addr == NULL) { ERR("NULL ADDRESS!\n"); } \
-  addr; \
-})
-
-#define WADDR(mem_addr) ({  \
-  wasm_runtime_addr_native_to_app(get_module_inst(exec_env), mem_addr); \
-})
-
-#define RD_FIELD(ptr, ty) ({  \
-  ty val; \
-  memcpy(&val, ptr, sizeof(ty));  \
-  ptr += sizeof(ty);  \
-  val;  \
-})
-
-#define RD_FIELD_ADDR(ptr) ({ \
-  uint32_t field = RD_FIELD(ptr, uint32_t); \
-  MADDR (field);  \
-})
+#include "copy.h"
 
 /* Get page aligned address after memory to mmap; since base is mapped it's already aligned, 
 * and psize is a multiple of 64kB but rounding added for safety */
@@ -50,7 +16,6 @@ uint32 psize;
   palign; \
 })
 
-typedef uint8_t* Addr;
 
 uint32_t NATIVE_PAGESIZE = 0;
 int MMAP_PAGELEN = 0;
@@ -267,38 +232,24 @@ long wali_syscall_brk (wasm_exec_env_t exec_env, long a1) {
   //__syscall1(SYS_brk, MADDR(a1));
 }
 
+
 void sa_handler_wali(int signo) {
-  ERR("Signal \'%s\' triggered SA_HANDLER", strsignal(signo));
+  printf("Signal \'%s\' triggered SIGACTION_HANDLER\n", strsignal(signo));
 }
-void sa_sigaction_wali(int signo, siginfo_t* siginfo, void *ucontext) {
-  ERR("Signal \'%s\' triggered SA_SIGACTION", strsignal(signo));
-}
-struct sigaction* copy_sigaction (wasm_exec_env_t exec_env, Addr wasm_act, struct sigaction *act) {
-  if (wasm_act == NULL) { return NULL; }
-  RD_FIELD_ADDR(wasm_act);
-  act->sa_handler = sa_handler_wali;
-
-  RD_FIELD_ADDR(wasm_act);
-  act->sa_sigaction = sa_sigaction_wali;
-
-  act->sa_mask = RD_FIELD(wasm_act, sigset_t);
-  act->sa_flags = RD_FIELD(wasm_act, int);
-  
-  RD_FIELD_ADDR(wasm_act);
-  act->sa_restorer = NULL;
-  return act;
-}
+void sa_restorer() { __syscall0(SYS_rt_sigreturn); }
 // 13 TODO
 long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(rt_sigaction);
   ERR("rt_sigaction args | a1: %ld, a2: %ld, a3: %ld, a4: %ld", a1, a2, a3, a4);
   Addr wasm_act  = MADDR(a2);
   Addr wasm_oldact = MADDR(a3);
-  struct sigaction act = {0};
-  struct sigaction oldact = {0};
+  struct k_sigaction act = {0};
+  struct k_sigaction oldact = {0};
 
-  struct sigaction *act_pt = copy_sigaction(exec_env, wasm_act, &act);
-  struct sigaction *oldact_pt = copy_sigaction(exec_env, wasm_oldact, &oldact);
+  struct k_sigaction *act_pt = 
+    copy_ksigaction(exec_env, wasm_act, &act, sa_handler_wali, sa_restorer);
+  struct k_sigaction *oldact_pt = 
+    copy_ksigaction(exec_env, wasm_oldact, &oldact, sa_handler_wali, sa_restorer);
   printf("Calling RT_SIGACTION!\n");
 	return __syscall4(SYS_rt_sigaction, a1, act_pt, oldact_pt, a4);
 }
@@ -350,13 +301,9 @@ long wali_syscall_writev (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
   Addr wasm_iov = MADDR(a2);
   int iov_cnt = a3;
   
-  struct iovec *new_iov = (struct iovec*) malloc(iov_cnt * sizeof(struct iovec));
-  for (int i = 0; i < iov_cnt; i++) {
-    new_iov[i].iov_base = RD_FIELD_ADDR(wasm_iov);
-    new_iov[i].iov_len = RD_FIELD(wasm_iov, int32_t);
-  }
-	long retval = __syscall3(SYS_writev, a1, new_iov, a3);
-  free(new_iov);
+  struct iovec *native_iov = copy_iovec(exec_env, wasm_iov, iov_cnt);
+	long retval = __syscall3(SYS_writev, a1, native_iov, a3);
+  free(native_iov);
   return retval;
 }
 

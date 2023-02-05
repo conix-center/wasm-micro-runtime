@@ -1,4 +1,46 @@
+#ifndef WALI_H
+#define WALI_H
+
 #include "wasm_export.h"
+#include "bh_platform.h"
+#include "aot_export.h"
+
+#define WASM_PAGESIZE 65536
+
+typedef uint8_t* Addr;
+
+uint32 psize;
+#define BASE_ADDR() ({  \
+  (Addr) wasm_runtime_addr_app_to_native(get_module_inst(exec_env), 0); \
+})
+
+#define MADDR(wasm_addr) ({  \
+  Addr addr = wasm_addr ? (Addr) wasm_runtime_addr_app_to_native(get_module_inst(exec_env), wasm_addr) : NULL;  \
+  if (addr == NULL) { ERR("NULL ADDRESS!\n"); } \
+  addr; \
+})
+
+#define WADDR(mem_addr) ({  \
+  wasm_runtime_addr_native_to_app(get_module_inst(exec_env), mem_addr); \
+})
+
+#define ERR(fmt, ...) LOG_VERBOSE("WALI: " fmt, ## __VA_ARGS__)
+
+
+
+/** Some internal structs for syscalls **/
+
+/* This is the structure used for the rt_sigaction syscall on most archs,
+ * but it can be overridden by a file with the same name in the top-level
+ * arch dir for a given arch, if necessary. */
+struct k_sigaction {
+	void (*handler)(int);
+	unsigned long flags;
+	void (*restorer)(void);
+	unsigned mask[2];
+};
+
+/** **/
 
 /** Init function **/
 void wali_init_native ();
@@ -368,3 +410,5 @@ int wali_a_ctz_64 (wasm_exec_env_t exec_env, long x);
 int wali_a_clz_64 (wasm_exec_env_t exec_env, long x);
 
 /** **/
+
+#endif
