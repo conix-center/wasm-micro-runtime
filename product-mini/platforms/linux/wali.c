@@ -324,10 +324,9 @@ long wali_syscall_select (wasm_exec_env_t exec_env, long a1, long a2, long a3, l
 	return __syscall5(SYS_select, a1, MADDR(a2), MADDR(a3), MADDR(a4), MADDR(a5));
 }
 
-// 24 TODO
+// 24 
 long wali_syscall_sched_yield (wasm_exec_env_t exec_env) {
 	SC(sched_yield);
-	ERRSC(sched_yield);
 	return __syscall0(SYS_sched_yield);
 }
 
@@ -585,6 +584,24 @@ long wali_syscall_fchown (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 long wali_syscall_umask (wasm_exec_env_t exec_env, long a1) {
 	SC(umask);
 	return __syscall1(SYS_umask, a1);
+}
+
+// 130 
+long wali_syscall_rt_sigsuspend (wasm_exec_env_t exec_env, long a1, long a2) {
+	SC(rt_sigsuspend);
+	return __syscall2(SYS_rt_sigsuspend, MADDR(a1), a2);
+}
+
+// 131 
+long wali_syscall_sigaltstack (wasm_exec_env_t exec_env, long a1, long a2) {
+	SC(sigaltstack);
+  Addr wasm_ss = MADDR(a1), wasm_old_ss = MADDR(a2);
+  
+  stack_t ss = {0}, old_ss = {0};
+  stack_t* ss_ptr = copy_sigstack(exec_env, wasm_ss, &ss);
+  stack_t* old_ss_ptr = copy_sigstack(exec_env, wasm_old_ss, &old_ss);
+
+	return __syscall2(SYS_sigaltstack, ss_ptr, old_ss_ptr);
 }
 
 // 132 

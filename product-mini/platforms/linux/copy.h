@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <sys/syscall.h>
 #include <sys/mman.h>
+#include <signal.h>
 
 #include "wali.h"
 
@@ -44,7 +45,6 @@ struct iovec* copy_iovec(wasm_exec_env_t exec_env, Addr wasm_iov, int iov_cnt) {
 }
 
 
-
 /* Copy Sigaction structure: Function pointers are padded */
 struct k_sigaction* copy_ksigaction (wasm_exec_env_t exec_env, Addr wasm_act, 
     struct k_sigaction *act, void (*handler)(int), void(*restorer)(void)) {
@@ -63,6 +63,15 @@ struct k_sigaction* copy_ksigaction (wasm_exec_env_t exec_env, Addr wasm_act,
 
   RD_FIELD_ARRAY(act->mask, wasm_act, unsigned, 2);
   return act;
+}
+
+stack_t* copy_sigstack (wasm_exec_env_t exec_env, Addr wasm_sigstack,
+    stack_t* ss) {
+  if (!wasm_sigstack) { return NULL; }
+  ss->ss_sp = RD_FIELD_ADDR(wasm_sigstack);
+  ss->ss_flags = RD_FIELD(wasm_sigstack, int);
+  ss->ss_size = RD_FIELD(wasm_sigstack, uint32_t);
+  return ss;
 }
 
 #endif

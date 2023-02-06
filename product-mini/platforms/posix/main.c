@@ -912,6 +912,8 @@ main(int argc, char *argv[])
 			NSYMBOL (       __syscall_SYS_chown,        wali_syscall_chown,     "(iii)I" ),
 			NSYMBOL (      __syscall_SYS_fchown,       wali_syscall_fchown,     "(iii)I" ),
 			NSYMBOL (       __syscall_SYS_umask,        wali_syscall_umask,       "(i)I" ),
+			NSYMBOL ( __syscall_SYS_rt_sigsuspend, wali_syscall_rt_sigsuspend,      "(ii)I" ),
+			NSYMBOL ( __syscall_SYS_sigaltstack,  wali_syscall_sigaltstack,      "(ii)I" ),
 			NSYMBOL (       __syscall_SYS_utime,        wali_syscall_utime,      "(ii)I" ),
 			NSYMBOL (      __syscall_SYS_statfs,       wali_syscall_statfs,      "(ii)I" ),
 			NSYMBOL (     __syscall_SYS_fstatfs,      wali_syscall_fstatfs,      "(ii)I" ),
