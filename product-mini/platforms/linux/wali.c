@@ -253,10 +253,9 @@ long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long
 	return __syscall4(SYS_rt_sigaction, a1, act_pt, oldact_pt, a4);
 }
 
-// 14 TODO
+// 14 
 long wali_syscall_rt_sigprocmask (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(rt_sigprocmask);
-	ERRSC(rt_sigprocmask);
 	return __syscall4(SYS_rt_sigprocmask, a1, MADDR(a2), MADDR(a3), a4);
 }
 
@@ -594,17 +593,15 @@ long wali_syscall_utime (wasm_exec_env_t exec_env, long a1, long a2) {
 	return __syscall2(SYS_utime, MADDR(a1), MADDR(a2));
 }
 
-// 137 TODO
+// 137 
 long wali_syscall_statfs (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(statfs);
-	ERRSC(statfs);
 	return __syscall2(SYS_statfs, MADDR(a1), MADDR(a2));
 }
 
-// 138 TODO
+// 138 
 long wali_syscall_fstatfs (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(fstatfs);
-	ERRSC(fstatfs);
 	return __syscall2(SYS_fstatfs, a1, MADDR(a2));
 }
 
