@@ -470,6 +470,17 @@ long wali_syscall_fork (wasm_exec_env_t exec_env) {
 	return __syscall0(SYS_fork);
 }
 
+// 59 
+long wali_syscall_execve (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
+	SC(execve);
+  char** argv = copy_stringarr (exec_env, MADDR(a2));
+  char** envp = copy_stringarr (exec_env, MADDR(a3));
+	long retval = __syscall3(SYS_execve, MADDR(a1), argv, envp);
+  free(argv);
+  free(envp);
+  return retval;
+}
+
 // 61 TODO
 long wali_syscall_wait4 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(wait4);

@@ -105,7 +105,7 @@ long wali_syscall_getsockopt (wasm_exec_env_t exec_env, long a1, long a2, long a
 long wali_syscall_clone (wasm_exec_env_t exec_env);
 long wali_syscall_fork (wasm_exec_env_t exec_env);
 long wali_syscall_vfork (wasm_exec_env_t exec_env);
-long wali_syscall_execve (wasm_exec_env_t exec_env);
+long wali_syscall_execve (wasm_exec_env_t exec_env, long a1, long a2, long a3);
 long wali_syscall_exit (wasm_exec_env_t exec_env);
 long wali_syscall_wait4 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4);
 long wali_syscall_kill (wasm_exec_env_t exec_env, long a1, long a2);

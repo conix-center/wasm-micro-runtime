@@ -893,6 +893,7 @@ main(int argc, char *argv[])
 			NSYMBOL (  __syscall_SYS_setsockopt,   wali_syscall_setsockopt,   "(iiiii)I" ),
 			NSYMBOL (  __syscall_SYS_getsockopt,   wali_syscall_getsockopt,   "(iiiii)I" ),
 			NSYMBOL (        __syscall_SYS_fork,         wali_syscall_fork,        "()I" ),
+			NSYMBOL (      __syscall_SYS_execve,       wali_syscall_execve,     "(iii)I" ),
 			NSYMBOL (       __syscall_SYS_wait4,        wali_syscall_wait4,    "(iiii)I" ),
 			NSYMBOL (        __syscall_SYS_kill,         wali_syscall_kill,      "(ii)I" ),
 			NSYMBOL (       __syscall_SYS_uname,        wali_syscall_uname,       "(i)I" ),
