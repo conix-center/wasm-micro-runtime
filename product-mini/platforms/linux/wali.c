@@ -597,6 +597,55 @@ long wali_syscall_umask (wasm_exec_env_t exec_env, long a1) {
 	return __syscall1(SYS_umask, a1);
 }
 
+// 102 TODO
+long wali_syscall_getuid (wasm_exec_env_t exec_env) {
+	SC(getuid);
+	ERRSC(getuid);
+	return __syscall0(SYS_getuid);
+}
+
+// 104 TODO
+long wali_syscall_getgid (wasm_exec_env_t exec_env) {
+	SC(getgid);
+	ERRSC(getgid);
+	return __syscall0(SYS_getgid);
+}
+
+// 107 TODO
+long wali_syscall_geteuid (wasm_exec_env_t exec_env) {
+	SC(geteuid);
+	ERRSC(geteuid);
+	return __syscall0(SYS_geteuid);
+}
+
+// 108 TODO
+long wali_syscall_getegid (wasm_exec_env_t exec_env) {
+	SC(getegid);
+	ERRSC(getegid);
+	return __syscall0(SYS_getegid);
+}
+
+// 110 TODO
+long wali_syscall_getppid (wasm_exec_env_t exec_env) {
+	SC(getppid);
+	ERRSC(getppid);
+	return __syscall0(SYS_getppid);
+}
+
+// 121 TODO
+long wali_syscall_getpgid (wasm_exec_env_t exec_env, long a1) {
+	SC(getpgid);
+	ERRSC(getpgid);
+	return __syscall1(SYS_getpgid, a1);
+}
+
+// 124 TODO
+long wali_syscall_getsid (wasm_exec_env_t exec_env, long a1) {
+	SC(getsid);
+	ERRSC(getsid);
+	return __syscall1(SYS_getsid, a1);
+}
+
 // 130 
 long wali_syscall_rt_sigsuspend (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(rt_sigsuspend);
