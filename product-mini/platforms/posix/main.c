@@ -945,8 +945,8 @@ main(int argc, char *argv[])
       NSYMBOL ( a_fetch_add, wali_a_fetch_add, "(ii)i" ),
       NSYMBOL ( a_and, wali_a_and, "(ii)" ),
       NSYMBOL ( a_or, wali_a_or, "(ii)" ),
-      NSYMBOL ( a_and_64, wali_a_and_64, "(ii)" ),
-      NSYMBOL ( a_or_64, wali_a_or_64, "(ii)" ),
+      NSYMBOL ( a_and_64, wali_a_and_64, "(iI)" ),
+      NSYMBOL ( a_or_64, wali_a_or_64, "(iI)" ),
 
       NSYMBOL ( a_inc, wali_a_inc, "(i)" ),
       NSYMBOL ( a_dec, wali_a_dec, "(i)" ),
