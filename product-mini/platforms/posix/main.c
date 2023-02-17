@@ -837,8 +837,6 @@ main(int argc, char *argv[])
     app_argc = argc;
     app_argv = argv;
 
-    init_args.running_mode = running_mode;
-
     /* Native WALI Symbols */
     #define NSYMBOL(symbol, fn, sign) \
       { #symbol, (void*)fn, sign, NULL }
@@ -967,8 +965,10 @@ main(int argc, char *argv[])
 
     };
 
-
+    /* Set init args */
     memset(&init_args, 0, sizeof(RuntimeInitArgs));
+
+    init_args.running_mode = running_mode;
 
     /* Register WALI symbols */
     wali_init_native();
