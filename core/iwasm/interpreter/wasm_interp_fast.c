@@ -1890,7 +1890,7 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
                 addr_ret = GET_OFFSET();
                 delta = (uint32)frame_lp[addr1];
 
-                if (!wasm_enlarge_memory(module, delta, false)) {
+                if (!wasm_enlarge_memory(module, delta)) {
                     /* failed to memory.grow, return -1 */
                     frame_lp[addr_ret] = -1;
                 }

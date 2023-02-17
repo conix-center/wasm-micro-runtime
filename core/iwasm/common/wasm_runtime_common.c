@@ -1772,8 +1772,7 @@ wasm_runtime_get_base_memory_size(WASMModuleInstanceCommon *const module_inst) {
 #if WASM_ENABLE_INTERP != 0
   if (module_inst->module_type == Wasm_Module_Bytecode) {
     const WASMModuleInstance* mod_inst = (const WASMModuleInstance*) module_inst;
-    WASMMemoryInstance* mem_inst = mod_inst->default_memory;
-    return mem_inst->base_page_count * mem_inst->num_bytes_per_page;
+    return (wasm_get_default_memory(mod_inst))->memory_data_size;
   }
 #endif
 #if WASM_ENABLE_AOT != 0
@@ -2787,20 +2786,9 @@ get_wasi_args_from_module(wasm_module_t module)
 {
     WASIArguments *wasi_args = NULL;
 
-<<<<<<< HEAD
 #if WASM_ENABLE_INTERP != 0 || WASM_ENABLE_JIT != 0
     if (module->module_type == Wasm_Module_Bytecode)
         wasi_args = &((WASMModule *)module)->wasi_args;
-=======
-bool
-wasm_runtime_enlarge_memory(WASMModuleInstanceCommon *module,
-                            uint32 inc_page_count, bool is_mmap)
-{
-#if WASM_ENABLE_INTERP != 0
-    if (module->module_type == Wasm_Module_Bytecode)
-        return wasm_enlarge_memory((WASMModuleInstance *)module,
-                                   inc_page_count, is_mmap);
->>>>>>> 3110cf97... WALI Runtime Change: Added base page count
 #endif
 #if WASM_ENABLE_AOT != 0
     if (module->module_type == Wasm_Module_AoT)

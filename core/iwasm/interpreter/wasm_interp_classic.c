@@ -2137,7 +2137,7 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
                 read_leb_uint32(frame_ip, frame_ip_end, reserved);
                 delta = (uint32)POP_I32();
 
-                if (!wasm_enlarge_memory(module, delta, false)) {
+                if (!wasm_enlarge_memory(module, delta)) {
                     /* failed to memory.grow, return -1 */
                     PUSH_I32(-1);
                 }
