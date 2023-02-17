@@ -283,6 +283,22 @@ wasm_runtime_get_mem_alloc_info(mem_alloc_info_t *mem_alloc_info)
     return false;
 }
 
+uint32
+wasm_runtime_get_base_memory_size(WASMModuleInstanceCommon *module_inst_comm) 
+{
+    WASMModuleInstance *mod_inst = (WASMModuleInstance *)module_inst_comm;
+    WASMMemoryInstance *memory_inst = wasm_get_default_memory(mod_inst);
+    return memory_inst->base_page_count * memory_inst->num_bytes_per_page;
+}
+
+uint32
+wasm_runtime_get_memory_size(WASMModuleInstanceCommon *module_inst_comm) 
+{
+    WASMModuleInstance *mod_inst = (WASMModuleInstance *)module_inst_comm;
+    WASMMemoryInstance *memory_inst = wasm_get_default_memory(mod_inst);
+    return memory_inst->memory_data_size;
+}
+
 bool
 wasm_runtime_validate_app_addr(WASMModuleInstanceCommon *module_inst_comm,
                                uint32 app_offset, uint32 size)
@@ -594,6 +610,7 @@ wasm_enlarge_memory_internal(WASMModuleInstance *module, uint32 inc_page_count)
         goto return_func;
     }
 
+
     heap_data_old = memory->heap_data;
     heap_size = (uint32)(memory->heap_data_end - memory->heap_data);
 
@@ -734,7 +751,7 @@ return_func:
 }
 #else
 bool
-wasm_enlarge_memory_internal(WASMModuleInstance *module, uint32 inc_page_count)
+wasm_enlarge_memory_internal(WASMModuleInstance *module, uint32 inc_page_count, bool is_mmap)
 {
     WASMMemoryInstance *memory = wasm_get_default_memory(module);
     uint32 num_bytes_per_page, total_size_old = 0;
@@ -777,6 +794,18 @@ wasm_enlarge_memory_internal(WASMModuleInstance *module, uint32 inc_page_count)
         total_page_count = max_page_count = 1;
         total_size_new = UINT32_MAX;
     }
+
+    if (is_mmap) {
+        LOG_VERBOSE("NOTE: Enlarging memory with mmap syscall");
+        /*** Added for WALI ***/
+        uint32 inc_bytes = num_bytes_per_page * inc_page_count;
+        memory->cur_page_count += inc_page_count;
+        memory->memory_data_size += inc_bytes;
+        memory->memory_data_end += inc_bytes;
+        return true;
+        /* */
+    }
+    LOG_ERROR("NOTE: Enlarging memory without mmap... There might be errors here..");
 
 #ifdef BH_PLATFORM_WINDOWS
     if (!os_mem_commit(memory->memory_data_end,
@@ -850,7 +879,7 @@ wasm_runtime_set_enlarge_mem_error_callback(
 }
 
 bool
-wasm_enlarge_memory(WASMModuleInstance *module, uint32 inc_page_count)
+wasm_enlarge_memory(WASMModuleInstance *module, uint32 inc_page_count, bool is_mmap)
 {
     bool ret = false;
 
@@ -858,7 +887,7 @@ wasm_enlarge_memory(WASMModuleInstance *module, uint32 inc_page_count)
     if (module->memory_count > 0)
         shared_memory_lock(module->memories[0]);
 #endif
-    ret = wasm_enlarge_memory_internal(module, inc_page_count);
+    ret = wasm_enlarge_memory_internal(module, inc_page_count, is_mmap);
 #if WASM_ENABLE_SHARED_MEMORY != 0
     if (module->memory_count > 0)
         shared_memory_unlock(module->memories[0]);

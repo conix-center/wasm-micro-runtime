@@ -2024,7 +2024,7 @@ aot_module_dup_data(AOTModuleInstance *module_inst, const char *src,
 bool
 aot_enlarge_memory(AOTModuleInstance *module_inst, uint32 inc_page_count)
 {
-    return wasm_enlarge_memory(module_inst, inc_page_count);
+    return wasm_enlarge_memory(module_inst, inc_page_count, false);
 }
 
 bool

@@ -6,7 +6,7 @@
 #include "copy.h"
 
 /* Get page aligned address after memory to mmap; since base is mapped it's already aligned, 
-* and psize is a multiple of 64kB but rounding added for safety */
+* and memory data size is a multiple of 64kB but rounding added for safety */
 #define PA_ALIGN_MMAP_ADDR() ({ \
   Addr base = BASE_ADDR(); \
   Addr punalign = base + wasm_runtime_get_base_memory_size(get_module_inst(exec_env));  \
@@ -175,8 +175,8 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
   Addr pa_aligned_addr = PA_ALIGN_MMAP_ADDR();
   Addr mmap_addr = pa_aligned_addr + MMAP_PAGELEN * NATIVE_PAGESIZE;
 
-  wasm_runtime_get_memory_ptr(get_module_inst(exec_env), &psize); 
-  ERR("Mem Base: %p | Mem End: %p | Mmap Addr: %p", base_addr, base_addr + psize, mmap_addr);
+  uint32 mem_size = wasm_runtime_get_memory_size(get_module_inst(exec_env)); 
+  ERR("Mem Base: %p | Mem End: %p | Mmap Addr: %p", base_addr, base_addr + mem_size, mmap_addr);
 
   Addr mem_addr = (Addr) __syscall6(SYS_mmap, mmap_addr, a2, a3, MAP_FIXED|a4, (int)a5, a6);
   if (mem_addr == MAP_FAILED) {
@@ -193,7 +193,7 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
       int inc_wasm_pages = new_wasm_pagelen - WASM_PAGELEN;
       ERR("WASM Page | Old: %d, New: %d", WASM_PAGELEN, new_wasm_pagelen);
       wasm_module_inst_t module = get_module_inst(exec_env);
-      wasm_runtime_enlarge_memory(module, inc_wasm_pages, true);
+      wasm_enlarge_memory(module, inc_wasm_pages, true);
       WASM_PAGELEN += inc_wasm_pages;
     }
   }

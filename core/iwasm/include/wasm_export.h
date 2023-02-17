@@ -579,16 +579,6 @@ WASM_RUNTIME_API_EXTERN wasm_function_inst_t
 wasm_runtime_lookup_function(wasm_module_inst_t const module_inst,
                              const char *name, const char *signature);
 
-/**
- * WALI: Get the size of the base memory (without mmaped data)
- *
- * @param module_inst the module instance
- *
- * @return size of base memory
- */
-WASM_RUNTIME_API_EXTERN uint32_t
-wasm_runtime_get_base_memory_size(wasm_module_inst_t const module_inst);
-
 
 /**
  * Get parameter count of the function instance
@@ -1036,6 +1026,26 @@ wasm_runtime_module_free(wasm_module_inst_t module_inst, uint32_t ptr);
 WASM_RUNTIME_API_EXTERN uint32_t
 wasm_runtime_module_dup_data(wasm_module_inst_t module_inst,
                              const char *src, uint32_t size);
+
+/**
+ * WALI: Get the size of the base memory (without mmaped data)
+ *
+ * @param module_inst the module instance
+ *
+ * @return size of base memory
+ */
+WASM_RUNTIME_API_EXTERN uint32_t
+wasm_runtime_get_base_memory_size(wasm_module_inst_t module_inst);
+
+/**
+ * Get the current size of memory
+ *
+ * @param module_inst the module instance
+ *
+ * @return size of memory
+ */
+WASM_RUNTIME_API_EXTERN uint32_t
+wasm_runtime_get_memory_size(wasm_module_inst_t module_inst);
 
 /**
  * Validate the app address, check whether it belongs to WASM module

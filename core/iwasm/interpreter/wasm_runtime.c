@@ -293,7 +293,7 @@ memory_instantiate(WASMModuleInstance *module_inst, WASMModuleInstance *parent,
     bh_assert(memory != NULL);
 #ifndef OS_ENABLE_HW_BOUND_CHECK
     if (memory_data_size > 0
-        && !(memory->memory_data = 
+        && !(memory->memory_data =
                   runtime_malloc(memory_data_size, error_buf, error_buf_size))) {
         goto fail1;
     }
