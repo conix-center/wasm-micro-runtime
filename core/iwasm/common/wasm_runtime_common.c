@@ -1771,8 +1771,9 @@ uint32
 wasm_runtime_get_base_memory_size(WASMModuleInstanceCommon *const module_inst) {
 #if WASM_ENABLE_INTERP != 0
   if (module_inst->module_type == Wasm_Module_Bytecode) {
-    const WASMModuleInstance* mod_inst = (const WASMModuleInstance*) module_inst;
-    return (wasm_get_default_memory(mod_inst))->memory_data_size;
+    WASMModuleInstance* mod_inst = (WASMModuleInstance*) module_inst;
+    WASMMemoryInstance* memory_inst = wasm_get_default_memory(mod_inst);
+    return memory_inst->base_page_count * memory_inst->num_bytes_per_page;
   }
 #endif
 #if WASM_ENABLE_AOT != 0
