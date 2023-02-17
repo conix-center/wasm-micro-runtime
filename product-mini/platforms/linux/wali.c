@@ -481,6 +481,13 @@ long wali_syscall_execve (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
   return retval;
 }
 
+// 60 TODO
+long wali_syscall_exit (wasm_exec_env_t exec_env, long a1) {
+	SC(exit);
+  ERRSC(exit);
+  return __syscall1(SYS_exit, a1);
+}
+
 // 61 TODO
 long wali_syscall_wait4 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(wait4);
@@ -625,6 +632,13 @@ long wali_syscall_getegid (wasm_exec_env_t exec_env) {
 	return __syscall0(SYS_getegid);
 }
 
+// 109 TODO
+long wali_syscall_setpgid (wasm_exec_env_t exec_env, long a1, long a2) {
+	SC(setpgid);
+	ERRSC(setpgid);
+	return __syscall2(SYS_setpgid, a1, a2);
+}
+
 // 110 TODO
 long wali_syscall_getppid (wasm_exec_env_t exec_env) {
 	SC(getppid);
@@ -707,6 +721,13 @@ long wali_syscall_clock_nanosleep (wasm_exec_env_t exec_env, long a1, long a2, l
 	return __syscall4(SYS_clock_nanosleep, a1, a2, MADDR(a3), MADDR(a4));
 }
 
+// 231 TODO
+long wali_syscall_exit_group (wasm_exec_env_t exec_env, long a1) {
+	SC(exit_group);
+  ERRSC(exit_group);
+	return __syscall1(SYS_exit_group, a1);
+}
+
 // 257 
 long wali_syscall_openat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(openat);
@@ -771,7 +792,7 @@ void wali__wasm_call_dtors(wasm_exec_env_t exec_env) {
 
 void wali__wasi_proc_exit(wasm_exec_env_t exec_env, long v) {
   PW(exit);
-  exit(1);
+  exit(v);
 }
 
 
