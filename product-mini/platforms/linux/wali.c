@@ -105,7 +105,6 @@ static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long
 #define SC(f)  LOG_VERBOSE("WALI: SC | " # f)
 #define ERRSC(f,...) { \
   LOG_ERROR("WALI: SC \"" # f "\" not implemented correctly yet! " __VA_ARGS__);  \
-  return -1;  \
 }
 
 
@@ -346,7 +345,6 @@ long wali_syscall_msync (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 // 28 
 long wali_syscall_madvise (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(madvise);
-	ERRSC(madvise);
 	return __syscall3(SYS_madvise, MADDR(a1), a2, a3);
 }
 
@@ -758,7 +756,7 @@ long wali_syscall_eventfd (wasm_exec_env_t exec_env, long a1) {
 	return __syscall1(SYS_eventfd, a1);
 }
 
-// 290 
+// 290 TODO
 long wali_syscall_eventfd2 (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(eventfd2);
 	ERRSC(eventfd2);
