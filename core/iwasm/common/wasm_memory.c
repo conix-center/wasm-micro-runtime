@@ -44,12 +44,21 @@ static unsigned int global_pool_size;
 
 /* Custom methods */
 uint32
-wasm_runtime_get_memory_size(WASMModuleInstanceCommon *module_inst_comm)
+wasm_runtime_get_base_memory_size(WASMModuleInstanceCommon *module_inst_comm) 
+{
+    WASMModuleInstance *mod_inst = (WASMModuleInstance *)module_inst_comm;
+    WASMMemoryInstance *memory_inst = wasm_get_default_memory(mod_inst);
+    return memory_inst->base_page_count * memory_inst->num_bytes_per_page;
+}
+
+uint32
+wasm_runtime_get_memory_size(WASMModuleInstanceCommon *module_inst_comm) 
 {
     WASMModuleInstance *mod_inst = (WASMModuleInstance *)module_inst_comm;
     WASMMemoryInstance *memory_inst = wasm_get_default_memory(mod_inst);
     return memory_inst->memory_data_size;
 }
+
 
 static bool
 wasm_memory_init_with_pool(void *mem, unsigned int bytes)
@@ -281,22 +290,6 @@ wasm_runtime_get_mem_alloc_info(mem_alloc_info_t *mem_alloc_info)
         return mem_allocator_get_alloc_info(pool_allocator, mem_alloc_info);
     }
     return false;
-}
-
-uint32
-wasm_runtime_get_base_memory_size(WASMModuleInstanceCommon *module_inst_comm) 
-{
-    WASMModuleInstance *mod_inst = (WASMModuleInstance *)module_inst_comm;
-    WASMMemoryInstance *memory_inst = wasm_get_default_memory(mod_inst);
-    return memory_inst->base_page_count * memory_inst->num_bytes_per_page;
-}
-
-uint32
-wasm_runtime_get_memory_size(WASMModuleInstanceCommon *module_inst_comm) 
-{
-    WASMModuleInstance *mod_inst = (WASMModuleInstance *)module_inst_comm;
-    WASMMemoryInstance *memory_inst = wasm_get_default_memory(mod_inst);
-    return memory_inst->memory_data_size;
 }
 
 bool
