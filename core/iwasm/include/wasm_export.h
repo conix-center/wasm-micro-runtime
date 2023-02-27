@@ -203,6 +203,17 @@ typedef struct wasm_val_t {
 } wasm_val_t;
 #endif
 
+/* Custom methods */
+/**
+ * Get the current size of memory
+ *
+ * @param module_inst the module instance
+ *
+ * @return size of memory
+ */
+WASM_RUNTIME_API_EXTERN uint32_t
+wasm_runtime_get_memory_size(wasm_module_inst_t module_inst);
+
 /**
  * Initialize the WASM runtime environment, and also initialize
  * the memory allocator with system allocator, which calls os_malloc

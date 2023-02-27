@@ -42,6 +42,15 @@ static void (*free_func)(void *ptr) = NULL;
 
 static unsigned int global_pool_size;
 
+/* Custom methods */
+uint32
+wasm_runtime_get_memory_size(WASMModuleInstanceCommon *module_inst_comm)
+{
+    WASMModuleInstance *mod_inst = (WASMModuleInstance *)module_inst_comm;
+    WASMMemoryInstance *memory_inst = wasm_get_default_memory(mod_inst);
+    return memory_inst->memory_data_size;
+}
+
 static bool
 wasm_memory_init_with_pool(void *mem, unsigned int bytes)
 {
