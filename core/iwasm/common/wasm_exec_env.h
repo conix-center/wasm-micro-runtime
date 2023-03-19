@@ -145,6 +145,9 @@ typedef struct WASMExecEnv {
     uint32 max_wasm_stack_used;
 #endif
 
+    /* Custom addition for dynamic thread creating tracking */
+    uint64 uid;
+
     /* The WASM stack size */
     uint32 wasm_stack_size;
 

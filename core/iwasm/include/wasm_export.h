@@ -641,6 +641,16 @@ wasm_runtime_create_exec_env(wasm_module_inst_t module_inst,
                              uint32_t stack_size);
 
 /**
+ * Get the unique (dynamic) id of WASM execution env
+ *
+ * @param exec_env the execution environment
+ *
+ * @return the unique id
+ */
+WASM_RUNTIME_API_EXTERN uint64_t
+wasm_runtime_get_exec_env_uid(wasm_exec_env_t exec_env);
+
+/**
  * Destroy the execution environment.
  *
  * @param exec_env the execution environment to destroy

@@ -1425,6 +1425,12 @@ wasm_runtime_create_exec_env(WASMModuleInstanceCommon *module_inst,
     return wasm_exec_env_create(module_inst, stack_size);
 }
 
+uint64
+wasm_runtime_get_exec_env_uid(WASMExecEnv *exec_env)
+{
+    return exec_env->uid;
+}
+
 void
 wasm_runtime_destroy_exec_env(WASMExecEnv *exec_env)
 {
