@@ -65,7 +65,7 @@ wasm_exec_env_create_internal(struct WASMModuleInstanceCommon *module_inst,
         goto fail5;
 #endif
 
-    static _Atomic uint64 uid = 0;
+    static _Atomic uint64 uid = 1;
     exec_env->uid = uid++;
 
     exec_env->module_inst = module_inst;
