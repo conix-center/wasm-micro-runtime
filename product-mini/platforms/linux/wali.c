@@ -169,13 +169,13 @@ long wali_syscall_lseek (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 // 9 
 long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
 	SC(mmap);
-  ERR("mmap args | a1: %ld, a2: %ld, a3: %ld, a4: %ld, a5: %ld, a6: %ld | MMAP_PAGELEN: %d", a1, a2, a3, a4, a5, a6, MMAP_PAGELEN);
+  ERR("mmap args | a1: %ld, a2: 0x%x, a3: %ld, a4: %ld, a5: %ld, a6: %ld | MMAP_PAGELEN: %d", a1, a2, a3, a4, a5, a6, MMAP_PAGELEN);
   Addr base_addr = BASE_ADDR();
   Addr pa_aligned_addr = PA_ALIGN_MMAP_ADDR();
   Addr mmap_addr = pa_aligned_addr + MMAP_PAGELEN * NATIVE_PAGESIZE;
 
   uint32 mem_size = wasm_runtime_get_memory_size(get_module_inst(exec_env)); 
-  ERR("Mem Base: %p | Mem End: %p | Mmap Addr: %p", base_addr, base_addr + mem_size, mmap_addr);
+  ERR("Mem Base: %p | Mem End: %p | Mem Size: 0x%x | Mmap Addr: %p", base_addr, base_addr + mem_size, mem_size, mmap_addr);
 
   Addr mem_addr = (Addr) __syscall6(SYS_mmap, mmap_addr, a2, a3, MAP_FIXED|a4, (int)a5, a6);
   if (mem_addr == MAP_FAILED) {
@@ -190,14 +190,13 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
     if (MMAP_PAGELEN > WASM_PAGELEN * WASM_TO_NATIVE_PAGE) {
       int new_wasm_pagelen = ((MMAP_PAGELEN + WASM_TO_NATIVE_PAGE - 1) / WASM_TO_NATIVE_PAGE);
       int inc_wasm_pages = new_wasm_pagelen - WASM_PAGELEN;
-      ERR("WASM Page | Old: %d, New: %d", WASM_PAGELEN, new_wasm_pagelen);
       wasm_module_inst_t module = get_module_inst(exec_env);
       wasm_enlarge_memory(module, inc_wasm_pages, true);
       WASM_PAGELEN += inc_wasm_pages;
     }
   }
   long retval =  WADDR(mem_addr);
-  ERR("Retval: %ld", retval);
+  ERR("Retval: 0x%x", retval);
   return retval;
 }
 
@@ -524,6 +523,12 @@ long wali_syscall_fsync (wasm_exec_env_t exec_env, long a1) {
 	return __syscall1(SYS_fsync, a1);
 }
 
+// 77 
+long wali_syscall_ftruncate (wasm_exec_env_t exec_env, long a1, long a2) {
+	SC(ftruncate);
+	return __syscall2(SYS_ftruncate, a1, a2);
+}
+
 // 79
 long wali_syscall_getcwd (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(getcwd);
@@ -644,6 +649,13 @@ long wali_syscall_getppid (wasm_exec_env_t exec_env) {
 	return __syscall0(SYS_getppid);
 }
 
+// 112 TODO
+long wali_syscall_setsid (wasm_exec_env_t exec_env) {
+	SC(setsid);
+	ERRSC(setsid);
+	return __syscall0(SYS_setsid);
+}
+
 // 121 TODO
 long wali_syscall_getpgid (wasm_exec_env_t exec_env, long a1) {
 	SC(getpgid);
@@ -722,8 +734,10 @@ long wali_syscall_clock_nanosleep (wasm_exec_env_t exec_env, long a1, long a2, l
 // 231 TODO
 long wali_syscall_exit_group (wasm_exec_env_t exec_env, long a1) {
 	SC(exit_group);
+  sleep(1);
   ERRSC(exit_group);
-	return __syscall1(SYS_exit_group, a1);
+  wali__wasi_proc_exit(exec_env, a1);
+  return -1;
 }
 
 // 257 

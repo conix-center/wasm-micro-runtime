@@ -123,7 +123,7 @@ long wali_syscall_flock (wasm_exec_env_t exec_env, long a1, long a2);
 long wali_syscall_fsync (wasm_exec_env_t exec_env, long a1);
 long wali_syscall_fdatasync (wasm_exec_env_t exec_env);
 long wali_syscall_truncate (wasm_exec_env_t exec_env);
-long wali_syscall_ftruncate (wasm_exec_env_t exec_env);
+long wali_syscall_ftruncate (wasm_exec_env_t exec_env, long a1, long a2);
 long wali_syscall_getdents (wasm_exec_env_t exec_env);
 long wali_syscall_getcwd (wasm_exec_env_t exec_env, long a1, long a2);
 long wali_syscall_chdir (wasm_exec_env_t exec_env, long a1);
