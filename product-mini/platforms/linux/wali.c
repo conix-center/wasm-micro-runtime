@@ -231,10 +231,11 @@ long wali_syscall_brk (wasm_exec_env_t exec_env, long a1) {
 }
 
 
+// ASM restorer function '__wali_restore_rt'.
+extern void __wali_restore_rt();
 void sa_handler_wali(int signo) {
   printf("Signal \'%s\' triggered SIGACTION_HANDLER\n", strsignal(signo));
 }
-void sa_restorer() { __syscall0(SYS_rt_sigreturn); }
 // 13 
 long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(rt_sigaction);
@@ -245,9 +246,10 @@ long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long
   struct k_sigaction oldact = {0};
 
   struct k_sigaction *act_pt = 
-    copy_ksigaction(exec_env, wasm_act, &act, sa_handler_wali, sa_restorer);
+    copy_ksigaction(exec_env, wasm_act, &act, sa_handler_wali, __wali_restore_rt);
   struct k_sigaction *oldact_pt = 
-    copy_ksigaction(exec_env, wasm_oldact, &oldact, sa_handler_wali, sa_restorer);
+    copy_ksigaction(exec_env, wasm_oldact, &oldact, sa_handler_wali, __wali_restore_rt);
+
 	return __syscall4(SYS_rt_sigaction, a1, act_pt, oldact_pt, a4);
 }
 
@@ -257,11 +259,11 @@ long wali_syscall_rt_sigprocmask (wasm_exec_env_t exec_env, long a1, long a2, lo
 	return __syscall4(SYS_rt_sigprocmask, a1, MADDR(a2), MADDR(a3), a4);
 }
 
-// 15 Note: Handled within sa_restorer
+// 15: Never directly called; __wali_restore_rt is called by OS
 long wali_syscall_rt_sigreturn (wasm_exec_env_t exec_env, long a1) {
 	SC(rt_sigreturn);
 	ERRSC(rt_sigreturn, "rt_sigreturn should never be called by the user!");
-	return __syscall1(SYS_rt_sigreturn, a1);
+	return -1;
 }
 
 // 16 
@@ -734,7 +736,6 @@ long wali_syscall_clock_nanosleep (wasm_exec_env_t exec_env, long a1, long a2, l
 // 231 TODO
 long wali_syscall_exit_group (wasm_exec_env_t exec_env, long a1) {
 	SC(exit_group);
-  sleep(1);
   ERRSC(exit_group);
   wali__wasi_proc_exit(exec_env, a1);
   return -1;

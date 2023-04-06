@@ -858,7 +858,7 @@ main(int argc, char *argv[])
 			NSYMBOL (         __syscall_SYS_brk,          wali_syscall_brk,       "(i)I" ),
 			NSYMBOL ( __syscall_SYS_rt_sigaction, wali_syscall_rt_sigaction,    "(iiii)I" ),
 			NSYMBOL ( __syscall_SYS_rt_sigprocmask, wali_syscall_rt_sigprocmask,    "(iiii)I" ),
-			NSYMBOL ( __syscall_SYS_rt_sigreturn, wali_syscall_rt_sigreturn,       "(i)I" ),
+			NSYMBOL ( __syscall_SYS_rt_sigreturn, wali_syscall_rt_sigreturn,       "(I)I" ),
 			NSYMBOL (       __syscall_SYS_ioctl,        wali_syscall_ioctl,     "(iii)I" ),
 			NSYMBOL (     __syscall_SYS_pread64,      wali_syscall_pread64,    "(iiiI)I" ),
 			NSYMBOL (    __syscall_SYS_pwrite64,     wali_syscall_pwrite64,    "(iiiI)I" ),

@@ -5,7 +5,7 @@ cmake_minimum_required (VERSION 3.14)
 
 include(CheckPIESupported)
 
-project (iwasm)
+project (iwasm LANGUAGES C ASM)
 
 set (CMAKE_VERBOSE_MAKEFILE OFF)
 
@@ -151,7 +151,10 @@ endif ()
 
 include (${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 
-add_executable (iwasm main.c wali.c ${UNCOMMON_SHARED_SOURCE})
+file (GLOB_RECURSE wali_asm_sources ${CMAKE_CURRENT_LIST_DIR}/wali_asm/x86_64/signal/*.s)
+set (WALI_SOURCES wali.c ${wali_asm_sources}) #${CMAKE_CURRENT_LIST_DIR}/wali_asm/x86_64/signal/restore.s)
+
+add_executable (iwasm main.c ${WALI_SOURCES} ${UNCOMMON_SHARED_SOURCE})
 
 set_target_properties (iwasm PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
