@@ -104,7 +104,7 @@ static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long
 #define PW(f)  LOG_VERBOSE("WALI: " # f)
 #define SC(f)  LOG_VERBOSE("WALI: SC | " # f)
 #define ERRSC(f,...) { \
-  LOG_ERROR("WALI: SC \"" # f "\" not implemented correctly yet! " __VA_ARGS__);  \
+  LOG_WARNING("WALI: SC \"" # f "\" not implemented correctly yet! " __VA_ARGS__);  \
 }
 
 
@@ -531,6 +531,13 @@ long wali_syscall_ftruncate (wasm_exec_env_t exec_env, long a1, long a2) {
 	return __syscall2(SYS_ftruncate, a1, a2);
 }
 
+// 78 TODO
+long wali_syscall_getdents (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
+	SC(getdents);
+	ERRSC(getdents, "Not going to support this yet; use getdents64");
+	return __syscall3(SYS_getdents, a1, MADDR(a2), a3);
+}
+
 // 79
 long wali_syscall_getcwd (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(getcwd);
@@ -616,38 +623,33 @@ long wali_syscall_getuid (wasm_exec_env_t exec_env) {
 	return __syscall0(SYS_getuid);
 }
 
-// 104 TODO
+// 104 
 long wali_syscall_getgid (wasm_exec_env_t exec_env) {
 	SC(getgid);
-	ERRSC(getgid);
 	return __syscall0(SYS_getgid);
 }
 
-// 107 TODO
+// 107 
 long wali_syscall_geteuid (wasm_exec_env_t exec_env) {
 	SC(geteuid);
-	ERRSC(geteuid);
 	return __syscall0(SYS_geteuid);
 }
 
-// 108 TODO
+// 108 
 long wali_syscall_getegid (wasm_exec_env_t exec_env) {
 	SC(getegid);
-	ERRSC(getegid);
 	return __syscall0(SYS_getegid);
 }
 
-// 109 TODO
+// 109 
 long wali_syscall_setpgid (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(setpgid);
-	ERRSC(setpgid);
 	return __syscall2(SYS_setpgid, a1, a2);
 }
 
-// 110 TODO
+// 110 
 long wali_syscall_getppid (wasm_exec_env_t exec_env) {
 	SC(getppid);
-	ERRSC(getppid);
 	return __syscall0(SYS_getppid);
 }
 
@@ -658,10 +660,9 @@ long wali_syscall_setsid (wasm_exec_env_t exec_env) {
 	return __syscall0(SYS_setsid);
 }
 
-// 121 TODO
+// 121 
 long wali_syscall_getpgid (wasm_exec_env_t exec_env, long a1) {
 	SC(getpgid);
-	ERRSC(getpgid);
 	return __syscall1(SYS_getpgid, a1);
 }
 

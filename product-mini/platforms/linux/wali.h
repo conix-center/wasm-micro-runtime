@@ -124,7 +124,7 @@ long wali_syscall_fsync (wasm_exec_env_t exec_env, long a1);
 long wali_syscall_fdatasync (wasm_exec_env_t exec_env);
 long wali_syscall_truncate (wasm_exec_env_t exec_env);
 long wali_syscall_ftruncate (wasm_exec_env_t exec_env, long a1, long a2);
-long wali_syscall_getdents (wasm_exec_env_t exec_env);
+long wali_syscall_getdents (wasm_exec_env_t exec_env, long a1, long a2, long a3);
 long wali_syscall_getcwd (wasm_exec_env_t exec_env, long a1, long a2);
 long wali_syscall_chdir (wasm_exec_env_t exec_env, long a1);
 long wali_syscall_fchdir (wasm_exec_env_t exec_env);
@@ -381,6 +381,7 @@ long wali_syscall_pkey_free (wasm_exec_env_t exec_env);
 long wali_syscall_statx (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5);
 long wali_syscall_io_pgetevents (wasm_exec_env_t exec_env);
 long wali_syscall_rseq (wasm_exec_env_t exec_env);
+
 
 /** Auxillary **/
 uintptr_t wali__get_tp (wasm_exec_env_t exec_env);
