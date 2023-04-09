@@ -4,6 +4,7 @@
 
 #include "wali.h"
 #include "copy.h"
+#include "../interpreter/sigtable.h"
 
 /* Get page aligned address after memory to mmap; since base is mapped it's already aligned, 
 * and memory data size is a multiple of 64kB but rounding added for safety */
@@ -231,10 +232,12 @@ long wali_syscall_brk (wasm_exec_env_t exec_env, long a1) {
 }
 
 
-// ASM restorer function '__wali_restore_rt'.
-extern void __wali_restore_rt();
 void sa_handler_wali(int signo) {
-  printf("Signal \'%s\' triggered SIGACTION_HANDLER\n", strsignal(signo));
+  //printf("Signal \'%s\' triggered SIGACTION_HANDLER\n", strsignal(signo));
+  /* Mark pending signal */
+  pthread_mutex_lock(&sigpending_mut);
+  wali_sigpending |= ((uint64_t)1 << signo);
+  pthread_mutex_unlock(&sigpending_mut);
 }
 // 13 
 long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
@@ -245,12 +248,31 @@ long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long
   struct k_sigaction act = {0};
   struct k_sigaction oldact = {0};
 
+  wasm_function_inst_t target_handler = NULL;
+  wasm_function_inst_t old_target_handler = NULL;
   struct k_sigaction *act_pt = 
-    copy_ksigaction(exec_env, wasm_act, &act, sa_handler_wali, __wali_restore_rt);
+    copy_ksigaction(exec_env, wasm_act, &act, sa_handler_wali, &target_handler);
   struct k_sigaction *oldact_pt = 
-    copy_ksigaction(exec_env, wasm_oldact, &oldact, sa_handler_wali, __wali_restore_rt);
+    copy_ksigaction(exec_env, wasm_oldact, &oldact, sa_handler_wali, &old_target_handler);
 
-	return __syscall4(SYS_rt_sigaction, a1, act_pt, oldact_pt, a4);
+  /* Block signals while setting up synchronized wali table */
+  //sigset_t mask, old_mask;
+  //sigfillset(&mask);
+  //sigprocmask(SIG_SETMASK, &mask, &old_mask);
+  pthread_mutex_lock(&sigtable_mut);
+  long retval = __syscall4(SYS_rt_sigaction, a1, act_pt, oldact_pt, a4);
+  if (!retval) {
+    int signo = a1;
+    if ((signo < NSIG) && (act_pt != NULL) && (act_pt->handler != SIG_DFL)) {
+      ERR("Registering target handler: %p\n", target_handler);
+      wali_sigtable[signo].function = target_handler;
+    }
+  }
+  /* Reset block signals */
+  //sigprocmask(SIG_SETMASK, &old_mask, NULL);
+  pthread_mutex_unlock(&sigtable_mut);
+
+  return retval;
 }
 
 // 14 

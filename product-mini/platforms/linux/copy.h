@@ -45,21 +45,29 @@ struct iovec* copy_iovec(wasm_exec_env_t exec_env, Addr wasm_iov, int iov_cnt) {
 }
 
 
+// ASM restorer function '__wali_restore_rt'.
+extern void __wali_restore_rt();
 /* Copy Sigaction structure: Function pointers are padded */
 struct k_sigaction* copy_ksigaction (wasm_exec_env_t exec_env, Addr wasm_act, 
-    struct k_sigaction *act, void (*handler)(int), void(*restorer)(void)) {
+    struct k_sigaction *act, void (*common_handler)(int), 
+    wasm_function_inst_t *target_handler) {
   if (wasm_act == NULL) { return NULL; }
 
-  if ( (void (*)(int))(RD_FIELD_ADDR(wasm_act)) == SIG_DFL) {
+  uint32_t wasm_handler = RD_FIELD(wasm_act, uint32_t);
+  if ( wasm_handler == (uint32_t)(SIG_DFL) ) {
     act->handler = SIG_DFL;
   } else {
-    act->handler = handler;
+    /* Setup target and common handler */
+    wasm_module_inst_t module_inst = get_module_inst(exec_env);
+    act->handler = common_handler;
+    *target_handler = wasm_runtime_get_indirect_function(
+                          module_inst, 0, wasm_handler);
   }
 
   act->flags = RD_FIELD(wasm_act, unsigned long);
   
   RD_FIELD_ADDR(wasm_act);
-  act->restorer = restorer;
+  act->restorer = __wali_restore_rt;
 
   RD_FIELD_ARRAY(act->mask, wasm_act, unsigned, 2);
   return act;
