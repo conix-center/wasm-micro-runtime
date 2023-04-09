@@ -395,6 +395,12 @@ long wali_syscall_alarm (wasm_exec_env_t exec_env, long a1) {
 	return __syscall1(SYS_alarm, a1);
 }
 
+// 38 TODO
+long wali_syscall_setitimer (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
+	SC(setitimer);
+	return __syscall3(SYS_setitimer, a1, MADDR(a2), MADDR(a3));
+}
+
 // 39 
 long wali_syscall_getpid (wasm_exec_env_t exec_env) {
 	SC(getpid);

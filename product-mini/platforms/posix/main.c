@@ -875,6 +875,7 @@ main(int argc, char *argv[])
 			NSYMBOL (        __syscall_SYS_dup2,         wali_syscall_dup2,      "(ii)I" ),
 			NSYMBOL (   __syscall_SYS_nanosleep,    wali_syscall_nanosleep,      "(ii)I" ),
 			NSYMBOL (       __syscall_SYS_alarm,        wali_syscall_alarm,       "(i)I" ),
+			NSYMBOL (   __syscall_SYS_setitimer,    wali_syscall_setitimer,     "(iii)I" ),
 			NSYMBOL (      __syscall_SYS_getpid,       wali_syscall_getpid,        "()I" ),
 			NSYMBOL (      __syscall_SYS_socket,       wali_syscall_socket,     "(iii)I" ),
 			NSYMBOL (     __syscall_SYS_connect,      wali_syscall_connect,     "(iii)I" ),

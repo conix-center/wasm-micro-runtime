@@ -84,7 +84,7 @@ long wali_syscall_pause (wasm_exec_env_t exec_env);
 long wali_syscall_nanosleep (wasm_exec_env_t exec_env, long a1, long a2);
 long wali_syscall_getitimer (wasm_exec_env_t exec_env);
 long wali_syscall_alarm (wasm_exec_env_t exec_env, long a1);
-long wali_syscall_setitimer (wasm_exec_env_t exec_env);
+long wali_syscall_setitimer (wasm_exec_env_t exec_env, long a1, long a2, long a3);
 long wali_syscall_getpid (wasm_exec_env_t exec_env);
 long wali_syscall_sendfile (wasm_exec_env_t exec_env);
 long wali_syscall_socket (wasm_exec_env_t exec_env, long a1, long a2, long a3);
