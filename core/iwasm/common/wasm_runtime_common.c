@@ -1767,6 +1767,22 @@ wasm_runtime_lookup_function(WASMModuleInstanceCommon *const module_inst,
     return NULL;
 }
 
+
+WASMFunctionInstanceCommon *
+wasm_runtime_get_indirect_function(WASMModuleInstanceCommon *module_inst,
+                                    uint32_t tbl_idx, uint32_t elem_idx) {
+#if WASM_ENABLE_INTERP != 0
+    if (module_inst->module_type == Wasm_Module_Bytecode)
+        return (WASMFunctionInstanceCommon *)wasm_get_indirect_function(
+            (WASMModuleInstance *)module_inst, tbl_idx, elem_idx);
+#endif
+#if WASM_ENABLE_AOT != 0
+    printf("ERROR: No AOT yet\n");
+#endif
+    return NULL;
+
+}
+
 uint32
 wasm_func_get_param_count(WASMFunctionInstanceCommon *const func_inst,
                           WASMModuleInstanceCommon *const module_inst)

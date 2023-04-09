@@ -204,6 +204,11 @@ typedef struct wasm_val_t {
 #endif
 
 /* Custom methods */
+/** WALI: **/
+WASM_RUNTIME_API_EXTERN wasm_function_inst_t
+wasm_runtime_get_indirect_function(wasm_module_inst_t module_inst, 
+                                uint32_t tbl_idx, uint32_t elem_idx);
+
 /**
  * WALI: Get the size of the base memory (without mmaped data)
  *

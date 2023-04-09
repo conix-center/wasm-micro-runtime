@@ -23,6 +23,7 @@ file (GLOB_RECURSE source_all
     ${IWASM_INTERP_DIR}/${LOADER}
     ${IWASM_INTERP_DIR}/wasm_runtime.c
     ${IWASM_INTERP_DIR}/${INTERPRETER}
+    ${IWASM_INTERP_DIR}/sigtable.c
 )
 
 set (IWASM_INTERP_SOURCE ${source_all})

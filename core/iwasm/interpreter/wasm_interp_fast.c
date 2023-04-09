@@ -13,6 +13,7 @@
 #if WASM_ENABLE_SHARED_MEMORY != 0
 #include "../common/wasm_shared_memory.h"
 #endif
+#include "sigtable.h"
 
 typedef int32 CellType_I32;
 typedef int64 CellType_I64;
@@ -1118,7 +1119,15 @@ wasm_interp_dump_op_count()
 #if WASM_ENABLE_OPCODE_COUNTER != 0
 #define HANDLE_OP(opcode) HANDLE_##opcode : opcode_table[opcode].count++;
 #else
-#define HANDLE_OP(opcode) HANDLE_##opcode:
+#define HANDLE_OP(opcode) HANDLE_##opcode:  \
+  do {  \
+    int signo;  \
+    if ((signo = get_pending_signal()) != -1) {  \
+      pthread_mutex_lock(&sigtable_mut);  \
+      wasm_runtime_call_wasm(exec_env, wali_sigtable[signo].function, 1, (uint32_t*)&signo); \
+      pthread_mutex_unlock(&sigtable_mut);  \
+    } \
+  } while(0);
 #endif
 #if WASM_CPU_SUPPORTS_UNALIGNED_ADDR_ACCESS != 0
 #define FETCH_OPCODE_AND_DISPATCH()                    \
