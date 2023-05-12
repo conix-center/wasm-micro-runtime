@@ -6,6 +6,9 @@
 #include "copy.h"
 #include "../interpreter/sigtable.h"
 
+extern int app_argc;
+extern char **app_argv;
+
 /* Get page aligned address after memory to mmap; since base is mapped it's already aligned, 
 * and memory data size is a multiple of 64kB but rounding added for safety */
 #define PA_ALIGN_MMAP_ADDR() ({ \
@@ -835,6 +838,22 @@ void wali__wasm_call_dtors(wasm_exec_env_t exec_env) {
 void wali__wasi_proc_exit(wasm_exec_env_t exec_env, long v) {
   PW(exit);
   exit(v);
+}
+
+/***** Startup *****/
+const char* test_str = "hello manheim";
+int wali_cl_get_argc (wasm_exec_env_t exec_env) {
+  return app_argc;
+}
+
+int wali_cl_get_argv_len (wasm_exec_env_t exec_env, int arg_idx) {
+  return strlen(app_argv[arg_idx]);
+}
+
+int wali_cl_copy_argv (wasm_exec_env_t exec_env, int argv_addr, int arg_idx) {
+  Addr argv = MADDR(argv_addr);
+  strcpy(argv, app_argv[arg_idx]);
+  return 0;
 }
 
 

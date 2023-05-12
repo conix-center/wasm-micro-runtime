@@ -18,8 +18,8 @@
 #include <dlfcn.h>
 #endif
 
-static int app_argc;
-static char **app_argv;
+int app_argc;
+char **app_argv;
 
 /* clang-format off */
 static int
@@ -963,6 +963,11 @@ main(int argc, char *argv[])
 
       NSYMBOL ( a_ctz_64, wali_a_ctz_64, "(I)i" ),
       NSYMBOL ( a_clz_64, wali_a_clz_64, "(I)i" ),
+
+      // Startup
+      NSYMBOL ( __cl_get_argc, wali_cl_get_argc, "()i" ),
+      NSYMBOL ( __cl_get_argv_len, wali_cl_get_argv_len, "(i)i" ),
+      NSYMBOL ( __cl_copy_argv, wali_cl_copy_argv, "(ii)i" ),
 
       // Threads
       NSYMBOL ( __get_tp, wali__get_tp, "()i" )

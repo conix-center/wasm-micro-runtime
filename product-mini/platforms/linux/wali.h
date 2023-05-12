@@ -389,6 +389,11 @@ uintptr_t wali__get_tp (wasm_exec_env_t exec_env);
 void wali__wasm_call_dtors (wasm_exec_env_t exec_env);
 void wali__wasi_proc_exit (wasm_exec_env_t exec_env, long v);
 
+/***** Startup *****/
+int wali_cl_get_argc (wasm_exec_env_t exec_env);
+int wali_cl_get_argv_len (wasm_exec_env_t exec_env, int arg_idx);
+int wali_cl_copy_argv (wasm_exec_env_t exec_env, int argv_addr, int arg_idx);
+
 /** Atomics **/
 int wali_a_cas (wasm_exec_env_t exec_env, long p, int t, int s);
 void* wali_a_cas_p (wasm_exec_env_t exec_env, long p, long t, long s);
