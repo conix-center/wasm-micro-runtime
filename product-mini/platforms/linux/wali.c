@@ -581,6 +581,12 @@ long wali_syscall_chdir (wasm_exec_env_t exec_env, long a1) {
 	return __syscall1(SYS_chdir, MADDR(a1));
 }
 
+// 82
+long wali_syscall_rename (wasm_exec_env_t exec_env, long a1, long a2) {
+	SC(rename);
+	return __syscall2(SYS_rename, MADDR(a1), MADDR(a2));
+}
+
 // 83
 long wali_syscall_mkdir (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(mkdir);
@@ -769,7 +775,7 @@ long wali_syscall_clock_nanosleep (wasm_exec_env_t exec_env, long a1, long a2, l
 long wali_syscall_exit_group (wasm_exec_env_t exec_env, long a1) {
 	SC(exit_group);
   ERRSC(exit_group);
-  wali__wasi_proc_exit(exec_env, a1);
+  wali_proc_exit(exec_env, a1);
   return -1;
 }
 
@@ -831,17 +837,21 @@ uintptr_t wali__get_tp (wasm_exec_env_t exec_env) {
 	return tp;
 }
 
-void wali__wasm_call_dtors(wasm_exec_env_t exec_env) {
+
+/***** Startup *****/
+void wali_call_ctors(wasm_exec_env_t exec_env) {
+  PW(wasm_call_ctors);
+}
+
+void wali_call_dtors(wasm_exec_env_t exec_env) {
   PW(wasm_call_dtors);
 }
 
-void wali__wasi_proc_exit(wasm_exec_env_t exec_env, long v) {
+void wali_proc_exit(wasm_exec_env_t exec_env, long v) {
   PW(exit);
   exit(v);
 }
 
-/***** Startup *****/
-const char* test_str = "hello manheim";
 int wali_cl_get_argc (wasm_exec_env_t exec_env) {
   return app_argc;
 }

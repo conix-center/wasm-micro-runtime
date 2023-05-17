@@ -128,7 +128,7 @@ long wali_syscall_getdents (wasm_exec_env_t exec_env, long a1, long a2, long a3)
 long wali_syscall_getcwd (wasm_exec_env_t exec_env, long a1, long a2);
 long wali_syscall_chdir (wasm_exec_env_t exec_env, long a1);
 long wali_syscall_fchdir (wasm_exec_env_t exec_env);
-long wali_syscall_rename (wasm_exec_env_t exec_env);
+long wali_syscall_rename (wasm_exec_env_t exec_env, long a1, long a2);
 long wali_syscall_mkdir (wasm_exec_env_t exec_env, long a1, long a2);
 long wali_syscall_rmdir (wasm_exec_env_t exec_env, long a1);
 long wali_syscall_creat (wasm_exec_env_t exec_env);
@@ -386,10 +386,10 @@ long wali_syscall_rseq (wasm_exec_env_t exec_env);
 /** Auxillary **/
 uintptr_t wali__get_tp (wasm_exec_env_t exec_env);
 
-void wali__wasm_call_dtors (wasm_exec_env_t exec_env);
-void wali__wasi_proc_exit (wasm_exec_env_t exec_env, long v);
-
 /***** Startup *****/
+void wali_call_ctors (wasm_exec_env_t exec_env);
+void wali_call_dtors (wasm_exec_env_t exec_env);
+void wali_proc_exit (wasm_exec_env_t exec_env, long v);
 int wali_cl_get_argc (wasm_exec_env_t exec_env);
 int wali_cl_get_argv_len (wasm_exec_env_t exec_env, int arg_idx);
 int wali_cl_copy_argv (wasm_exec_env_t exec_env, int argv_addr, int arg_idx);

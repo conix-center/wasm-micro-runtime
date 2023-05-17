@@ -904,6 +904,7 @@ main(int argc, char *argv[])
 			NSYMBOL (    __syscall_SYS_getdents,     wali_syscall_getdents,     "(iii)I" ),
 			NSYMBOL (      __syscall_SYS_getcwd,       wali_syscall_getcwd,      "(ii)I" ),
 			NSYMBOL (       __syscall_SYS_chdir,        wali_syscall_chdir,       "(i)I" ),
+			NSYMBOL (       __syscall_SYS_rename,        wali_syscall_rename,       "(ii)I" ),
 			NSYMBOL (       __syscall_SYS_mkdir,        wali_syscall_mkdir,      "(ii)I" ),
 			NSYMBOL (       __syscall_SYS_rmdir,        wali_syscall_rmdir,       "(i)I" ),
 			NSYMBOL (        __syscall_SYS_link,         wali_syscall_link,      "(ii)I" ),
@@ -964,7 +965,12 @@ main(int argc, char *argv[])
       NSYMBOL ( a_ctz_64, wali_a_ctz_64, "(I)i" ),
       NSYMBOL ( a_clz_64, wali_a_clz_64, "(I)i" ),
 
+      /* Libc imports */
+
       // Startup
+      NSYMBOL ( __call_ctors, wali_call_ctors, "()" ),
+      NSYMBOL ( __call_dtors, wali_call_dtors, "()" ),
+      NSYMBOL ( __proc_exit, wali_proc_exit, "(i)" ),
       NSYMBOL ( __cl_get_argc, wali_cl_get_argc, "()i" ),
       NSYMBOL ( __cl_get_argv_len, wali_cl_get_argv_len, "(i)i" ),
       NSYMBOL ( __cl_copy_argv, wali_cl_copy_argv, "(ii)i" ),
@@ -1017,15 +1023,7 @@ main(int argc, char *argv[])
         printf("Init runtime environment failed.\n");
         return -1;
     }
-    const char* module_name = "env";
-    static NativeSymbol native_symbols[] = {
-      NSYMBOL ( __wasm_call_dtors,  wali__wasm_call_dtors, "()"),
-      NSYMBOL ( __wasi_proc_exit,   wali__wasi_proc_exit, "(i)")
-    };
 
-    int n_native_symbols = sizeof(native_symbols) / sizeof(NativeSymbol);
-    wasm_runtime_register_natives(module_name, native_symbols,
-                                               n_native_symbols);
 #if WASM_ENABLE_LOG != 0
     bh_log_set_verbose_level(log_verbose_level);
 #endif
