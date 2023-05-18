@@ -792,7 +792,9 @@ wasm_enlarge_memory_internal(WASMModuleInstance *module, uint32 inc_page_count, 
         LOG_VERBOSE("NOTE: Enlarging memory with mmap syscall by %d pages", inc_page_count);
         /*** Added for WALI ***/
         uint32 inc_bytes = num_bytes_per_page * inc_page_count;
+        memory->num_bytes_per_page = num_bytes_per_page;
         memory->cur_page_count += inc_page_count;
+        memory->max_page_count = max_page_count;
         memory->memory_data_size += inc_bytes;
         memory->memory_data_end += inc_bytes;
         return true;
