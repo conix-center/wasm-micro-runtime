@@ -40,6 +40,17 @@ struct k_sigaction {
 	unsigned mask[2];
 };
 
+/* Setjmp/longjmp with signal handling */
+typedef unsigned long __libc_jmp_buf_internal[8];
+
+typedef struct __libc_jmp_buf_tag {
+  __libc_jmp_buf_internal __jb;
+  unsigned long __fl;
+  unsigned long __ss[128/sizeof(long)];
+} __libc_jmp_buf[1];
+
+typedef __libc_jmp_buf __libc_sigjmp_buf;
+
 /** **/
 
 /** Init function **/
@@ -385,6 +396,8 @@ long wali_syscall_rseq (wasm_exec_env_t exec_env);
 
 /** Auxillary **/
 uintptr_t wali__get_tp (wasm_exec_env_t exec_env);
+int wali_sigsetjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int savesigs);
+void wali_siglongjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int val);
 
 /***** Startup *****/
 void wali_call_ctors (wasm_exec_env_t exec_env);

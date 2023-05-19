@@ -1,8 +1,8 @@
-.global __wali_restore_rt
-.global __wali_restore
-.type __wali_restore_rt,@function
-.type __wali_restore,@function
-__wali_restore_rt:
-__wali_restore:
+.global __libc_restore_rt
+.global __libc_restore
+.type __libc_restore_rt,@function
+.type __libc_restore,@function
+__libc_restore_rt:
+__libc_restore:
 	movl $15, %eax
 	syscall

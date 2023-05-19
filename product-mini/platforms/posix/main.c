@@ -944,6 +944,7 @@ main(int argc, char *argv[])
 			NSYMBOL (       __syscall_SYS_pipe2,        wali_syscall_pipe2,      "(ii)I" ),
 			NSYMBOL (       __syscall_SYS_statx,        wali_syscall_statx,   "(iiiii)I" ),
 
+      /* Libc imports */
       // Atomics
       NSYMBOL ( a_cas, wali_a_cas, "(iii)i" ),
       NSYMBOL ( a_cas_p, wali_a_cas_p, "(iii)i" ),
@@ -965,8 +966,6 @@ main(int argc, char *argv[])
       NSYMBOL ( a_ctz_64, wali_a_ctz_64, "(I)i" ),
       NSYMBOL ( a_clz_64, wali_a_clz_64, "(I)i" ),
 
-      /* Libc imports */
-
       // Startup
       NSYMBOL ( __call_ctors, wali_call_ctors, "()" ),
       NSYMBOL ( __call_dtors, wali_call_dtors, "()" ),
@@ -974,6 +973,10 @@ main(int argc, char *argv[])
       NSYMBOL ( __cl_get_argc, wali_cl_get_argc, "()i" ),
       NSYMBOL ( __cl_get_argv_len, wali_cl_get_argv_len, "(i)i" ),
       NSYMBOL ( __cl_copy_argv, wali_cl_copy_argv, "(ii)i" ),
+
+      // Signal
+      NSYMBOL ( sigsetjmp, wali_sigsetjmp, "(ii)i" ),
+      NSYMBOL ( siglongjmp, wali_siglongjmp, "(ii)" ),
 
       // Threads
       NSYMBOL ( __get_tp, wali__get_tp, "()i" )

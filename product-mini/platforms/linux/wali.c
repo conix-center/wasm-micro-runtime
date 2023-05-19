@@ -284,7 +284,7 @@ long wali_syscall_rt_sigprocmask (wasm_exec_env_t exec_env, long a1, long a2, lo
 	return __syscall4(SYS_rt_sigprocmask, a1, MADDR(a2), MADDR(a3), a4);
 }
 
-// 15: Never directly called; __wali_restore_rt is called by OS
+// 15: Never directly called; __libc_restore_rt is called by OS
 long wali_syscall_rt_sigreturn (wasm_exec_env_t exec_env, long a1) {
 	SC(rt_sigreturn);
 	ERRSC(rt_sigreturn, "rt_sigreturn should never be called by the user!");
@@ -837,14 +837,32 @@ uintptr_t wali__get_tp (wasm_exec_env_t exec_env) {
 	return tp;
 }
 
+int wali_sigsetjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int savesigs) {
+  PW(sigsetjmp);
+  struct __libc_jmp_buf_tag* env = copy_jmp_buf(exec_env, MADDR(sigjmp_buf_addr));
+  int retval = __libc_sigsetjmp_asm(env, savesigs);
+  ERRSC(sigsetjmp, "sigsetjmp is NOP in WASM right now");
+  if (retval == 0) {
+    free(env);
+  }
+  return retval;
+}
+
+_Noreturn void wali_siglongjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int val) {
+  PW(siglongjmp);
+  struct __libc_jmp_buf_tag* env = copy_jmp_buf(exec_env, MADDR(sigjmp_buf_addr));
+  ERRSC(siglongjmp, "siglongjmp is NOP in WASM right now");
+  __libc_siglongjmp(env, val);
+}
+
 
 /***** Startup *****/
 void wali_call_ctors(wasm_exec_env_t exec_env) {
-  PW(wasm_call_ctors);
+  PW(wali_call_ctors);
 }
 
 void wali_call_dtors(wasm_exec_env_t exec_env) {
-  PW(wasm_call_dtors);
+  PW(wali_call_dtors);
 }
 
 void wali_proc_exit(wasm_exec_env_t exec_env, long v) {
@@ -853,14 +871,17 @@ void wali_proc_exit(wasm_exec_env_t exec_env, long v) {
 }
 
 int wali_cl_get_argc (wasm_exec_env_t exec_env) {
+  PW(cl_get_argc);
   return app_argc;
 }
 
 int wali_cl_get_argv_len (wasm_exec_env_t exec_env, int arg_idx) {
+  PW(cl_get_argc_len);
   return strlen(app_argv[arg_idx]);
 }
 
 int wali_cl_copy_argv (wasm_exec_env_t exec_env, int argv_addr, int arg_idx) {
+  PW(cl_copy_argv);
   Addr argv = MADDR(argv_addr);
   strcpy(argv, app_argv[arg_idx]);
   return 0;

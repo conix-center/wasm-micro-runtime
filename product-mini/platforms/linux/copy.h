@@ -5,6 +5,7 @@
 #include <sys/syscall.h>
 #include <sys/mman.h>
 #include <signal.h>
+#include <setjmp.h>
 
 #include "wali.h"
 
@@ -45,8 +46,8 @@ struct iovec* copy_iovec(wasm_exec_env_t exec_env, Addr wasm_iov, int iov_cnt) {
 }
 
 
-// ASM restorer function '__wali_restore_rt'.
-extern void __wali_restore_rt();
+// ASM restorer function '__libc_restore_rt'.
+extern void __libc_restore_rt();
 /* Copy Sigaction structure: Function pointers are padded */
 struct k_sigaction* copy_ksigaction (wasm_exec_env_t exec_env, Addr wasm_act, 
     struct k_sigaction *act, void (*common_handler)(int), 
@@ -67,7 +68,7 @@ struct k_sigaction* copy_ksigaction (wasm_exec_env_t exec_env, Addr wasm_act,
   act->flags = RD_FIELD(wasm_act, unsigned long);
   
   RD_FIELD_ADDR(wasm_act);
-  act->restorer = __wali_restore_rt;
+  act->restorer = __libc_restore_rt;
 
   RD_FIELD_ARRAY(act->mask, wasm_act, unsigned, 2);
   return act;
@@ -99,5 +100,20 @@ char** copy_stringarr (wasm_exec_env_t exec_env, Addr wasm_arr) {
   stringarr[num_strings] = NULL;
   return stringarr;
 }
+
+
+extern _Noreturn void __libc_longjmp_asm(__libc_sigjmp_buf, int);
+extern int __libc_sigsetjmp_asm(__libc_sigjmp_buf, int);
+#define __libc_siglongjmp __libc_longjmp_asm
+
+struct __libc_jmp_buf_tag* copy_jmp_buf (wasm_exec_env_t exec_env, Addr wasm_jmp_buf) {
+  if (!wasm_jmp_buf) { return NULL; }
+  struct __libc_jmp_buf_tag* buf = (struct __libc_jmp_buf_tag *) malloc(sizeof(struct __libc_jmp_buf_tag));
+  RD_FIELD_ARRAY(buf->__jb, wasm_jmp_buf, unsigned long, 8);
+  buf->__fl = RD_FIELD(wasm_jmp_buf, unsigned long);
+  RD_FIELD_ARRAY(buf->__ss, wasm_jmp_buf, unsigned long, (128/sizeof(long)));
+  return buf;
+}
+
 
 #endif
