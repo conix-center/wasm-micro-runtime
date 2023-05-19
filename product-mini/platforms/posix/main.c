@@ -904,7 +904,7 @@ main(int argc, char *argv[])
 			NSYMBOL (    __syscall_SYS_getdents,     wali_syscall_getdents,     "(iii)I" ),
 			NSYMBOL (      __syscall_SYS_getcwd,       wali_syscall_getcwd,      "(ii)I" ),
 			NSYMBOL (       __syscall_SYS_chdir,        wali_syscall_chdir,       "(i)I" ),
-			NSYMBOL (       __syscall_SYS_rename,        wali_syscall_rename,       "(ii)I" ),
+			NSYMBOL (      __syscall_SYS_rename,       wali_syscall_rename,      "(ii)I" ),
 			NSYMBOL (       __syscall_SYS_mkdir,        wali_syscall_mkdir,      "(ii)I" ),
 			NSYMBOL (       __syscall_SYS_rmdir,        wali_syscall_rmdir,       "(i)I" ),
 			NSYMBOL (        __syscall_SYS_link,         wali_syscall_link,      "(ii)I" ),
@@ -916,6 +916,8 @@ main(int argc, char *argv[])
 			NSYMBOL (       __syscall_SYS_chown,        wali_syscall_chown,     "(iii)I" ),
 			NSYMBOL (      __syscall_SYS_fchown,       wali_syscall_fchown,     "(iii)I" ),
 			NSYMBOL (       __syscall_SYS_umask,        wali_syscall_umask,       "(i)I" ),
+			NSYMBOL (   __syscall_SYS_getrlimit,    wali_syscall_getrlimit,      "(ii)I" ),
+			NSYMBOL (     __syscall_SYS_sysinfo,      wali_syscall_sysinfo,       "(i)I" ),
 			NSYMBOL (      __syscall_SYS_getuid,       wali_syscall_getuid,        "()I" ),
 			NSYMBOL (      __syscall_SYS_getgid,       wali_syscall_getgid,        "()I" ),
 			NSYMBOL (     __syscall_SYS_geteuid,      wali_syscall_geteuid,        "()I" ),
@@ -930,6 +932,7 @@ main(int argc, char *argv[])
 			NSYMBOL (       __syscall_SYS_utime,        wali_syscall_utime,      "(ii)I" ),
 			NSYMBOL (      __syscall_SYS_statfs,       wali_syscall_statfs,      "(ii)I" ),
 			NSYMBOL (     __syscall_SYS_fstatfs,      wali_syscall_fstatfs,      "(ii)I" ),
+			NSYMBOL (   __syscall_SYS_setrlimit,    wali_syscall_setrlimit,      "(ii)I" ),
 			NSYMBOL (  __syscall_SYS_getdents64,   wali_syscall_getdents64,     "(iii)I" ),
 			NSYMBOL (     __syscall_SYS_fadvise,      wali_syscall_fadvise,    "(iIIi)I" ),
 			NSYMBOL ( __syscall_SYS_clock_gettime, wali_syscall_clock_gettime,      "(ii)I" ),
@@ -942,7 +945,10 @@ main(int argc, char *argv[])
 			NSYMBOL (     __syscall_SYS_eventfd,      wali_syscall_eventfd,       "(i)I" ),
 			NSYMBOL (    __syscall_SYS_eventfd2,     wali_syscall_eventfd2,      "(ii)I" ),
 			NSYMBOL (       __syscall_SYS_pipe2,        wali_syscall_pipe2,      "(ii)I" ),
+			NSYMBOL (   __syscall_SYS_prlimit64,    wali_syscall_prlimit64,    "(iiii)I" ),
+			NSYMBOL (   __syscall_SYS_getrandom,    wali_syscall_getrandom,     "(iii)I" ),
 			NSYMBOL (       __syscall_SYS_statx,        wali_syscall_statx,   "(iiiii)I" ),
+			NSYMBOL (  __syscall_SYS_faccessat2,   wali_syscall_faccessat2,    "(iiii)I" ),
 
       /* Libc imports */
       // Atomics

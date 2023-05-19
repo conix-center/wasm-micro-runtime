@@ -253,10 +253,13 @@ long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long
 
   wasm_function_inst_t target_handler = NULL;
   wasm_function_inst_t old_target_handler = NULL;
+  //printf("Signo: %d\n", a1);
   struct k_sigaction *act_pt = 
     copy_ksigaction(exec_env, wasm_act, &act, sa_handler_wali, &target_handler);
+  //printf("Act pt\n");
   struct k_sigaction *oldact_pt = 
     copy_ksigaction(exec_env, wasm_oldact, &oldact, sa_handler_wali, &old_target_handler);
+  //printf("OLD Act pt\n");
 
   /* Block signals while setting up synchronized wali table */
   //sigset_t mask, old_mask;
@@ -266,7 +269,7 @@ long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long
   long retval = __syscall4(SYS_rt_sigaction, a1, act_pt, oldact_pt, a4);
   if (!retval) {
     int signo = a1;
-    if ((signo < NSIG) && (act_pt != NULL) && (act_pt->handler != SIG_DFL)) {
+    if ((signo < NSIG) && (act_pt != NULL) && ((act_pt->handler != SIG_DFL) && (act_pt->handler != SIG_IGN))) {
       ERR("Registering target handler: %p\n", target_handler);
       wali_sigtable[signo].function = target_handler;
     }
@@ -653,6 +656,18 @@ long wali_syscall_umask (wasm_exec_env_t exec_env, long a1) {
 	return __syscall1(SYS_umask, a1);
 }
 
+// 97 
+long wali_syscall_getrlimit (wasm_exec_env_t exec_env, long a1, long a2) {
+	SC(getrlimit);
+	return __syscall2(SYS_getrlimit, a1, MADDR(a2));
+}
+
+// 99 
+long wali_syscall_sysinfo (wasm_exec_env_t exec_env, long a1) {
+	SC(sysinfo);
+	return __syscall1(SYS_sysinfo, MADDR(a1));
+}
+
 // 102 TODO
 long wali_syscall_getuid (wasm_exec_env_t exec_env) {
 	SC(getuid);
@@ -746,6 +761,12 @@ long wali_syscall_fstatfs (wasm_exec_env_t exec_env, long a1, long a2) {
 	return __syscall2(SYS_fstatfs, a1, MADDR(a2));
 }
 
+// 160 
+long wali_syscall_setrlimit (wasm_exec_env_t exec_env, long a1, long a2) {
+	SC(setrlimit);
+	return __syscall2(SYS_setrlimit, a1, MADDR(a2));
+}
+
 // 217 
 long wali_syscall_getdents64 (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(getdents64);
@@ -822,12 +843,29 @@ long wali_syscall_pipe2 (wasm_exec_env_t exec_env, long a1, long a2) {
 	return __syscall2(SYS_pipe2, MADDR(a1), a2);
 }
 
+// 302 
+long wali_syscall_prlimit64 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
+	SC(prlimit64);
+	return __syscall4(SYS_prlimit64, a1, a2, MADDR(a3), MADDR(a4));
+}
+
+// 318 
+long wali_syscall_getrandom (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
+	SC(getrandom);
+	return __syscall3(SYS_getrandom, MADDR(a1), a2, a3);
+}
+
 // 332
 long wali_syscall_statx (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
 	SC(statx);
 	return __syscall5(SYS_statx, a1, MADDR(a2), a3, a4, MADDR(a5));
 }
 
+// 439 
+long wali_syscall_faccessat2 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
+	SC(faccessat2);
+	return __syscall4(439, a1, MADDR(a2), a3, a4);
+}
 
 /***** Non-syscall methods *****/
 uintptr_t wali__get_tp (wasm_exec_env_t exec_env) {

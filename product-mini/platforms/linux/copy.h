@@ -46,6 +46,11 @@ struct iovec* copy_iovec(wasm_exec_env_t exec_env, Addr wasm_iov, int iov_cnt) {
 }
 
 
+// 0 = SIG_DFL; -1: SIG_ERR; -2: SIG_IGN
+#define WASM_SIG_DFL (0)
+#define WASM_SIG_ERR (-1)
+#define WASM_SIG_IGN (-2)
+
 // ASM restorer function '__libc_restore_rt'.
 extern void __libc_restore_rt();
 /* Copy Sigaction structure: Function pointers are padded */
@@ -55,9 +60,12 @@ struct k_sigaction* copy_ksigaction (wasm_exec_env_t exec_env, Addr wasm_act,
   if (wasm_act == NULL) { return NULL; }
 
   uint32_t wasm_handler = RD_FIELD(wasm_act, uint32_t);
-  if ( wasm_handler == (uint32_t)(SIG_DFL) ) {
+  if ( wasm_handler == (uint32_t)(WASM_SIG_DFL) ) {
     act->handler = SIG_DFL;
+  } else if (wasm_handler == (uint32_t)(WASM_SIG_IGN)) {
+    act->handler = SIG_IGN;
   } else {
+    printf("Wasm Handler: %u\n", wasm_handler);
     /* Setup target and common handler */
     wasm_module_inst_t module_inst = get_module_inst(exec_env);
     act->handler = common_handler;
