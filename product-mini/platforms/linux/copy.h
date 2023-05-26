@@ -149,6 +149,12 @@ extern _Noreturn void __libc_longjmp_asm(__libc_sigjmp_buf, int);
 extern int __libc_sigsetjmp_asm(__libc_sigjmp_buf, int);
 #define __libc_siglongjmp __libc_longjmp_asm
 
+void copy2wasm_jmp_buf (wasm_exec_env_t exec_env, Addr wasm_buf, struct __libc_jmp_buf_tag* buf) {
+  WR_FIELD_ARRAY(wasm_buf, buf->__jb, unsigned long, 8);
+  WR_FIELD(wasm_buf, buf->__fl, unsigned long);
+  WR_FIELD_ARRAY(wasm_buf, buf->__ss, unsigned long, (128/sizeof(long)));
+}
+
 struct __libc_jmp_buf_tag* copy_jmp_buf (wasm_exec_env_t exec_env, Addr wasm_jmp_buf) {
   if (!wasm_jmp_buf) { return NULL; }
   struct __libc_jmp_buf_tag* buf = (struct __libc_jmp_buf_tag *) malloc(sizeof(struct __libc_jmp_buf_tag));

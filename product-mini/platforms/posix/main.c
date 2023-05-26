@@ -982,7 +982,7 @@ main(int argc, char *argv[])
 
       // Signal
       NSYMBOL ( sigsetjmp, wali_sigsetjmp, "(ii)i" ),
-      NSYMBOL ( siglongjmp, wali_siglongjmp, "(ii)" ),
+      NSYMBOL ( longjmp, wali_siglongjmp, "(ii)" ),
 
       // Threads
       NSYMBOL ( __get_tp, wali__get_tp, "()i" )

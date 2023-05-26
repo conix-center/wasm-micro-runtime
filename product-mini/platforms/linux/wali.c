@@ -267,14 +267,14 @@ long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long
   ERR("Signal Registration -- Signo: %ld | Sigtype: %s", a1, sigtype);
 
   /* Register virtual signal in WALI sigtable 
-  * -------------------------------------------------------------
-  * | Handler value | WALI sigtable (set)     | Old Action (get)
-  * -------------------------------------------------------------
-  * | SIG_DFL       | No register             | WASM_SIG_DFL
-  * | SIG_IGN       | No register             | WASM_SIG_IGN
-  * | SIG_ERR       |     -                   | WASM_SIG_ERR
-  * | FuncPtr_t     | Table[FuncPtr_t]        | Table[FuncPtr_t]
-  * -------------------------------------------------------------
+  * ---------------------------------------------------------------
+  * | Handler value | WALI sigtable (set)     | Old Action (get)  |
+  * ---------------------------------------------------------------
+  * | SIG_DFL       | No register             | WASM_SIG_DFL      |
+  * | SIG_IGN       | No register             | WASM_SIG_IGN      |
+  * | SIG_ERR       |     -                   | WASM_SIG_ERR      |
+  * | FuncPtr_t     | Table[FuncPtr_t]        | Table[FuncPtr_t]  |
+  * ---------------------------------------------------------------
   * */
   if (!retval && (signo < NSIG)) {
     /* Save old sigaction to WASM */
@@ -892,10 +892,12 @@ uintptr_t wali__get_tp (wasm_exec_env_t exec_env) {
 
 int wali_sigsetjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int savesigs) {
   PW(sigsetjmp);
-  struct __libc_jmp_buf_tag* env = copy_jmp_buf(exec_env, MADDR(sigjmp_buf_addr));
+  Addr wasm_sigjmp_buf = MADDR(sigjmp_buf_addr);
+  struct __libc_jmp_buf_tag* env = copy_jmp_buf(exec_env, wasm_sigjmp_buf);
   int retval = __libc_sigsetjmp_asm(env, savesigs);
-  ERRSC(sigsetjmp, "sigsetjmp is NOP in WASM right now");
+  ERRSC(sigsetjmp, "sigsetjmp is UNSTABLE in WASM right now");
   if (retval == 0) {
+    copy2wasm_jmp_buf(exec_env, wasm_sigjmp_buf, env);
     free(env);
   }
   return retval;
