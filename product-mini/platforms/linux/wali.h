@@ -28,6 +28,7 @@ uint32 psize;
 #define ERR(fmt, ...) LOG_VERBOSE("WALI: " fmt, ## __VA_ARGS__)
 
 
+#define FUNC_IDX(func) ({ wasm_runtime_get_function_idx(module_inst, func); })
 
 /* 0 = SIG_DFL; */
 #define WASM_SIG_DFL (0)

@@ -80,7 +80,7 @@ void copy2wasm_old_ksigaction (int signo, Addr wasm_act, struct k_sigaction *act
     old_wasm_funcptr = WASM_SIG_ERR;
   } else {
     old_wasm_funcptr = wali_sigtable[signo].func_table_idx;
-    printf("Save old sigaction handler: Tbl[%d]\n", old_wasm_funcptr);
+    ERR("Save old sigaction handler -- Tbl[%d]", old_wasm_funcptr);
   }
   WR_FIELD(wasm_act, old_wasm_funcptr, FuncPtr_t);
   WR_FIELD(wasm_act, act->flags, unsigned long);
@@ -91,21 +91,21 @@ void copy2wasm_old_ksigaction (int signo, Addr wasm_act, struct k_sigaction *act
 /* Copy Sigaction structure to native: Function pointers are padded */
 struct k_sigaction* copy_ksigaction (wasm_exec_env_t exec_env, Addr wasm_act, 
     struct k_sigaction *act, void (*common_handler)(int), 
-    FuncPtr_t *target_wasm_funcptr) {
+    FuncPtr_t *target_wasm_funcptr, char* debug_str) {
   if (wasm_act == NULL) { return NULL; }
 
   FuncPtr_t wasm_handler_funcptr = RD_FIELD(wasm_act, FuncPtr_t);
   if ( wasm_handler_funcptr == (FuncPtr_t)(WASM_SIG_DFL) ) {
     act->handler = SIG_DFL;
-    printf("Setting Default handler\n");
+    strcpy(debug_str, "SIG_DFL");
   } else if (wasm_handler_funcptr == (FuncPtr_t)(WASM_SIG_IGN)) {
     act->handler = SIG_IGN;
-    printf("Setting Ignore handler\n");
+    strcpy(debug_str, "SIG_IGN");
   } else {
-    printf("Setting Wasm Handler\n");
     /* Setup common handler */
     act->handler = common_handler;
     *target_wasm_funcptr = wasm_handler_funcptr;
+    strcpy(debug_str, "Wasm SIG");
   }
 
   act->flags = RD_FIELD(wasm_act, unsigned long);

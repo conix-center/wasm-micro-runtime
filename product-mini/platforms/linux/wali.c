@@ -255,14 +255,16 @@ long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long
   /* Block signal manipulation while setting up synchronized wali table */
   pthread_mutex_lock(&sigtable_mut);
   FuncPtr_t target_wasm_funcptr = 0;
+  char sigtype[30];
 
   /* Prepare for native signal syscall */
-  printf("WALI Signal Registration | Signo: %ld\n", a1);
   struct k_sigaction *act_pt = 
-    copy_ksigaction(exec_env, wasm_act, &act, sa_handler_wali, &target_wasm_funcptr);
+    copy_ksigaction(exec_env, wasm_act, &act, sa_handler_wali, &target_wasm_funcptr, sigtype);
   struct k_sigaction *oldact_pt = 
     wasm_oldact ? &oldact : NULL;
   long retval = __syscall4(SYS_rt_sigaction, a1, act_pt, oldact_pt, a4);
+
+  ERR("Signal Registration -- Signo: %ld | Sigtype: %s", a1, sigtype);
 
   /* Register virtual signal in WALI sigtable 
   * -------------------------------------------------------------
@@ -283,7 +285,9 @@ long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long
     if (act_pt && (act_pt->handler != SIG_DFL) && (act_pt->handler != SIG_IGN)) {
       wasm_function_inst_t target_wasm_handler = wasm_runtime_get_indirect_function(
                                                   module_inst, 0, target_wasm_funcptr);
-      printf("Replacing target handler: %p -> %p\n", wali_sigtable[signo].function, target_wasm_handler);
+      uint32_t old_fn_idx = wali_sigtable[signo].function ? FUNC_IDX(wali_sigtable[signo].function) : 0;
+      uint32_t new_fn_idx = target_wasm_handler ? FUNC_IDX(target_wasm_handler) : 0;
+      ERR("Replacing target handler: Fn[%u] -> Fn[%u]\n", old_fn_idx, new_fn_idx);
       wali_sigtable[signo].function = target_wasm_handler;
       wali_sigtable[signo].func_table_idx = target_wasm_funcptr;
     }

@@ -1697,6 +1697,21 @@ wasm_runtime_set_module_inst(WASMExecEnv *exec_env,
     wasm_exec_env_set_module_inst(exec_env, module_inst);
 }
 
+uint32
+wasm_runtime_get_function_idx(WASMModuleInstanceCommon *module_inst, WASMFunctionInstanceCommon *func) {
+#if WASM_ENABLE_INTERP != 0
+    if (module_inst->module_type == Wasm_Module_Bytecode) {
+        return (WASMFunctionInstance*)(func) - ((WASMModuleInstance*)(module_inst))->e->functions;
+    }
+#endif
+#if WASM_ENABLE_AOT != 0
+    if (module_inst->module_type == Wasm_Module_AoT) {
+        LOG_ERROR("Not supported \'get_function_idx\' for AoT yet");
+    }
+#endif
+    return -1;
+}
+
 void *
 wasm_runtime_get_function_attachment(WASMExecEnv *exec_env)
 {
@@ -1777,7 +1792,7 @@ wasm_runtime_get_indirect_function(WASMModuleInstanceCommon *module_inst,
             (WASMModuleInstance *)module_inst, tbl_idx, elem_idx);
 #endif
 #if WASM_ENABLE_AOT != 0
-    printf("ERROR: No AOT yet\n");
+    LOG_ERROR("ERROR: No AOT yet\n");
 #endif
     return NULL;
 
