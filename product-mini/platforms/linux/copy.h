@@ -8,6 +8,23 @@
 #include <setjmp.h>
 
 #include "wali.h"
+#include "../interpreter/sigtable.h"
+
+#define WR_FIELD(wptr, val, ty) ({ \
+  memcpy(wptr, &val, sizeof(ty)); \
+  wptr += sizeof(ty); \
+})
+
+#define WR_FIELD_ADDR(wptr, nptr) ({  \
+  uint32_t wasm_addr = WADDR(nptr);  \
+  if (!wasm_addr) { ERR("NULL Wasm Address generated"); }  \
+  WR_FIELD(wptr, wasm_addr, uint32_t);  \
+})
+
+#define WR_FIELD_ARRAY(wptr, narr, ty, num) ({  \
+  memcpy(wptr, narr, sizeof(ty) * num); \
+  wptr += (sizeof(ty) * num); \
+})
 
 #define RD_FIELD(ptr, ty) ({  \
   ty val; \
@@ -45,7 +62,6 @@ struct iovec* copy_iovec(wasm_exec_env_t exec_env, Addr wasm_iov, int iov_cnt) {
   return new_iov;
 }
 
-
 // 0 = SIG_DFL; -1: SIG_ERR; -2: SIG_IGN
 #define WASM_SIG_DFL (0)
 #define WASM_SIG_ERR (-1)
@@ -53,29 +69,48 @@ struct iovec* copy_iovec(wasm_exec_env_t exec_env, Addr wasm_iov, int iov_cnt) {
 
 // ASM restorer function '__libc_restore_rt'.
 extern void __libc_restore_rt();
-/* Copy Sigaction structure: Function pointers are padded */
+
+void copy2wasm_old_ksigaction (int signo, Addr wasm_act, struct k_sigaction *act) {
+  FuncPtr_t old_wasm_funcptr;
+  if (act->handler == SIG_DFL) {
+    old_wasm_funcptr = WASM_SIG_DFL;
+  } else if (act->handler == SIG_IGN) {
+    old_wasm_funcptr = WASM_SIG_IGN;
+  } else if (act->handler == SIG_ERR) {
+    old_wasm_funcptr = WASM_SIG_ERR;
+  } else {
+    old_wasm_funcptr = wali_sigtable[signo].func_table_idx;
+    printf("Save old sigaction handler: Tbl[%d]\n", old_wasm_funcptr);
+  }
+  WR_FIELD(wasm_act, old_wasm_funcptr, FuncPtr_t);
+  WR_FIELD(wasm_act, act->flags, unsigned long);
+  WR_FIELD(wasm_act, act->restorer, FuncPtr_t);
+  WR_FIELD_ARRAY(wasm_act, act->mask, unsigned, 2);
+}
+
+/* Copy Sigaction structure to native: Function pointers are padded */
 struct k_sigaction* copy_ksigaction (wasm_exec_env_t exec_env, Addr wasm_act, 
     struct k_sigaction *act, void (*common_handler)(int), 
-    wasm_function_inst_t *target_handler) {
+    FuncPtr_t *target_wasm_funcptr) {
   if (wasm_act == NULL) { return NULL; }
 
-  uint32_t wasm_handler = RD_FIELD(wasm_act, uint32_t);
-  if ( wasm_handler == (uint32_t)(WASM_SIG_DFL) ) {
+  FuncPtr_t wasm_handler_funcptr = RD_FIELD(wasm_act, FuncPtr_t);
+  if ( wasm_handler_funcptr == (FuncPtr_t)(WASM_SIG_DFL) ) {
     act->handler = SIG_DFL;
-  } else if (wasm_handler == (uint32_t)(WASM_SIG_IGN)) {
+    printf("Setting Default handler\n");
+  } else if (wasm_handler_funcptr == (FuncPtr_t)(WASM_SIG_IGN)) {
     act->handler = SIG_IGN;
+    printf("Setting Ignore handler\n");
   } else {
-    printf("Wasm Handler: %u\n", wasm_handler);
-    /* Setup target and common handler */
-    wasm_module_inst_t module_inst = get_module_inst(exec_env);
+    printf("Setting Wasm Handler\n");
+    /* Setup common handler */
     act->handler = common_handler;
-    *target_handler = wasm_runtime_get_indirect_function(
-                          module_inst, 0, wasm_handler);
+    *target_wasm_funcptr = wasm_handler_funcptr;
   }
 
   act->flags = RD_FIELD(wasm_act, unsigned long);
   
-  RD_FIELD_ADDR(wasm_act);
+  RD_FIELD(wasm_act, FuncPtr_t);
   act->restorer = __libc_restore_rt;
 
   RD_FIELD_ARRAY(act->mask, wasm_act, unsigned, 2);

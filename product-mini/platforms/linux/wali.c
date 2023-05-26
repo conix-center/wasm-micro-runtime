@@ -236,7 +236,6 @@ long wali_syscall_brk (wasm_exec_env_t exec_env, long a1) {
 
 
 void sa_handler_wali(int signo) {
-  //printf("Signal \'%s\' triggered SIGACTION_HANDLER\n", strsignal(signo));
   /* Mark pending signal */
   pthread_mutex_lock(&sigpending_mut);
   wali_sigpending |= ((uint64_t)1 << signo);
@@ -246,36 +245,50 @@ void sa_handler_wali(int signo) {
 long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(rt_sigaction);
   ERR("rt_sigaction args | a1: %ld, a2: %ld, a3: %ld, a4: %ld", a1, a2, a3, a4);
+  wasm_module_inst_t module_inst = get_module_inst(exec_env);
+  int signo = a1;
   Addr wasm_act  = MADDR(a2);
   Addr wasm_oldact = MADDR(a3);
   struct k_sigaction act = {0};
   struct k_sigaction oldact = {0};
 
-  wasm_function_inst_t target_handler = NULL;
-  wasm_function_inst_t old_target_handler = NULL;
-  //printf("Signo: %d\n", a1);
-  struct k_sigaction *act_pt = 
-    copy_ksigaction(exec_env, wasm_act, &act, sa_handler_wali, &target_handler);
-  //printf("Act pt\n");
-  struct k_sigaction *oldact_pt = 
-    copy_ksigaction(exec_env, wasm_oldact, &oldact, sa_handler_wali, &old_target_handler);
-  //printf("OLD Act pt\n");
-
-  /* Block signals while setting up synchronized wali table */
-  //sigset_t mask, old_mask;
-  //sigfillset(&mask);
-  //sigprocmask(SIG_SETMASK, &mask, &old_mask);
+  /* Block signal manipulation while setting up synchronized wali table */
   pthread_mutex_lock(&sigtable_mut);
+  FuncPtr_t target_wasm_funcptr = 0;
+
+  /* Prepare for native signal syscall */
+  printf("WALI Signal Registration | Signo: %ld\n", a1);
+  struct k_sigaction *act_pt = 
+    copy_ksigaction(exec_env, wasm_act, &act, sa_handler_wali, &target_wasm_funcptr);
+  struct k_sigaction *oldact_pt = 
+    wasm_oldact ? &oldact : NULL;
   long retval = __syscall4(SYS_rt_sigaction, a1, act_pt, oldact_pt, a4);
-  if (!retval) {
-    int signo = a1;
-    if ((signo < NSIG) && (act_pt != NULL) && ((act_pt->handler != SIG_DFL) && (act_pt->handler != SIG_IGN))) {
-      ERR("Registering target handler: %p\n", target_handler);
-      wali_sigtable[signo].function = target_handler;
+
+  /* Register virtual signal in WALI sigtable 
+  * -------------------------------------------------------------
+  * | Handler value | WALI sigtable (set)     | Old Action (get)
+  * -------------------------------------------------------------
+  * | SIG_DFL       | No register             | WASM_SIG_DFL
+  * | SIG_IGN       | No register             | WASM_SIG_IGN
+  * | SIG_ERR       |     -                   | WASM_SIG_ERR
+  * | FuncPtr_t     | Table[FuncPtr_t]        | Table[FuncPtr_t]
+  * -------------------------------------------------------------
+  * */
+  if (!retval && (signo < NSIG)) {
+    /* Save old sigaction to WASM */
+    if (oldact_pt) {
+      copy2wasm_old_ksigaction (signo, wasm_oldact, oldact_pt);
+    }
+    /* Set WALI table */
+    if (act_pt && (act_pt->handler != SIG_DFL) && (act_pt->handler != SIG_IGN)) {
+      wasm_function_inst_t target_wasm_handler = wasm_runtime_get_indirect_function(
+                                                  module_inst, 0, target_wasm_funcptr);
+      printf("Replacing target handler: %p -> %p\n", wali_sigtable[signo].function, target_wasm_handler);
+      wali_sigtable[signo].function = target_wasm_handler;
+      wali_sigtable[signo].func_table_idx = target_wasm_funcptr;
     }
   }
   /* Reset block signals */
-  //sigprocmask(SIG_SETMASK, &old_mask, NULL);
   pthread_mutex_unlock(&sigtable_mut);
 
   return retval;
@@ -506,6 +519,7 @@ long wali_syscall_fork (wasm_exec_env_t exec_env) {
 // 59 
 long wali_syscall_execve (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(execve);
+  printf("Execve string: %s\n", MADDR(a1));
   char** argv = copy_stringarr (exec_env, MADDR(a2));
   char** envp = copy_stringarr (exec_env, MADDR(a3));
 	long retval = __syscall3(SYS_execve, MADDR(a1), argv, envp);
@@ -668,10 +682,9 @@ long wali_syscall_sysinfo (wasm_exec_env_t exec_env, long a1) {
 	return __syscall1(SYS_sysinfo, MADDR(a1));
 }
 
-// 102 TODO
+// 102 
 long wali_syscall_getuid (wasm_exec_env_t exec_env) {
 	SC(getuid);
-	ERRSC(getuid);
 	return __syscall0(SYS_getuid);
 }
 
@@ -705,10 +718,9 @@ long wali_syscall_getppid (wasm_exec_env_t exec_env) {
 	return __syscall0(SYS_getppid);
 }
 
-// 112 TODO
+// 112 
 long wali_syscall_setsid (wasm_exec_env_t exec_env) {
 	SC(setsid);
-	ERRSC(setsid);
 	return __syscall0(SYS_setsid);
 }
 
@@ -718,10 +730,9 @@ long wali_syscall_getpgid (wasm_exec_env_t exec_env, long a1) {
 	return __syscall1(SYS_getpgid, a1);
 }
 
-// 124 TODO
+// 124 
 long wali_syscall_getsid (wasm_exec_env_t exec_env, long a1) {
 	SC(getsid);
-	ERRSC(getsid);
 	return __syscall1(SYS_getsid, a1);
 }
 

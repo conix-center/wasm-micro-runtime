@@ -8,6 +8,7 @@
 #define WASM_PAGESIZE 65536
 
 typedef uint8_t* Addr;
+typedef uint32_t FuncPtr_t;
 
 uint32 psize;
 #define BASE_ADDR() ({  \
@@ -28,6 +29,10 @@ uint32 psize;
 
 
 
+/* 0 = SIG_DFL; */
+#define WASM_SIG_DFL (0)
+#define WASM_SIG_ERR (-1)
+#define WASM_SIG_IGN (-2)
 /** Some internal structs for syscalls **/
 
 /* This is the structure used for the rt_sigaction syscall on most archs,
