@@ -264,7 +264,7 @@ long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long
     wasm_oldact ? &oldact : NULL;
   long retval = __syscall4(SYS_rt_sigaction, a1, act_pt, oldact_pt, a4);
 
-  ERR("Signal Registration -- Signo: %ld | Sigtype: %s", a1, sigtype);
+  ERR("Signal Registration -- \'%s\' | Sigtype: %s", strsignal(a1), sigtype);
 
   /* Register virtual signal in WALI sigtable 
   * ---------------------------------------------------------------
@@ -906,7 +906,7 @@ int wali_sigsetjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int savesigs)
 _Noreturn void wali_siglongjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int val) {
   PW(siglongjmp);
   struct __libc_jmp_buf_tag* env = copy_jmp_buf(exec_env, MADDR(sigjmp_buf_addr));
-  ERRSC(siglongjmp, "siglongjmp is NOP in WASM right now");
+  ERRSC(siglongjmp, "siglongjmp is UNSTABLE in WASM right now");
   __libc_siglongjmp(env, val);
 }
 
