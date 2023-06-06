@@ -1,10 +1,12 @@
+#define _GNU_SOURCE
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/mman.h>
 
 #include "wali.h"
 #include "copy.h"
-#include "../interpreter/sigtable.h"
+#include "../interpreter/wasm_runtime.h"
 
 extern int app_argc;
 extern char **app_argv;
@@ -26,6 +28,7 @@ int MMAP_PAGELEN = 0;
 int WASM_PAGELEN = 0;
 int WASM_TO_NATIVE_PAGE = 0;
 uint32_t BASE_MEMSIZE = 0;
+uint32_t THREAD_ID = 0;
 
 void wali_init_native() {
   NATIVE_PAGESIZE = sysconf(_SC_PAGE_SIZE);
@@ -34,6 +37,7 @@ void wali_init_native() {
   WASM_TO_NATIVE_PAGE = WASM_PAGESIZE / NATIVE_PAGESIZE;
   // Set in mmap
   BASE_MEMSIZE = 0;
+  THREAD_ID = 1;
 }
 
 static __inline long __syscall0(long n)
@@ -104,11 +108,11 @@ static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long
 #define __syscall6(n, a1, a2, a3, a4, a5, a6) __syscall6(n, (long)a1, (long)a2, (long)a3, (long)a4, (long)a5, (long)a6)
 
 
-#define ATOM(f) LOG_VERBOSE("WALI: Atomic (use with care) | " # f)
-#define PW(f)  LOG_VERBOSE("WALI: " # f)
-#define SC(f)  LOG_VERBOSE("WALI: SC | " # f)
+#define ATOM(f) LOG_VERBOSE("[%d] WALI: Atomic (use with care) | " # f, gettid())
+#define PC(f)  LOG_VERBOSE("[%d] WALI: | " # f, gettid())
+#define SC(f)  LOG_VERBOSE("[%d] WALI: SC | " # f, gettid())
 #define ERRSC(f,...) { \
-  LOG_WARNING("WALI: SC \"" # f "\" not implemented correctly yet! " __VA_ARGS__);  \
+  LOG_WARNING("[%d] WALI: SC \"" # f "\" not implemented correctly yet! " __VA_ARGS__, gettid());  \
 }
 
 
@@ -195,7 +199,7 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
       int new_wasm_pagelen = ((MMAP_PAGELEN + WASM_TO_NATIVE_PAGE - 1) / WASM_TO_NATIVE_PAGE);
       int inc_wasm_pages = new_wasm_pagelen - WASM_PAGELEN;
       wasm_module_inst_t module = get_module_inst(exec_env);
-      wasm_enlarge_memory(module, inc_wasm_pages, true);
+      wasm_enlarge_memory((WASMModuleInstance*)module, inc_wasm_pages, true);
       WASM_PAGELEN += inc_wasm_pages;
     }
   }
@@ -782,6 +786,12 @@ long wali_syscall_setrlimit (wasm_exec_env_t exec_env, long a1, long a2) {
 	return __syscall2(SYS_setrlimit, a1, MADDR(a2));
 }
 
+// 186
+long wali_syscall_gettid (wasm_exec_env_t exec_env) {
+  SC(gettid);
+  return __syscall0(SYS_gettid);
+}
+
 // 217 
 long wali_syscall_getdents64 (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(getdents64);
@@ -883,15 +893,8 @@ long wali_syscall_faccessat2 (wasm_exec_env_t exec_env, long a1, long a2, long a
 }
 
 /***** Non-syscall methods *****/
-uintptr_t wali__get_tp (wasm_exec_env_t exec_env) {
-  uintptr_t tp;
-	__asm__ ("mov %%fs:0,%0" : "=r" (tp) );
-  PW(get_tp);
-	return tp;
-}
-
 int wali_sigsetjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int savesigs) {
-  PW(sigsetjmp);
+  PC(sigsetjmp);
   Addr wasm_sigjmp_buf = MADDR(sigjmp_buf_addr);
   struct __libc_jmp_buf_tag* env = copy_jmp_buf(exec_env, wasm_sigjmp_buf);
   int retval = __libc_sigsetjmp_asm(env, savesigs);
@@ -904,7 +907,7 @@ int wali_sigsetjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int savesigs)
 }
 
 _Noreturn void wali_siglongjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int val) {
-  PW(siglongjmp);
+  PC(siglongjmp);
   struct __libc_jmp_buf_tag* env = copy_jmp_buf(exec_env, MADDR(sigjmp_buf_addr));
   ERRSC(siglongjmp, "siglongjmp is UNSTABLE in WASM right now");
   __libc_siglongjmp(env, val);
@@ -913,35 +916,136 @@ _Noreturn void wali_siglongjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, i
 
 /***** Startup *****/
 void wali_call_ctors(wasm_exec_env_t exec_env) {
-  PW(wali_call_ctors);
+  PC(wali_call_ctors);
 }
 
 void wali_call_dtors(wasm_exec_env_t exec_env) {
-  PW(wali_call_dtors);
+  PC(wali_call_dtors);
 }
 
 void wali_proc_exit(wasm_exec_env_t exec_env, long v) {
-  PW(exit);
+  PC(exit);
   exit(v);
 }
 
 int wali_cl_get_argc (wasm_exec_env_t exec_env) {
-  PW(cl_get_argc);
+  PC(cl_get_argc);
   return app_argc;
 }
 
 int wali_cl_get_argv_len (wasm_exec_env_t exec_env, int arg_idx) {
-  PW(cl_get_argc_len);
+  PC(cl_get_argc_len);
   return strlen(app_argv[arg_idx]);
 }
 
 int wali_cl_copy_argv (wasm_exec_env_t exec_env, int argv_addr, int arg_idx) {
-  PW(cl_copy_argv);
+  PC(cl_copy_argv);
   Addr argv = MADDR(argv_addr);
-  strcpy(argv, app_argv[arg_idx]);
+  strcpy((char*)argv, app_argv[arg_idx]);
   return 0;
 }
 
+
+/***** Threads *****/
+typedef struct {
+  /* Initial function */
+  wasm_function_inst_t start_fn;
+  /* Wasm address for args */
+  int arg;
+  /* Wasm Thread ID */
+  int tid;
+} WasmThreadStartArg;
+
+/* Thread dispatcher function calls into WASM  */
+static void*
+wali_dispatch_thread_libc(void *exec_env_ptr) {
+  wasm_exec_env_t exec_env = (wasm_exec_env_t) exec_env_ptr;
+  WasmThreadStartArg *thread_arg = (WasmThreadStartArg*) exec_env->thread_arg;
+  
+  wasm_exec_env_set_thread_info(exec_env);
+  /* Libc start fn: (int thread_id, void *arg) */
+  uint32_t wasm_argv[2];
+  // Dispatcher is part of child thread; can get tid using syscall
+  wasm_argv[0] = thread_arg->tid;
+  wasm_argv[1] = thread_arg->arg;
+
+  ERR("Dispatcher | Thread ID: %d\n", wasm_argv[0]);
+
+  if (!wasm_runtime_call_wasm(exec_env, thread_arg->start_fn, 2, wasm_argv)) {
+    /* Execption has already been spread during throwing */
+  }
+
+  ERR("================ Thread [%d] exiting ==============\n", gettid());
+  // Cleanup
+  wasm_runtime_free(thread_arg);
+  exec_env->thread_arg = NULL;
+  
+  return NULL;
+}
+
+int wali_wasm_thread_spawn (wasm_exec_env_t exec_env, int setup_fnptr, int arg_wasm) {
+  SC(wasm_thread_spawn (clone));
+  wasm_module_inst_t module_inst = get_module_inst(exec_env);
+  wasm_module_t module = wasm_runtime_get_module(module_inst);
+  bh_assert(module);
+  bh_assert(module_inst);
+
+  wasm_module_inst_t new_module_inst = NULL;
+  WasmThreadStartArg *thread_start_arg = NULL;
+  uint32_t stack_size = 8192;
+  int thread_id = -1;
+  int ret = -1;
+
+  wasm_function_inst_t setup_wasm_fn = 
+      wasm_runtime_get_indirect_function(module_inst, 0, setup_fnptr);
+
+
+  stack_size = ((WASMModuleInstance *)module_inst)->default_wasm_stack_size;
+
+  /* New module instance -- custom data, import function registration, etc. */
+  if (!(new_module_inst = wasm_runtime_instantiate_internal(
+            module, true, exec_env, stack_size, 0, NULL, 0)))
+      return -1;
+
+  wasm_runtime_set_custom_data_internal(
+      new_module_inst, wasm_runtime_get_custom_data(module_inst));
+
+  if (!(wasm_cluster_dup_c_api_imports(new_module_inst, module_inst)))
+      goto thread_spawn_fail;
+  /** **/
+
+  /** Setup args to pass to startup dispatcher **/
+  if (!(thread_start_arg = wasm_runtime_malloc(sizeof(WasmThreadStartArg)))) {
+      LOG_ERROR("Runtime args allocation failed");
+      goto thread_spawn_fail;
+  }
+
+  thread_start_arg->tid = thread_id = THREAD_ID++;
+
+  thread_start_arg->start_fn = setup_wasm_fn;
+  thread_start_arg->arg = arg_wasm;
+  /** **/
+
+  /** Create and dispatch the thread (language-independent: currently just C); 
+  * Thread ID of the created thread is sent back to parent */
+  ret = wasm_cluster_create_thread(exec_env, new_module_inst, false,
+                                   wali_dispatch_thread_libc, thread_start_arg);
+  if (ret != 0) {
+      LOG_ERROR("Failed to spawn a new thread");
+      goto thread_spawn_fail;
+  }
+
+  ERR("Parent of Dispatcher | Thread ID: %d\n", thread_id);
+  return thread_id;
+
+thread_spawn_fail:
+  if (new_module_inst)
+      wasm_runtime_deinstantiate_internal(new_module_inst, true);
+  if (thread_start_arg)
+      wasm_runtime_free(thread_start_arg);
+
+  return -1;
+}
 
 /***** Atomics *****/
 int wali_a_cas (wasm_exec_env_t exec_env, long p, int t, int s) {

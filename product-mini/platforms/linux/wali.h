@@ -25,7 +25,7 @@ uint32 psize;
   wasm_runtime_addr_native_to_app(get_module_inst(exec_env), mem_addr); \
 })
 
-#define ERR(fmt, ...) LOG_VERBOSE("WALI: " fmt, ## __VA_ARGS__)
+#define ERR(fmt, ...) LOG_VERBOSE("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
 
 
 #define FUNC_IDX(func) ({ wasm_runtime_get_function_idx(module_inst, func); })
@@ -224,6 +224,7 @@ long wali_syscall_prctl (wasm_exec_env_t exec_env);
 long wali_syscall_arch_prctl (wasm_exec_env_t exec_env);
 long wali_syscall_adjtimex (wasm_exec_env_t exec_env);
 long wali_syscall_setrlimit (wasm_exec_env_t exec_env, long a1, long a2);
+long wali_syscall_gettid (wasm_exec_env_t exec_env);
 long wali_syscall_chroot (wasm_exec_env_t exec_env);
 long wali_syscall_sync (wasm_exec_env_t exec_env);
 long wali_syscall_acct (wasm_exec_env_t exec_env);
@@ -402,7 +403,6 @@ long wali_syscall_faccessat2 (wasm_exec_env_t exec_env, long a1, long a2, long a
 
 
 /** Auxillary **/
-uintptr_t wali__get_tp (wasm_exec_env_t exec_env);
 int wali_sigsetjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int savesigs);
 void wali_siglongjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int val);
 
@@ -413,6 +413,9 @@ void wali_proc_exit (wasm_exec_env_t exec_env, long v);
 int wali_cl_get_argc (wasm_exec_env_t exec_env);
 int wali_cl_get_argv_len (wasm_exec_env_t exec_env, int arg_idx);
 int wali_cl_copy_argv (wasm_exec_env_t exec_env, int argv_addr, int arg_idx);
+
+/***** Threads *****/
+int wali_wasm_thread_spawn (wasm_exec_env_t exec_env, int setup_fnptr, int arg_wasm);
 
 /** Atomics **/
 int wali_a_cas (wasm_exec_env_t exec_env, long p, int t, int s);
@@ -434,7 +437,5 @@ void wali_a_crash (wasm_exec_env_t exec_env);
 
 int wali_a_ctz_64 (wasm_exec_env_t exec_env, long x);
 int wali_a_clz_64 (wasm_exec_env_t exec_env, long x);
-
-/** **/
 
 #endif
