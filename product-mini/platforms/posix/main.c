@@ -934,6 +934,7 @@ main(int argc, char *argv[])
 			NSYMBOL (     __syscall_SYS_fstatfs,      wali_syscall_fstatfs,      "(ii)I" ),
 			NSYMBOL (   __syscall_SYS_setrlimit,    wali_syscall_setrlimit,      "(ii)I" ),
 			NSYMBOL (      __syscall_SYS_gettid,       wali_syscall_gettid,        "()I" ),
+			NSYMBOL (       __syscall_SYS_futex,        wali_syscall_futex,  "(iiiiii)I" ),
 			NSYMBOL (  __syscall_SYS_getdents64,   wali_syscall_getdents64,     "(iii)I" ),
 			NSYMBOL (     __syscall_SYS_fadvise,      wali_syscall_fadvise,    "(iIIi)I" ),
 			NSYMBOL ( __syscall_SYS_clock_gettime, wali_syscall_clock_gettime,      "(ii)I" ),

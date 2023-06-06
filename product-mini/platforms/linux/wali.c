@@ -792,6 +792,12 @@ long wali_syscall_gettid (wasm_exec_env_t exec_env) {
   return __syscall0(SYS_gettid);
 }
 
+// 202 
+long wali_syscall_futex (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
+	SC(futex);
+	return __syscall6(SYS_futex, MADDR(a1), a2, a3, MADDR(a4), MADDR(a5), a6);
+}
+
 // 217 
 long wali_syscall_getdents64 (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(getdents64);
