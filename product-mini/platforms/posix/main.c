@@ -936,6 +936,7 @@ main(int argc, char *argv[])
 			NSYMBOL (      __syscall_SYS_gettid,       wali_syscall_gettid,        "()I" ),
 			NSYMBOL (       __syscall_SYS_futex,        wali_syscall_futex,  "(iiiiii)I" ),
 			NSYMBOL (  __syscall_SYS_getdents64,   wali_syscall_getdents64,     "(iii)I" ),
+			NSYMBOL (  __syscall_SYS_set_tid_address,   wali_syscall_set_tid_address,     "(i)I" ),
 			NSYMBOL (     __syscall_SYS_fadvise,      wali_syscall_fadvise,    "(iIIi)I" ),
 			NSYMBOL ( __syscall_SYS_clock_gettime, wali_syscall_clock_gettime,      "(ii)I" ),
 			NSYMBOL ( __syscall_SYS_clock_nanosleep, wali_syscall_clock_nanosleep,    "(iiii)I" ),

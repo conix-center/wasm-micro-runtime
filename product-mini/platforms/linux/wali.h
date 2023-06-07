@@ -281,7 +281,7 @@ long wali_syscall_epoll_ctl_old (wasm_exec_env_t exec_env);
 long wali_syscall_epoll_wait_old (wasm_exec_env_t exec_env);
 long wali_syscall_remap_file_pages (wasm_exec_env_t exec_env);
 long wali_syscall_getdents64 (wasm_exec_env_t exec_env, long a1, long a2, long a3);
-long wali_syscall_set_tid_address (wasm_exec_env_t exec_env);
+long wali_syscall_set_tid_address (wasm_exec_env_t exec_env, long a1);
 long wali_syscall_restart_syscall (wasm_exec_env_t exec_env);
 long wali_syscall_semtimedop (wasm_exec_env_t exec_env);
 long wali_syscall_fadvise (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4);

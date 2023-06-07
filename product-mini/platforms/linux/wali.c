@@ -804,6 +804,12 @@ long wali_syscall_getdents64 (wasm_exec_env_t exec_env, long a1, long a2, long a
 	return __syscall3(SYS_getdents64, a1, MADDR(a2), a3);
 }
 
+// 218 
+long wali_syscall_set_tid_address (wasm_exec_env_t exec_env, long a1) {
+  SC(set_tid_address);
+  return __syscall1(SYS_set_tid_address, MADDR(a1));
+}
+
 // 221 TODO
 long wali_syscall_fadvise (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(fadvise);
