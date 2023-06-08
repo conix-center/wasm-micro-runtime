@@ -1120,7 +1120,7 @@ wasm_interp_dump_op_count()
 #define HANDLE_OP(opcode) HANDLE_##opcode : opcode_table[opcode].count++;
 #else
 #define HANDLE_OP(opcode) HANDLE_##opcode:  \
-  do {  \
+  {  \
     int signo;  \
     if ((signo = get_pending_signal()) != -1) {  \
       pthread_mutex_lock(&sigtable_mut);  \
@@ -1128,7 +1128,7 @@ wasm_interp_dump_op_count()
       pthread_mutex_unlock(&sigtable_mut);  \
       wasm_runtime_call_wasm(exec_env, sigfn, 1, (uint32_t*)&signo); \
     } \
-  } while(0);
+  };
 #endif
 #if WASM_CPU_SUPPORTS_UNALIGNED_ADDR_ACCESS != 0
 #define FETCH_OPCODE_AND_DISPATCH()                    \

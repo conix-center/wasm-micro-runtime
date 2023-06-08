@@ -333,7 +333,7 @@ long wali_syscall_symlinkat (wasm_exec_env_t exec_env);
 long wali_syscall_readlinkat (wasm_exec_env_t exec_env);
 long wali_syscall_fchmodat (wasm_exec_env_t exec_env);
 long wali_syscall_faccessat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4);
-long wali_syscall_pselect6 (wasm_exec_env_t exec_env);
+long wali_syscall_pselect6 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6);
 long wali_syscall_ppoll (wasm_exec_env_t exec_env);
 long wali_syscall_unshare (wasm_exec_env_t exec_env);
 long wali_syscall_set_robust_list (wasm_exec_env_t exec_env);

@@ -855,6 +855,12 @@ long wali_syscall_faccessat (wasm_exec_env_t exec_env, long a1, long a2, long a3
 	return __syscall4(SYS_faccessat, a1, MADDR(a2), a3, a4);
 }
 
+// 270 
+long wali_syscall_pselect6 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
+	SC(pselect6);
+	return __syscall6(SYS_pselect6, a1, MADDR(a2), MADDR(a3), MADDR(a4), MADDR(a5), MADDR(a6));
+}
+
 // 280 
 long wali_syscall_utimensat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(utimensat);
