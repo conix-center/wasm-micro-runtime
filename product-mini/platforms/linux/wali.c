@@ -114,6 +114,9 @@ static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long
 #define ERRSC(f,...) { \
   LOG_WARNING("[%d] WALI: SC \"" # f "\" not implemented correctly yet! " __VA_ARGS__, gettid());  \
 }
+#define FATALSC(f,...) { \
+  LOG_WARNING("[%d] WALI: SC \"" # f "\" fatal error! " __VA_ARGS__, gettid());  \
+}
 
 
 
@@ -187,7 +190,7 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
 
   Addr mem_addr = (Addr) __syscall6(SYS_mmap, mmap_addr, a2, a3, MAP_FIXED|a4, (int)a5, a6);
   if (mem_addr == MAP_FAILED) {
-    LOG_ERROR("Failed to mmap!\n");
+    FATALSC(mmap, "Failed to mmap!\n");
     return (long) MAP_FAILED;
   }
   /* On success */
@@ -339,8 +342,15 @@ long wali_syscall_pwrite64 (wasm_exec_env_t exec_env, long a1, long a2, long a3,
 // 19 TODO
 long wali_syscall_readv (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(readv);
-	ERRSC(readv);
-	return __syscall3(SYS_readv, a1, MADDR(a2), a3);
+	//ERRSC(readv);
+  Addr wasm_iov = MADDR(a2);
+  int iov_cnt = a3;
+  
+  struct iovec *native_iov = copy_iovec(exec_env, wasm_iov, iov_cnt);
+	long retval = __syscall3(SYS_readv, a1, native_iov, a3);
+  free(native_iov);
+
+	return retval;
 }
 
 // 20 
@@ -939,7 +949,9 @@ _Noreturn void wali_siglongjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, i
   PC(siglongjmp);
   struct __libc_jmp_buf_tag* env = copy_jmp_buf(exec_env, MADDR(sigjmp_buf_addr));
   ERRSC(siglongjmp, "siglongjmp is UNSTABLE in WASM right now");
-  __libc_siglongjmp(env, val);
+  FATALSC(siglongjmp, "Not supported in WALI yet, exiting code...");
+  exit(0);
+  //__libc_siglongjmp(env, val);
 }
 
 
@@ -1045,7 +1057,7 @@ int wali_wasm_thread_spawn (wasm_exec_env_t exec_env, int setup_fnptr, int arg_w
 
   /** Setup args to pass to startup dispatcher **/
   if (!(thread_start_arg = wasm_runtime_malloc(sizeof(WasmThreadStartArg)))) {
-      LOG_ERROR("Runtime args allocation failed");
+      LOG_FATAL("Runtime args allocation failed");
       goto thread_spawn_fail;
   }
 
@@ -1060,7 +1072,7 @@ int wali_wasm_thread_spawn (wasm_exec_env_t exec_env, int setup_fnptr, int arg_w
   ret = wasm_cluster_create_thread(exec_env, new_module_inst, false,
                                    wali_dispatch_thread_libc, thread_start_arg);
   if (ret != 0) {
-      LOG_ERROR("Failed to spawn a new thread");
+      FATALSC(wasm_thread_spawn, "Failed to spawn a new thread");
       goto thread_spawn_fail;
   }
 
