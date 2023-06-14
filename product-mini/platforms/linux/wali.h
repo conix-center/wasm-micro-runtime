@@ -418,7 +418,7 @@ int wali_wasm_thread_spawn (wasm_exec_env_t exec_env, int setup_fnptr, int arg_w
 
 /** Atomics **/
 int wali_a_cas (wasm_exec_env_t exec_env, long p, int t, int s);
-void* wali_a_cas_p (wasm_exec_env_t exec_env, long p, long t, long s);
+int wali_a_cas_p (wasm_exec_env_t exec_env, long p, long t, long s);
 int wali_a_swap (wasm_exec_env_t exec_env, long p, int v);
 int wali_a_fetch_add (wasm_exec_env_t exec_env, long p, int v);
 void wali_a_and (wasm_exec_env_t exec_env, long p, int v);

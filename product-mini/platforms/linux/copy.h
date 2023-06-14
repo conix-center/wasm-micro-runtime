@@ -52,6 +52,16 @@
   printf("\n"); \
 }
 
+/* Copy pselect6 sigmask structure */
+void* copy_pselect6_sigmask(wasm_exec_env_t exec_env, Addr wasm_psel_sm, long* sm_struct) {
+  /* Libc stores the address in a long (64-bit). Cannot use RD_FIELD_ADDR since
+   * it reads 32-bit values */
+  long sigmask_addr = RD_FIELD(wasm_psel_sm, long);
+  sm_struct[0] = (long) MADDR(sigmask_addr);
+  sm_struct[1] = RD_FIELD(wasm_psel_sm, long);
+  return sm_struct;
+}
+
 /* Copy iovec structure */
 struct iovec* copy_iovec(wasm_exec_env_t exec_env, Addr wasm_iov, int iov_cnt) {
   struct iovec *new_iov = (struct iovec*) malloc(iov_cnt * sizeof(struct iovec));

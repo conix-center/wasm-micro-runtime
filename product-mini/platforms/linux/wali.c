@@ -233,7 +233,8 @@ long wali_syscall_munmap (wasm_exec_env_t exec_env, long a1, long a2) {
 // 12 TODO
 long wali_syscall_brk (wasm_exec_env_t exec_env, long a1) {
 	SC(brk);
-	ERRSC(brk, "brk syscall is nop in WASM right now");
+  ERR("brk syscall is a NOP in WASM right now");
+	//ERRSC(brk, "brk syscall is nop in WASM right now");
 	return 0; 
   //__syscall1(SYS_brk, MADDR(a1));
 }
@@ -858,7 +859,11 @@ long wali_syscall_faccessat (wasm_exec_env_t exec_env, long a1, long a2, long a3
 // 270 
 long wali_syscall_pselect6 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
 	SC(pselect6);
-	return __syscall6(SYS_pselect6, a1, MADDR(a2), MADDR(a3), MADDR(a4), MADDR(a5), MADDR(a6));
+  ERR("pselect args | a1: %ld, a2: %ld, a3: %ld, a4: %ld, a5: %ld, a6: %ld", a1, a2, a3, a4, a5, a6);
+  Addr wasm_psel_sm = MADDR(a6);
+  long sm_struct[2];
+  long* sm_struct_ptr = copy_pselect6_sigmask(exec_env, wasm_psel_sm, sm_struct);
+	return __syscall6(SYS_pselect6, a1, MADDR(a2), MADDR(a3), MADDR(a4), MADDR(a5), sm_struct_ptr);
 }
 
 // 280 
@@ -1075,13 +1080,13 @@ int wali_a_cas (wasm_exec_env_t exec_env, long p, int t, int s) {
 
 }
 
-void* wali_a_cas_p (wasm_exec_env_t exec_env, long p, long t, long s) {
+int wali_a_cas_p (wasm_exec_env_t exec_env, long p, long t, long s) {
   ATOM(a_cas_p);
   Addr tm = MADDR(t);
 	__asm__( "lock ; cmpxchg %3, %1"
 		: "=a"(tm), "=m"(*(void *volatile *)MADDR(p))
 		: "a"(tm), "r"(MADDR(s)) : "memory" );
-	return tm;
+	return WADDR(tm);
 }
 
 int wali_a_swap (wasm_exec_env_t exec_env, long p, int v) {
