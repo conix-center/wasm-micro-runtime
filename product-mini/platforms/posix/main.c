@@ -917,6 +917,7 @@ main(int argc, char *argv[])
 			NSYMBOL (      __syscall_SYS_fchown,       wali_syscall_fchown,     "(iii)I" ),
 			NSYMBOL (       __syscall_SYS_umask,        wali_syscall_umask,       "(i)I" ),
 			NSYMBOL (   __syscall_SYS_getrlimit,    wali_syscall_getrlimit,      "(ii)I" ),
+			NSYMBOL (   __syscall_SYS_getrusage,    wali_syscall_getrusage,      "(ii)I" ),
 			NSYMBOL (     __syscall_SYS_sysinfo,      wali_syscall_sysinfo,       "(i)I" ),
 			NSYMBOL (      __syscall_SYS_getuid,       wali_syscall_getuid,        "()I" ),
 			NSYMBOL (      __syscall_SYS_getgid,       wali_syscall_getgid,        "()I" ),

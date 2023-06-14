@@ -685,6 +685,12 @@ long wali_syscall_getrlimit (wasm_exec_env_t exec_env, long a1, long a2) {
 	return __syscall2(SYS_getrlimit, a1, MADDR(a2));
 }
 
+// 98 
+long wali_syscall_getrusage (wasm_exec_env_t exec_env, long a1, long a2) {
+	SC(getrusage);
+	return __syscall2(SYS_getrusage, a1, MADDR(a2));
+}
+
 // 99 
 long wali_syscall_sysinfo (wasm_exec_env_t exec_env, long a1) {
 	SC(sysinfo);

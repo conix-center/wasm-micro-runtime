@@ -161,7 +161,7 @@ long wali_syscall_lchown (wasm_exec_env_t exec_env);
 long wali_syscall_umask (wasm_exec_env_t exec_env, long a1);
 long wali_syscall_gettimeofday (wasm_exec_env_t exec_env);
 long wali_syscall_getrlimit (wasm_exec_env_t exec_env, long a1, long a2);
-long wali_syscall_getrusage (wasm_exec_env_t exec_env);
+long wali_syscall_getrusage (wasm_exec_env_t exec_env, long a1, long a2);
 long wali_syscall_sysinfo (wasm_exec_env_t exec_env, long a1);
 long wali_syscall_times (wasm_exec_env_t exec_env);
 long wali_syscall_ptrace (wasm_exec_env_t exec_env);
