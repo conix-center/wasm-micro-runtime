@@ -393,7 +393,7 @@ long wali_syscall_sched_yield (wasm_exec_env_t exec_env) {
 long wali_syscall_mremap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
 	SC(mremap);
 	ERRSC(mremap);
-	return __syscall5(SYS_mremap, MADDR(a1), a2, a3, a4, a5);
+	return __syscall5(SYS_mremap, MADDR(a1), a2, a3, a4, MADDR(a5));
 }
 
 // 26 
