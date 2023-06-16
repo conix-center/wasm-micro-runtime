@@ -112,10 +112,10 @@ static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long
 #define PC(f)  LOG_VERBOSE("[%d] WALI: | " # f, gettid())
 #define SC(f)  LOG_VERBOSE("[%d] WALI: SC | " # f, gettid())
 #define ERRSC(f,...) { \
-  LOG_WARNING("[%d] WALI: SC \"" # f "\" not implemented correctly yet! " __VA_ARGS__, gettid());  \
+  LOG_ERROR("[%d] WALI: SC \"" # f "\" not implemented correctly yet! " __VA_ARGS__, gettid());  \
 }
 #define FATALSC(f,...) { \
-  LOG_WARNING("[%d] WALI: SC \"" # f "\" fatal error! " __VA_ARGS__, gettid());  \
+  LOG_FATAL("[%d] WALI: SC \"" # f "\" fatal error! " __VA_ARGS__, gettid());  \
 }
 
 
@@ -237,7 +237,6 @@ long wali_syscall_munmap (wasm_exec_env_t exec_env, long a1, long a2) {
 long wali_syscall_brk (wasm_exec_env_t exec_env, long a1) {
 	SC(brk);
   ERR("brk syscall is a NOP in WASM right now");
-	//ERRSC(brk, "brk syscall is nop in WASM right now");
 	return 0; 
   //__syscall1(SYS_brk, MADDR(a1));
 }
@@ -601,7 +600,7 @@ long wali_syscall_ftruncate (wasm_exec_env_t exec_env, long a1, long a2) {
 // 78 TODO
 long wali_syscall_getdents (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(getdents);
-	ERRSC(getdents, "Not going to support this yet; use getdents64");
+	FATALSC(getdents, "Not going to support this yet; use getdents64");
 	return __syscall3(SYS_getdents, a1, MADDR(a2), a3);
 }
 
@@ -937,7 +936,8 @@ int wali_sigsetjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int savesigs)
   Addr wasm_sigjmp_buf = MADDR(sigjmp_buf_addr);
   struct __libc_jmp_buf_tag* env = copy_jmp_buf(exec_env, wasm_sigjmp_buf);
   int retval = __libc_sigsetjmp_asm(env, savesigs);
-  ERRSC(sigsetjmp, "sigsetjmp is UNSTABLE in WASM right now");
+  ERRSC(sigsetjmp, "Unsupported in WALI right now, continuing execution with "
+   "flag on siglongjmp");
   if (retval == 0) {
     copy2wasm_jmp_buf(exec_env, wasm_sigjmp_buf, env);
     free(env);
@@ -948,7 +948,6 @@ int wali_sigsetjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int savesigs)
 _Noreturn void wali_siglongjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int val) {
   PC(siglongjmp);
   struct __libc_jmp_buf_tag* env = copy_jmp_buf(exec_env, MADDR(sigjmp_buf_addr));
-  ERRSC(siglongjmp, "siglongjmp is UNSTABLE in WASM right now");
   FATALSC(siglongjmp, "Not supported in WALI yet, exiting code...");
   exit(0);
   //__libc_siglongjmp(env, val);
@@ -1057,7 +1056,7 @@ int wali_wasm_thread_spawn (wasm_exec_env_t exec_env, int setup_fnptr, int arg_w
 
   /** Setup args to pass to startup dispatcher **/
   if (!(thread_start_arg = wasm_runtime_malloc(sizeof(WasmThreadStartArg)))) {
-      LOG_FATAL("Runtime args allocation failed");
+      FATALSC(wasm_thread_spawn, "Runtime args allocation failed");
       goto thread_spawn_fail;
   }
 
