@@ -151,6 +151,8 @@ endif ()
 
 include (${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 
+file (COPY ${CMAKE_CURRENT_LIST_DIR}/wali_arch/${CMAKE_SYSTEM_PROCESSOR}/syscall.h DESTINATION ${CMAKE_CURRENT_LIST_DIR})
+file (RENAME ${CMAKE_CURRENT_LIST_DIR}/syscall.h ${CMAKE_CURRENT_LIST_DIR}/syscall_arch.h)
 file (GLOB_RECURSE wali_arch_sources ${CMAKE_CURRENT_LIST_DIR}/wali_arch/${CMAKE_SYSTEM_PROCESSOR}/*.s ${CMAKE_CURRENT_LIST_DIR}/wali_arch/*.c)
 set (WALI_SOURCES wali.c ${wali_arch_sources})
 

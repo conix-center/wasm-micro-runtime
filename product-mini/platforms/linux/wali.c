@@ -8,7 +8,7 @@
 #include "copy.h"
 #include "../interpreter/wasm_runtime.h"
 
-#include "wali_arch/x86_64/syscall.h"
+#include "syscall_arch.h"
 
 extern int app_argc;
 extern char **app_argv;
