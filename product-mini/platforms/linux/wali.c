@@ -8,6 +8,8 @@
 #include "copy.h"
 #include "../interpreter/wasm_runtime.h"
 
+#include "wali_arch/x86_64/syscall.h"
+
 extern int app_argc;
 extern char **app_argv;
 
@@ -40,65 +42,6 @@ void wali_init_native() {
   THREAD_ID = 1;
 }
 
-static __inline long __syscall0(long n)
-{
-	unsigned long ret;
-	__asm__ __volatile__ ("syscall" : "=a"(ret) : "a"(n) : "rcx", "r11", "memory");
-	return ret;
-}
-
-static __inline long __syscall1(long n, long a1)
-{
-	unsigned long ret;
-	__asm__ __volatile__ ("syscall" : "=a"(ret) : "a"(n), "D"(a1) : "rcx", "r11", "memory");
-	return ret;
-}
-
-static __inline long __syscall2(long n, long a1, long a2)
-{
-	unsigned long ret;
-	__asm__ __volatile__ ("syscall" : "=a"(ret) : "a"(n), "D"(a1), "S"(a2)
-						  : "rcx", "r11", "memory");
-	return ret;
-}
-
-static __inline long __syscall3(long n, long a1, long a2, long a3)
-{
-	unsigned long ret;
-	__asm__ __volatile__ ("syscall" : "=a"(ret) : "a"(n), "D"(a1), "S"(a2),
-						  "d"(a3) : "rcx", "r11", "memory");
-	return ret;
-}
-
-static __inline long __syscall4(long n, long a1, long a2, long a3, long a4)
-{
-	unsigned long ret;
-	register long r10 __asm__("r10") = a4;
-	__asm__ __volatile__ ("syscall" : "=a"(ret) : "a"(n), "D"(a1), "S"(a2),
-						  "d"(a3), "r"(r10): "rcx", "r11", "memory");
-	return ret;
-}
-
-static __inline long __syscall5(long n, long a1, long a2, long a3, long a4, long a5)
-{
-	unsigned long ret;
-	register long r10 __asm__("r10") = a4;
-	register long r8 __asm__("r8") = a5;
-	__asm__ __volatile__ ("syscall" : "=a"(ret) : "a"(n), "D"(a1), "S"(a2),
-						  "d"(a3), "r"(r10), "r"(r8) : "rcx", "r11", "memory");
-	return ret;
-}
-
-static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long a5, long a6)
-{
-	unsigned long ret;
-	register long r10 __asm__("r10") = a4;
-	register long r8 __asm__("r8") = a5;
-	register long r9 __asm__("r9") = a6;
-	__asm__ __volatile__ ("syscall" : "=a"(ret) : "a"(n), "D"(a1), "S"(a2),
-						  "d"(a3), "r"(r10), "r"(r8), "r"(r9) : "rcx", "r11", "memory");
-	return ret;
-}
 
 #define __syscall1(n, a1) __syscall1(n, (long)a1)
 #define __syscall2(n, a1, a2) __syscall2(n, (long)a1, (long)a2)

@@ -151,8 +151,8 @@ endif ()
 
 include (${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 
-file (GLOB_RECURSE wali_asm_sources ${CMAKE_CURRENT_LIST_DIR}/wali_asm/x86_64/*.s ${CMAKE_CURRENT_LIST_DIR}/wali_asm/*.c)
-set (WALI_SOURCES wali.c ${wali_asm_sources})
+file (GLOB_RECURSE wali_arch_sources ${CMAKE_CURRENT_LIST_DIR}/wali_arch/${CMAKE_SYSTEM_PROCESSOR}/*.s ${CMAKE_CURRENT_LIST_DIR}/wali_arch/*.c)
+set (WALI_SOURCES wali.c ${wali_arch_sources})
 
 add_executable (iwasm main.c ${WALI_SOURCES} ${UNCOMMON_SHARED_SOURCE})
 
