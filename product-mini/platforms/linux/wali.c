@@ -64,7 +64,9 @@ void wali_init_native() {
 #define FATALSC(f,...) { \
   LOG_FATAL("[%d] WALI: SC \"" # f "\" fatal error! " __VA_ARGS__, gettid());  \
 }
-
+#define MISSC(f,...) { \
+  LOG_FATAL("[%d] WALI: SC \"" # f "\" fatal error! No such syscall on platform", gettid());  \
+}
 
   #if __x86_64__
   #elif __aarch64__ || __riscv64__
@@ -125,11 +127,15 @@ long wali_syscall_lstat (wasm_exec_env_t exec_env, long a1, long a2) {
   #endif
 }
 
-// 7 TODO
+#define CONV_TIME_TO_TS(x) ( (x>=0) ? &((struct timespec){.tv_sec = x/1000, .tv_nsec = x%1000*1000000}) : 0 )
+// 7 
 long wali_syscall_poll (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(poll);
-	ERRSC(poll);
-	return __syscall3(SYS_poll, MADDR(a1), a2, a3);
+  #if __x86_64__
+	  return __syscall3(SYS_poll, MADDR(a1), a2, a3);
+  #elif __aarch64__ || __riscv64__
+    return wali_syscall_ppoll(exec_env, a1, a2, (long)CONV_TIME_TO_TS(a3), 0, _NSIG/8);
+  #endif
 }
 
 // 8 
@@ -353,7 +359,7 @@ long wali_syscall_select (wasm_exec_env_t exec_env, long a1, long a2, long a3, l
   #if __x86_64__
 	  return __syscall5(SYS_select, a1, MADDR(a2), MADDR(a3), MADDR(a4), MADDR(a5));
   #elif __aarch64__ || __riscv64__
-    return wali_syscall_pselect6(a1, a2, a3, a4, a5, (long[]){0, _NSIG/8});
+    return wali_syscall_pselect6(exec_env, a1, a2, a3, a4, a5, (long)((long[]){0, _NSIG/8}));
   #endif
 }
 
@@ -394,6 +400,13 @@ long wali_syscall_dup2 (wasm_exec_env_t exec_env, long a1, long a2) {
   #if __x86_64__
 	  return __syscall2(SYS_dup2, a1, a2);
   #elif __aarch64__ || __riscv64__
+    /* Dup2 returns newfd while dup3 throws error, handle with case below */
+    if (a1 == a2) {
+      long r = wali_syscall_fcntl(exec_env, a1, F_GETFD, 0);
+      return (r >= 0) ? a2 : r;
+    } else {
+      return wali_syscall_dup3(exec_env, a1, a2, 0);
+    }
   #endif
 }
 
@@ -409,8 +422,9 @@ long wali_syscall_alarm (wasm_exec_env_t exec_env, long a1) {
   #if __x86_64__
 	  return __syscall1(SYS_alarm, a1);
   #elif __aarch64__ || __riscv64__
-    FATALSC(alarm, "No such syscall for aarch64, riscv64");
+    MISSC(alarm);
   #endif
+  exit(1);
 }
 
 // 38 TODO
@@ -621,7 +635,7 @@ long wali_syscall_mkdir (wasm_exec_env_t exec_env, long a1, long a2) {
   #if __x86_64__
 	  return __syscall2(SYS_mkdir, MADDR(a1), a2);
   #elif __aarch64__ || __riscv64__
-    return wali_syscall_mkdirat(exec_env, a1, a2, a3);
+    return wali_syscall_mkdirat(exec_env, AT_FDCWD, a1, a2);
   #endif
 }
 
@@ -681,7 +695,7 @@ long wali_syscall_chmod (wasm_exec_env_t exec_env, long a1, long a2) {
   #if __x86_64__
 	  return __syscall2(SYS_chmod, MADDR(a1), a2);
   #elif __aarch64__ || __riscv64__
-    return wali_syscall_fchmodat(AT_FDCWD, a1, a2);
+    return wali_syscall_fchmodat(exec_env, AT_FDCWD, a1, a2, 0);
   #endif
 }
 
@@ -697,7 +711,7 @@ long wali_syscall_chown (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
   #if __x86_64__
 	  return __syscall3(SYS_chown, MADDR(a1), a2, a3);
   #elif __aarch64__ || __riscv64__
-    return wali_syscall_fchownat(AT_FDCWD, a1, a2, a3, 0);
+    return wali_syscall_fchownat(exec_env, AT_FDCWD, a1, a2, a3, 0);
   #endif
 }
 
