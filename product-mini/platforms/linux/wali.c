@@ -8,6 +8,10 @@
 #include "copy.h"
 #include "../interpreter/wasm_runtime.h"
 
+#if !__x86_64__ && !__aarch64__ && !__riscv64__
+#error "Unsupported architecture for WALI -- Only supports [x86_64, aarch64, riscv64]"
+#endif
+
 #include "syscall_arch.h"
 
 extern int app_argc;
@@ -62,6 +66,10 @@ void wali_init_native() {
 }
 
 
+#if __x86_64__
+#elif __aarch64__
+#elif __riscv64__
+#endif
 
 /***** WALI Methods *******/
 // 0
@@ -79,7 +87,11 @@ long wali_syscall_write (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 // 2
 long wali_syscall_open (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(open);
-	return __syscall3(SYS_open, MADDR(a1), a2, a3);
+  #if __x86_64__
+	  return __syscall3(SYS_open, MADDR(a1), a2, a3);
+  #elif __aarch64__ || __riscv64__
+    return wali_syscall_openat(exec_env, AT_FDCWD, a1, a2, a3);
+  #endif
 }
 
 // 3
