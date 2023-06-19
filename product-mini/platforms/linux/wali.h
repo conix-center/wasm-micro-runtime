@@ -325,7 +325,7 @@ long wali_syscall_mkdirat (wasm_exec_env_t exec_env, long a1, long a2, long a3);
 long wali_syscall_mknodat (wasm_exec_env_t exec_env);
 long wali_syscall_fchownat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5);
 long wali_syscall_futimesat (wasm_exec_env_t exec_env);
-long wali_syscall_fstatat (wasm_exec_env_t exec_env);
+long wali_syscall_fstatat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4);
 long wali_syscall_unlinkat (wasm_exec_env_t exec_env, long a1, long a2, long a3);
 long wali_syscall_renameat (wasm_exec_env_t exec_env);
 long wali_syscall_linkat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5);

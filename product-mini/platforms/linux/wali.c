@@ -914,6 +914,12 @@ long wali_syscall_fchownat (wasm_exec_env_t exec_env, long a1, long a2, long a3,
 	return __syscall5(SYS_fchownat, a1, MADDR(a2), a3, a4, a5);
 }
 
+// 262 
+long wali_syscall_fstatat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
+	SC(fstatat);
+	return __syscall4(SYS_fstatat, a1, MADDR(a2), MADDR(a3), a4);
+}
+
 // 263 
 long wali_syscall_unlinkat (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(unlinkat);

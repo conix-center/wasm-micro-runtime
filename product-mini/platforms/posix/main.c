@@ -945,6 +945,7 @@ main(int argc, char *argv[])
 			NSYMBOL (      __syscall_SYS_openat,       wali_syscall_openat,    "(iiii)I" ),
 			NSYMBOL (     __syscall_SYS_mkdirat,      wali_syscall_mkdirat,     "(iii)I" ),
 			NSYMBOL (    __syscall_SYS_fchownat,     wali_syscall_fchownat,   "(iiiii)I" ),
+			NSYMBOL (     __syscall_SYS_fstatat,      wali_syscall_fstatat,    "(iiii)I" ),
 			NSYMBOL (    __syscall_SYS_unlinkat,     wali_syscall_unlinkat,     "(iii)I" ),
 			NSYMBOL (      __syscall_SYS_linkat,       wali_syscall_linkat,   "(iiiii)I" ),
 			NSYMBOL (   __syscall_SYS_symlinkat,    wali_syscall_symlinkat,     "(iii)I" ),
