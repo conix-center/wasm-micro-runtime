@@ -888,10 +888,46 @@ long wali_syscall_openat (wasm_exec_env_t exec_env, long a1, long a2, long a3, l
 	return __syscall4(SYS_openat, a1, MADDR(a2), a3, a4);
 }
 
+// 258 
+long wali_syscall_mkdirat (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
+	SC(mkdirat);
+	return __syscall3(SYS_mkdirat, a1, MADDR(a2), a3);
+}
+
+// 260 
+long wali_syscall_fchownat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
+	SC(fchownat);
+	return __syscall5(SYS_fchownat, a1, MADDR(a2), a3, a4, a5);
+}
+
 // 263 
 long wali_syscall_unlinkat (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(unlinkat);
 	return __syscall3(SYS_unlinkat, a1, MADDR(a2), a3);
+}
+
+// 265 
+long wali_syscall_linkat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
+	SC(linkat);
+	return __syscall5(SYS_linkat, a1, MADDR(a2), a3, MADDR(a4), a5);
+}
+
+// 266 
+long wali_syscall_symlinkat (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
+	SC(symlinkat);
+	return __syscall3(SYS_symlinkat, MADDR(a1), a2, MADDR(a3));
+}
+
+// 267 
+long wali_syscall_readlinkat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
+	SC(readlinkat);
+	return __syscall4(SYS_readlinkat, a1, MADDR(a2), MADDR(a3), a4);
+}
+
+// 268 
+long wali_syscall_fchmodat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
+	SC(fchmodat);
+	return __syscall4(SYS_fchmodat, a1, MADDR(a2), a3, a4);
 }
 
 // 269 
@@ -908,6 +944,12 @@ long wali_syscall_pselect6 (wasm_exec_env_t exec_env, long a1, long a2, long a3,
   long sm_struct[2];
   long* sm_struct_ptr = copy_pselect6_sigmask(exec_env, wasm_psel_sm, sm_struct);
 	return __syscall6(SYS_pselect6, a1, MADDR(a2), MADDR(a3), MADDR(a4), MADDR(a5), sm_struct_ptr);
+}
+
+// 271 
+long wali_syscall_ppoll (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
+	SC(ppoll);
+	return __syscall5(SYS_ppoll, MADDR(a1), a2, MADDR(a3), MADDR(a4), a5);
 }
 
 // 280 
@@ -933,6 +975,12 @@ long wali_syscall_eventfd2 (wasm_exec_env_t exec_env, long a1, long a2) {
 	return __syscall2(SYS_eventfd2, a1, a2);
 }
 
+// 292 
+long wali_syscall_dup3 (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
+	SC(dup3);
+	return __syscall3(SYS_dup3, a1, a2, a3);
+}
+
 // 293 
 long wali_syscall_pipe2 (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(pipe2);
@@ -943,6 +991,12 @@ long wali_syscall_pipe2 (wasm_exec_env_t exec_env, long a1, long a2) {
 long wali_syscall_prlimit64 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(prlimit64);
 	return __syscall4(SYS_prlimit64, a1, a2, MADDR(a3), MADDR(a4));
+}
+
+// 316 
+long wali_syscall_renameat2 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
+	SC(renameat2);
+	return __syscall5(SYS_renameat2, a1, MADDR(a2), a3, MADDR(a4), a5);
 }
 
 // 318 
