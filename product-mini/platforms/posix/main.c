@@ -967,25 +967,25 @@ main(int argc, char *argv[])
 
       /* Libc imports */
       // Atomics
-      NSYMBOL ( a_cas, wali_a_cas, "(iii)i" ),
-      NSYMBOL ( a_cas_p, wali_a_cas_p, "(iii)i" ),
-      NSYMBOL ( a_swap, wali_a_swap, "(ii)i" ),
-      NSYMBOL ( a_fetch_add, wali_a_fetch_add, "(ii)i" ),
-      NSYMBOL ( a_and, wali_a_and, "(ii)" ),
-      NSYMBOL ( a_or, wali_a_or, "(ii)" ),
-      NSYMBOL ( a_and_64, wali_a_and_64, "(iI)" ),
-      NSYMBOL ( a_or_64, wali_a_or_64, "(iI)" ),
+      //NSYMBOL ( a_cas, wali_a_cas, "(iii)i" ),
+      //NSYMBOL ( a_cas_p, wali_a_cas_p, "(iii)i" ),
+      //NSYMBOL ( a_swap, wali_a_swap, "(ii)i" ),
+      //NSYMBOL ( a_fetch_add, wali_a_fetch_add, "(ii)i" ),
+      //NSYMBOL ( a_and, wali_a_and, "(ii)" ),
+      //NSYMBOL ( a_or, wali_a_or, "(ii)" ),
+      //NSYMBOL ( a_and_64, wali_a_and_64, "(iI)" ),
+      //NSYMBOL ( a_or_64, wali_a_or_64, "(iI)" ),
 
-      NSYMBOL ( a_inc, wali_a_inc, "(i)" ),
-      NSYMBOL ( a_dec, wali_a_dec, "(i)" ),
-      NSYMBOL ( a_store, wali_a_store, "(ii)" ),
-      
-      NSYMBOL ( a_barrier, wali_a_barrier, "()" ),
-      NSYMBOL ( a_spin, wali_a_spin, "()" ),
-      NSYMBOL ( a_crash, wali_a_crash, "()" ),
+      //NSYMBOL ( a_inc, wali_a_inc, "(i)" ),
+      //NSYMBOL ( a_dec, wali_a_dec, "(i)" ),
+      //NSYMBOL ( a_store, wali_a_store, "(ii)" ),
+      //
+      //NSYMBOL ( a_barrier, wali_a_barrier, "()" ),
+      //NSYMBOL ( a_spin, wali_a_spin, "()" ),
+      //NSYMBOL ( a_crash, wali_a_crash, "()" ),
 
-      NSYMBOL ( a_ctz_64, wali_a_ctz_64, "(I)i" ),
-      NSYMBOL ( a_clz_64, wali_a_clz_64, "(I)i" ),
+      //NSYMBOL ( a_ctz_64, wali_a_ctz_64, "(I)i" ),
+      //NSYMBOL ( a_clz_64, wali_a_clz_64, "(I)i" ),
 
       // Threads
       // thread_spawn is the substitute for syscall(clone)
