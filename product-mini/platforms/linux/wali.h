@@ -400,6 +400,8 @@ long wali_syscall_io_pgetevents (wasm_exec_env_t exec_env);
 long wali_syscall_rseq (wasm_exec_env_t exec_env);
 long wali_syscall_faccessat2 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4);
 
+/* Alias calls */
+long wali_syscall_ppoll_aliased (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5);
 
 /** Auxillary **/
 int wali_sigsetjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int savesigs);

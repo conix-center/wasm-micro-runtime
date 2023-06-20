@@ -129,14 +129,14 @@ long wali_syscall_lstat (wasm_exec_env_t exec_env, long a1, long a2) {
   #endif
 }
 
-#define CONV_TIME_TO_TS(x) ( (x>=0) ? &((struct timespec){.tv_sec = x/1000, .tv_nsec = x%1000*1000000}) : 0 )
+#define CONV_TIME_TO_TS(x) ( (x>=0) ? &((struct timespec){.tv_sec = x/1000, .tv_nsec = (x%1000)*1000000}) : 0 )
 // 7 
 long wali_syscall_poll (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(poll);
   #if __x86_64__
 	  return __syscall3(SYS_poll, MADDR(a1), a2, a3);
   #elif __aarch64__ || __riscv64__
-    return wali_syscall_ppoll(exec_env, a1, a2, (long)CONV_TIME_TO_TS(a3), 0, _NSIG/8);
+    return wali_syscall_ppoll_aliased(exec_env, a1, a2, (long)CONV_TIME_TO_TS(a3), 0, _NSIG/8);
   #endif
 }
 
@@ -993,6 +993,11 @@ long wali_syscall_pselect6 (wasm_exec_env_t exec_env, long a1, long a2, long a3,
 long wali_syscall_ppoll (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
 	SC(ppoll);
 	return __syscall5(SYS_ppoll, MADDR(a1), a2, MADDR(a3), MADDR(a4), a5);
+}
+/* Since poll needs a time conversion on pointer, need to use a different alias call */
+long wali_syscall_ppoll_aliased (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
+	SC(ppoll-alias);
+	return __syscall5(SYS_ppoll, MADDR(a1), a2, a3, MADDR(a4), a5);
 }
 
 // 280 
