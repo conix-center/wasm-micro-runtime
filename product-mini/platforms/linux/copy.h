@@ -180,6 +180,34 @@ struct __libc_jmp_buf_tag* copy_jmp_buf (wasm_exec_env_t exec_env, Addr wasm_jmp
 /* Architecture-specific copies */
 
 #if __aarch64__
+
+/* Copy for differing `struct stat` */
+void copy2wasm_stat_struct (wasm_exec_env_t exec_env, Addr wasm_stat, struct stat *n_stat) {
+  if (n_stat == NULL) { return; }
+  WR_FIELD(wasm_stat, n_stat->st_dev, uint64_t);
+  WR_FIELD(wasm_stat, n_stat->st_ino, uint64_t);
+
+  long nlink = n_stat->st_nlink;
+  WR_FIELD(wasm_stat, nlink, uint64_t);
+  WR_FIELD(wasm_stat, n_stat->st_mode, uint32_t);
+
+  WR_FIELD(wasm_stat, n_stat->st_uid, uint32_t);
+  WR_FIELD(wasm_stat, n_stat->st_gid, uint32_t);
+  int pad = 0;
+  WR_FIELD(wasm_stat, pad, uint32_t); // Pad
+  WR_FIELD(wasm_stat, n_stat->st_rdev, uint64_t);
+  WR_FIELD(wasm_stat, n_stat->st_size, uint64_t);
+
+  long blksize = n_stat->st_blksize;
+  WR_FIELD(wasm_stat, blksize, uint64_t);
+  WR_FIELD(wasm_stat, n_stat->st_blocks, uint64_t);
+
+  WR_FIELD(wasm_stat, n_stat->st_atim, struct timespec);
+  WR_FIELD(wasm_stat, n_stat->st_mtim, struct timespec);
+  WR_FIELD(wasm_stat, n_stat->st_ctim, struct timespec);
+}
+
+
 static int swap_bits (int val, int b1pos, int b2pos) {
   int b1 = (val >> b1pos) & 1;
   int b2 = (val >> b2pos) & 1;
@@ -198,6 +226,9 @@ int swap_open_flags (int open_flags) {
   int result = swap_bits(one_swap, olargefile_shf, onofollow_shf);
   return result;
 }
+
+
+
 
 #elif __riscv64__
 

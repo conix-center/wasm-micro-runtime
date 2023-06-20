@@ -932,7 +932,15 @@ long wali_syscall_fchownat (wasm_exec_env_t exec_env, long a1, long a2, long a3,
 // 262 
 long wali_syscall_fstatat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(fstatat);
-	return __syscall4(SYS_newfstatat, a1, MADDR(a2), MADDR(a3), a4);
+  #if __x86_64__
+	  return __syscall4(SYS_newfstatat, a1, MADDR(a2), MADDR(a3), a4);
+  #elif __aarch64__ || __riscv64__
+    Addr wasm_stat = MADDR(a3);
+    struct stat sb;
+    long retval = __syscall4(SYS_newfstatat, a1, MADDR(a2), &sb, a4);
+    copy2wasm_stat_struct (exec_env, wasm_stat, &sb);
+    return retval;
+  #endif
 }
 
 // 263 
