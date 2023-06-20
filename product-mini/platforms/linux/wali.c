@@ -90,7 +90,9 @@ long wali_syscall_open (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(open);
   #if __x86_64__
 	  return __syscall3(SYS_open, MADDR(a1), a2, a3);
-  #elif __aarch64__ || __riscv64__
+  #elif __aarch64__
+    return wali_syscall_openat(exec_env, AT_FDCWD, a1, a2, a3);
+  #elif __riscv64__
     return wali_syscall_openat(exec_env, AT_FDCWD, a1, a2, a3);
   #endif
 }
@@ -574,7 +576,16 @@ long wali_syscall_uname (wasm_exec_env_t exec_env, long a1) {
 // 72 
 long wali_syscall_fcntl (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(fcntl);
-	return __syscall3(SYS_fcntl, a1, a2, a3);
+  /* Swap open flags only on F_GETFL and F_SETFL mode for aarch64 */
+  #if __aarch64__
+    switch (a2) {
+      case F_GETFL: return swap_open_flags(__syscall3(SYS_fcntl, a1, a2, a3)); break;
+      case F_SETFL: return __syscall3(SYS_fcntl, a1, a2, swap_open_flags(a3)); break;
+      default: return __syscall3(SYS_fcntl, a1, a2, a3);
+    }
+  #else
+	  return __syscall3(SYS_fcntl, a1, a2, a3);
+  #endif
 }
 
 // 73 TODO
@@ -899,7 +910,11 @@ long wali_syscall_exit_group (wasm_exec_env_t exec_env, long a1) {
 // 257 
 long wali_syscall_openat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(openat);
-	return __syscall4(SYS_openat, a1, MADDR(a2), a3, a4);
+  #if __aarch64__
+	  return __syscall4(SYS_openat, a1, MADDR(a2), swap_open_flags(a3), a4);
+  #else
+	  return __syscall4(SYS_openat, a1, MADDR(a2), a3, a4);
+  #endif
 }
 
 // 258 
@@ -998,13 +1013,21 @@ long wali_syscall_eventfd2 (wasm_exec_env_t exec_env, long a1, long a2) {
 // 292 
 long wali_syscall_dup3 (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(dup3);
-	return __syscall3(SYS_dup3, a1, a2, a3);
+  #if __aarch64__
+	  return __syscall3(SYS_dup3, a1, a2, swap_open_flags(a3));
+  #else
+	  return __syscall3(SYS_dup3, a1, a2, a3);
+  #endif
 }
 
 // 293 
 long wali_syscall_pipe2 (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(pipe2);
-	return __syscall2(SYS_pipe2, MADDR(a1), a2);
+  #if __aarch64__
+	  return __syscall2(SYS_pipe2, MADDR(a1), swap_open_flags(a2));
+  #else
+	  return __syscall2(SYS_pipe2, MADDR(a1), a2);
+  #endif
 }
 
 // 302 

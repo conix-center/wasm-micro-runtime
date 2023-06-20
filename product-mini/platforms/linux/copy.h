@@ -175,4 +175,33 @@ struct __libc_jmp_buf_tag* copy_jmp_buf (wasm_exec_env_t exec_env, Addr wasm_jmp
 }
 
 
+
+
+/* Architecture-specific copies */
+
+#if __aarch64__
+static int swap_bits (int val, int b1pos, int b2pos) {
+  int b1 = (val >> b1pos) & 1;
+  int b2 = (val >> b2pos) & 1;
+  int x = b1 ^ b2;
+  x = ((x << b1pos) | (x << b2pos));
+  return val ^ x;
+}
+/* aarch64 swaps O_DIRECTORY <-> O_DIRECT
+ *    and O_NOFOLLOW <-> O_LARGEFILE */
+int swap_open_flags (int open_flags) {
+  int odirectory_shf = __builtin_ctz(O_DIRECTORY);
+  int odirect_shf = __builtin_ctz(O_DIRECT);
+  int olargefile_shf = __builtin_ctz(O_LARGEFILE);
+  int onofollow_shf = __builtin_ctz(O_NOFOLLOW);
+  int one_swap = swap_bits(open_flags, odirectory_shf, odirect_shf);
+  int result = swap_bits(one_swap, olargefile_shf, onofollow_shf);
+  return result;
+}
+
+#elif __riscv64__
+
+#endif
+
+
 #endif
