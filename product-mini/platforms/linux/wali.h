@@ -5,12 +5,25 @@
 #include "bh_platform.h"
 #include "aot_export.h"
 
+/* Architecture defines */
+#ifndef __riscv64__
+#if __riscv
+  #if __riscv_xlen == 64
+    #define __riscv64__ 1
+  #endif
+#endif
+#endif
+
+#if !__x86_64__ && !__aarch64__ && !__riscv64__
+#error "Unsupported architecture for WALI -- Only supports [x86_64, aarch64, riscv64]"
+#endif
+
+
 #define WASM_PAGESIZE 65536
 
 typedef uint8_t* Addr;
 typedef uint32_t FuncPtr_t;
 
-uint32 psize;
 #define BASE_ADDR() ({  \
   (Addr) wasm_runtime_addr_app_to_native(get_module_inst(exec_env), 0); \
 })
