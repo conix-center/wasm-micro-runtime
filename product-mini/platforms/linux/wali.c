@@ -460,7 +460,7 @@ long wali_syscall_accept (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 }
 
 // 44 
-long wali_syscall_sendto (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
+long wali_syscall_sendto (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
 	SC(sendto);
 	return __syscall6(SYS_sendto, a1, MADDR(a2), a3, a4, MADDR(a5), a6);
 }
