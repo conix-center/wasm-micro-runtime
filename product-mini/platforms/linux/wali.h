@@ -120,7 +120,7 @@ long wali_syscall_sendfile (wasm_exec_env_t exec_env);
 long wali_syscall_socket (wasm_exec_env_t exec_env, long a1, long a2, long a3);
 long wali_syscall_connect (wasm_exec_env_t exec_env, long a1, long a2, long a3);
 long wali_syscall_accept (wasm_exec_env_t exec_env, long a1, long a2, long a3);
-long wali_syscall_sendto (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4);
+long wali_syscall_sendto (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6);
 long wali_syscall_recvfrom (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6);
 long wali_syscall_sendmsg (wasm_exec_env_t exec_env, long a1, long a2, long a3);
 long wali_syscall_recvmsg (wasm_exec_env_t exec_env, long a1, long a2, long a3);

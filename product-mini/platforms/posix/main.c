@@ -880,7 +880,7 @@ main(int argc, char *argv[])
 			NSYMBOL (      __syscall_SYS_socket,       wali_syscall_socket,     "(iii)I" ),
 			NSYMBOL (     __syscall_SYS_connect,      wali_syscall_connect,     "(iii)I" ),
 			NSYMBOL (      __syscall_SYS_accept,       wali_syscall_accept,     "(iii)I" ),
-			NSYMBOL (      __syscall_SYS_sendto,       wali_syscall_sendto,    "(iiii)I" ),
+			NSYMBOL (      __syscall_SYS_sendto,       wali_syscall_sendto,  "(iiiiii)I" ),
 			NSYMBOL (    __syscall_SYS_recvfrom,     wali_syscall_recvfrom,  "(iiiiii)I" ),
 			NSYMBOL (     __syscall_SYS_sendmsg,      wali_syscall_sendmsg,     "(iii)I" ),
 			NSYMBOL (     __syscall_SYS_recvmsg,      wali_syscall_recvmsg,     "(iii)I" ),
