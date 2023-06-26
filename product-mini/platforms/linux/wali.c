@@ -158,8 +158,9 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
   uint32 mem_size = wasm_runtime_get_memory_size(get_module_inst(exec_env)); 
   ERR("Mem Base: %p | Mem End: %p | Mem Size: 0x%x | Mmap Addr: %p", base_addr, base_addr + mem_size, mem_size, mmap_addr);
 
-  Addr mem_addr = (Addr) __syscall6(SYS_mmap, mmap_addr, a2, a3, MAP_FIXED|a4, (int)a5, a6);
-  if (mem_addr == MAP_FAILED) {
+  Addr mem_addr = (Addr) __syscall6(SYS_mmap, mmap_addr, a2, a3, MAP_FIXED|a4, a5, a6);
+  /* Sometimes mmap returns -9 instead of MAP_FAILED? */
+  if ((mem_addr == MAP_FAILED) || (mem_addr == -9)) {
     FATALSC(mmap, "Failed to mmap!\n");
     return (long) MAP_FAILED;
   }
