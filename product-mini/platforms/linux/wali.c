@@ -1179,6 +1179,7 @@ int wali_wasm_thread_spawn (wasm_exec_env_t exec_env, int setup_fnptr, int arg_w
   int thread_id = -1;
   int ret = -1;
 
+  /* Table 0 is only supported currently */
   wasm_function_inst_t setup_wasm_fn = 
       wasm_runtime_get_indirect_function(module_inst, 0, setup_fnptr);
 

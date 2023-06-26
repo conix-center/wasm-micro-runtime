@@ -1706,7 +1706,7 @@ wasm_runtime_get_function_idx(WASMModuleInstanceCommon *module_inst, WASMFunctio
 #endif
 #if WASM_ENABLE_AOT != 0
     if (module_inst->module_type == Wasm_Module_AoT) {
-        LOG_ERROR("Not supported \'get_function_idx\' for AoT yet");
+        LOG_FATAL("Not supported \'get_function_idx\' for AoT yet");
     }
 #endif
     return -1;
@@ -1792,7 +1792,9 @@ wasm_runtime_get_indirect_function(WASMModuleInstanceCommon *module_inst,
             (WASMModuleInstance *)module_inst, tbl_idx, elem_idx);
 #endif
 #if WASM_ENABLE_AOT != 0
-    LOG_ERROR("ERROR: No AOT yet\n");
+    if (module_inst->module_type == Wasm_Module_AoT) {
+      LOG_ERROR("ERROR: No AOT yet\n");
+    }
 #endif
     return NULL;
 
