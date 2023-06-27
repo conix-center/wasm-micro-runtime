@@ -10,6 +10,7 @@
 
 typedef struct {
   wasm_function_inst_t function;
+  /* Index in the table, required to return back to old_sigaction */
   uint32_t func_table_idx;
 } wali_sigentry;
 

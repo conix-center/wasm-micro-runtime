@@ -1706,7 +1706,7 @@ wasm_runtime_get_function_idx(WASMModuleInstanceCommon *module_inst, WASMFunctio
 #endif
 #if WASM_ENABLE_AOT != 0
     if (module_inst->module_type == Wasm_Module_AoT) {
-        LOG_FATAL("Not supported \'get_function_idx\' for AoT yet");
+        return ((AOTFunctionInstance*)func)->func_index;
     }
 #endif
     return -1;
@@ -1785,15 +1785,41 @@ wasm_runtime_lookup_function(WASMModuleInstanceCommon *const module_inst,
 
 WASMFunctionInstanceCommon *
 wasm_runtime_get_indirect_function(WASMModuleInstanceCommon *module_inst,
-                                    uint32_t tbl_idx, uint32_t elem_idx) {
+                                  uint32 tbl_idx, uint32 elem_idx) {
 #if WASM_ENABLE_INTERP != 0
-    if (module_inst->module_type == Wasm_Module_Bytecode)
+    if (module_inst->module_type == Wasm_Module_Bytecode) {
         return (WASMFunctionInstanceCommon *)wasm_get_indirect_function(
             (WASMModuleInstance *)module_inst, tbl_idx, elem_idx);
+    }
 #endif
 #if WASM_ENABLE_AOT != 0
     if (module_inst->module_type == Wasm_Module_AoT) {
       LOG_ERROR("ERROR: No AOT yet\n");
+      AOTModuleInstance *aot_inst = (AOTModuleInstance*)module_inst;
+      void *func_ptr;
+      uint32 func_idx;
+      AOTFuncType *func_type;
+      bool success = aot_get_indirect_function(aot_inst, tbl_idx, elem_idx, 
+                      &func_ptr, &func_idx, &func_type);
+
+      if (!success) {
+        return NULL;
+      }
+
+      AOTFunctionInstance *func_inst = (AOTFunctionInstance*) 
+        runtime_malloc(sizeof(AOTFunctionInstance), module_inst, NULL, 0);
+      func_inst->func_name = "";
+      func_inst->func_index = func_idx;
+      func_inst->is_import_func = false;
+
+      // AOTModule *aot_module = (AOTModule*)aot_inst->module;
+      // uint32 func_type_idx = aot_inst->func_type_indexes[func_idx];
+      // func_inst->u.func.func_type = aot_module->func_types[func_type_idx];
+      func_inst->u.func.func_type = func_type; 
+
+      func_inst->u.func.func_ptr = func_ptr;
+
+      return (WASMFunctionInstanceCommon *)func_inst;
     }
 #endif
     return NULL;

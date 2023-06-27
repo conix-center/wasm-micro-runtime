@@ -532,6 +532,14 @@ bool
 aot_invoke_native(WASMExecEnv *exec_env, uint32 func_idx, uint32 argc,
                   uint32 *argv);
 
+/**
+* Get indirect function and return func_ptr, func_idx, func_type 
+*/
+bool
+aot_get_indirect_function (AOTModuleInstance *module_inst, uint32 tbl_idx,
+                          uint32 table_elem_idx, void **func_ptr_addr, 
+                          uint32* func_idx_addr, AOTFuncType **func_type_addr);
+
 bool
 aot_call_indirect(WASMExecEnv *exec_env, uint32 tbl_idx, uint32 table_elem_idx,
                   uint32 argc, uint32 *argv);

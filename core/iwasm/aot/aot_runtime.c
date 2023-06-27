@@ -2119,6 +2119,50 @@ fail:
     return ret;
 }
 
+
+bool
+aot_get_indirect_function (AOTModuleInstance *module_inst, uint32 tbl_idx,
+                          uint32 table_elem_idx, void **func_ptr_addr, 
+                          uint32* func_idx_addr, AOTFuncType **func_type_addr) {
+
+  AOTModule *aot_module = (AOTModule *)module_inst->module;
+  AOTTableInstance *tbl_inst = NULL;
+  uint32 func_idx = NULL_REF;
+  uint32 *func_type_indexes = module_inst->func_type_indexes;
+  uint32 func_type_idx;
+  void **func_ptrs = module_inst->func_ptrs;
+
+  tbl_inst = module_inst->tables[tbl_idx];
+  bh_assert(tbl_inst);
+  if (table_elem_idx >= tbl_inst->cur_size) {
+      aot_set_exception_with_id(module_inst, EXCE_UNDEFINED_ELEMENT);
+      goto fail;
+  }
+
+  func_idx = tbl_inst->elems[table_elem_idx];
+  if (func_idx == NULL_REF) {
+      aot_set_exception_with_id(module_inst, EXCE_UNINITIALIZED_ELEMENT);
+      goto fail;
+  }
+
+  func_type_idx = func_type_indexes[func_idx];
+  *func_type_addr = aot_module->func_types[func_type_idx];
+
+  if (func_idx >= aot_module->import_func_count) {
+      /* func pointer was looked up previously */
+      bh_assert(func_ptrs[func_idx] != NULL);
+  }
+
+  *func_ptr_addr = func_ptrs[func_idx];
+  *func_idx_addr = func_idx;
+  return true;
+
+fail:
+  *func_ptr_addr = NULL;
+  *func_idx_addr = 0;
+  return false;
+}
+
 bool
 aot_call_indirect(WASMExecEnv *exec_env, uint32 tbl_idx, uint32 table_elem_idx,
                   uint32 argc, uint32 *argv)
@@ -2126,11 +2170,9 @@ aot_call_indirect(WASMExecEnv *exec_env, uint32 tbl_idx, uint32 table_elem_idx,
     AOTModuleInstance *module_inst =
         (AOTModuleInstance *)wasm_runtime_get_module_inst(exec_env);
     AOTModule *aot_module = (AOTModule *)module_inst->module;
-    uint32 *func_type_indexes = module_inst->func_type_indexes;
-    AOTTableInstance *tbl_inst;
     AOTFuncType *func_type;
-    void **func_ptrs = module_inst->func_ptrs, *func_ptr;
-    uint32 func_type_idx, func_idx, ext_ret_count;
+    void *func_ptr;
+    uint32 func_idx, ext_ret_count;
     AOTImportFunc *import_func;
     const char *signature = NULL;
     void *attachment = NULL;
@@ -2147,29 +2189,13 @@ aot_call_indirect(WASMExecEnv *exec_env, uint32 tbl_idx, uint32 table_elem_idx,
         goto fail;
     }
 
-    tbl_inst = module_inst->tables[tbl_idx];
-    bh_assert(tbl_inst);
-
-    if (table_elem_idx >= tbl_inst->cur_size) {
-        aot_set_exception_with_id(module_inst, EXCE_UNDEFINED_ELEMENT);
-        goto fail;
+    bool success = aot_get_indirect_function(module_inst, tbl_idx, table_elem_idx, 
+                                          &func_ptr, &func_idx, &func_type);
+    if (!success) {
+      goto fail;
     }
 
-    func_idx = tbl_inst->elems[table_elem_idx];
-    if (func_idx == NULL_REF) {
-        aot_set_exception_with_id(module_inst, EXCE_UNINITIALIZED_ELEMENT);
-        goto fail;
-    }
-
-    func_type_idx = func_type_indexes[func_idx];
-    func_type = aot_module->func_types[func_type_idx];
-
-    if (func_idx >= aot_module->import_func_count) {
-        /* func pointer was looked up previously */
-        bh_assert(func_ptrs[func_idx] != NULL);
-    }
-
-    if (!(func_ptr = func_ptrs[func_idx])) {
+    if (!func_ptr) {
         bh_assert(func_idx < aot_module->import_func_count);
         import_func = aot_module->import_funcs + func_idx;
         snprintf(buf, sizeof(buf),
