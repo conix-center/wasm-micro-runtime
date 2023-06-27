@@ -551,6 +551,7 @@ memory_instantiate(AOTModuleInstance *module_inst, AOTModuleInstance *parent,
     memory_inst->module_type = Wasm_Module_AoT;
     memory_inst->num_bytes_per_page = num_bytes_per_page;
     memory_inst->cur_page_count = init_page_count;
+    memory_inst->base_page_count = init_page_count;
     memory_inst->max_page_count = max_page_count;
     memory_inst->memory_data_size = (uint32)total_size;
 
