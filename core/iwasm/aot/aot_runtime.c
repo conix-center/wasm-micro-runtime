@@ -14,6 +14,7 @@
 #if WASM_ENABLE_THREAD_MGR != 0
 #include "../libraries/thread-mgr/thread_manager.h"
 #endif
+#include "../interpreter/sigtable.h"
 
 /*
  * Note: These offsets need to match the values hardcoded in
@@ -1705,6 +1706,19 @@ aot_copy_exception(AOTModuleInstance *module_inst, char *exception_buf)
     /* The field offsets of cur_exception in AOTModuleInstance and
        WASMModuleInstance are the same */
     return wasm_copy_exception(module_inst, exception_buf);
+}
+
+void
+aot_poll_pending_signal(WASMExecEnv *exec_env)
+{
+  //printf("CALLS INTO POLL PENDING SIGNAL\n");
+  int signo;
+  if ((signo = get_pending_signal()) != -1) {
+    pthread_mutex_lock(&sigtable_mut);
+    AOTFunctionInstance* sigfn = wali_sigtable[signo].function;
+    pthread_mutex_unlock(&sigtable_mut);
+    wasm_runtime_call_wasm(exec_env, sigfn, 1, (uint32_t*)&signo);
+  }
 }
 
 static bool

@@ -1794,7 +1794,6 @@ wasm_runtime_get_indirect_function(WASMModuleInstanceCommon *module_inst,
 #endif
 #if WASM_ENABLE_AOT != 0
     if (module_inst->module_type == Wasm_Module_AoT) {
-      LOG_ERROR("ERROR: No AOT yet\n");
       AOTModuleInstance *aot_inst = (AOTModuleInstance*)module_inst;
       void *func_ptr;
       uint32 func_idx;
@@ -1806,17 +1805,18 @@ wasm_runtime_get_indirect_function(WASMModuleInstanceCommon *module_inst,
         return NULL;
       }
 
-      AOTFunctionInstance *func_inst = (AOTFunctionInstance*) 
-        runtime_malloc(sizeof(AOTFunctionInstance), module_inst, NULL, 0);
+      /* Create a custom function instance since this is discarded
+      * by the compiler. Caller implementation is responsible for freeing */
+      AOTFunctionInstance *func_inst = 
+        (AOTFunctionInstance*) runtime_malloc(
+            sizeof(AOTFunctionInstance), module_inst, NULL, 0);
+      if (!func_inst) {
+        return NULL;
+      }
       func_inst->func_name = "";
       func_inst->func_index = func_idx;
       func_inst->is_import_func = false;
-
-      // AOTModule *aot_module = (AOTModule*)aot_inst->module;
-      // uint32 func_type_idx = aot_inst->func_type_indexes[func_idx];
-      // func_inst->u.func.func_type = aot_module->func_types[func_type_idx];
       func_inst->u.func.func_type = func_type; 
-
       func_inst->u.func.func_ptr = func_ptr;
 
       return (WASMFunctionInstanceCommon *)func_inst;

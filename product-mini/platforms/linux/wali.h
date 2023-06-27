@@ -43,6 +43,13 @@ typedef uint32_t FuncPtr_t;
 
 #define FUNC_IDX(func) ({ wasm_runtime_get_function_idx(module_inst, func); })
 
+/* Needs to be called only for AoT when using wasm_runtime_get_indirect_function */
+#define FUNC_FREE(func) { \
+  if (func && (get_module_inst(exec_env)->module_type == Wasm_Module_AoT)) { \
+      wasm_runtime_free(func);  \
+  } \
+}
+
 /* 0 = SIG_DFL; */
 #define WASM_SIG_DFL (0)
 #define WASM_SIG_ERR (-1)

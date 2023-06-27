@@ -495,6 +495,13 @@ aot_get_exception(AOTModuleInstance *module_inst);
 bool
 aot_copy_exception(AOTModuleInstance *module_inst, char *exception_buf);
 
+/**
+ * Poll for pending signals in WALI
+ * @param exec_env the execution environment
+ * @return none
+ */
+void aot_poll_pending_signal(WASMExecEnv *exec_env);
+
 uint32
 aot_module_malloc_internal(AOTModuleInstance *module_inst, WASMExecEnv *env,
                            uint32 size, void **p_native_addr);

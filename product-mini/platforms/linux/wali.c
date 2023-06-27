@@ -266,6 +266,7 @@ long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long
       uint32_t old_fn_idx = wali_sigtable[signo].function ? FUNC_IDX(wali_sigtable[signo].function) : 0;
       uint32_t new_fn_idx = target_wasm_handler ? FUNC_IDX(target_wasm_handler) : 0;
       ERR("Replacing target handler: Fn[%u] -> Fn[%u]\n", old_fn_idx, new_fn_idx);
+      FUNC_FREE(wali_sigtable[signo].function);
       wali_sigtable[signo].function = target_wasm_handler;
       wali_sigtable[signo].func_table_idx = target_wasm_funcptr;
     }
@@ -1184,7 +1185,6 @@ int wali_wasm_thread_spawn (wasm_exec_env_t exec_env, int setup_fnptr, int arg_w
   wasm_function_inst_t setup_wasm_fn = 
       wasm_runtime_get_indirect_function(module_inst, 0, setup_fnptr);
 
-
   stack_size = ((WASMModuleInstance *)module_inst)->default_wasm_stack_size;
 
   /* New module instance -- custom data, import function registration, etc. */
@@ -1221,6 +1221,8 @@ int wali_wasm_thread_spawn (wasm_exec_env_t exec_env, int setup_fnptr, int arg_w
   }
 
   ERR("Parent of Dispatcher | Thread ID: %d\n", thread_id);
+  FUNC_FREE(setup_wasm_fn);
+
   return thread_id;
 
 thread_spawn_fail:
