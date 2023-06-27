@@ -1094,7 +1094,7 @@ _Noreturn void wali_siglongjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, i
   PC(siglongjmp);
   struct __libc_jmp_buf_tag* env = copy_jmp_buf(exec_env, MADDR(sigjmp_buf_addr));
   FATALSC(siglongjmp, "Not supported in WALI yet, exiting code...");
-  exit(0);
+  exit(1);
   //__libc_siglongjmp(env, val);
 }
 
