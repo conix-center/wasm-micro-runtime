@@ -242,7 +242,7 @@ long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long
     wasm_oldact ? &oldact : NULL;
   long retval = __syscall4(SYS_rt_sigaction, a1, act_pt, oldact_pt, a4);
 
-  ERR("Signal Registration -- \'%s\' | Sigtype: %s", strsignal(a1), sigtype);
+  ERR("Signal Registration -- \'%s\'(%d) | Sigtype: %s", strsignal(a1), signo, sigtype);
 
   /* Register virtual signal in WALI sigtable 
   * ---------------------------------------------------------------
@@ -260,7 +260,7 @@ long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long
       copy2wasm_old_ksigaction (signo, wasm_oldact, oldact_pt);
     }
     /* Set WALI table */
-    if (act_pt && (act_pt->handler != SIG_DFL) && (act_pt->handler != SIG_IGN)) {
+    if (act_pt && (act_pt->handler != SIG_DFL) && (act_pt->handler != SIG_IGN) && (act_pt->handler != SIG_ERR)) {
       wasm_function_inst_t target_wasm_handler = wasm_runtime_get_indirect_function(
                                                   module_inst, 0, target_wasm_funcptr);
       uint32_t old_fn_idx = wali_sigtable[signo].function ? FUNC_IDX(wali_sigtable[signo].function) : 0;
@@ -356,10 +356,9 @@ long wali_syscall_pipe (wasm_exec_env_t exec_env, long a1) {
   #endif
 }
 
-// 23 TODO
+// 23 
 long wali_syscall_select (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
 	SC(select);
-	ERRSC(select);
   #if __x86_64__
 	  return __syscall5(SYS_select, a1, MADDR(a2), MADDR(a3), MADDR(a4), MADDR(a5));
   #elif __aarch64__ || __riscv64__
@@ -632,6 +631,12 @@ long wali_syscall_chdir (wasm_exec_env_t exec_env, long a1) {
 	return __syscall1(SYS_chdir, MADDR(a1));
 }
 
+// 81 
+long wali_syscall_fchdir (wasm_exec_env_t exec_env, long a1) {
+	SC(fchdir);
+	return __syscall1(SYS_fchdir, a1);
+}
+
 // 82
 long wali_syscall_rename (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(rename);
@@ -810,6 +815,12 @@ long wali_syscall_getpgid (wasm_exec_env_t exec_env, long a1) {
 long wali_syscall_getsid (wasm_exec_env_t exec_env, long a1) {
 	SC(getsid);
 	return __syscall1(SYS_getsid, a1);
+}
+
+// 127 
+long wali_syscall_rt_sigpending (wasm_exec_env_t exec_env, long a1, long a2) {
+	SC(rt_sigpending);
+	return __syscall2(SYS_rt_sigpending, MADDR(a1), a2);
 }
 
 // 130 

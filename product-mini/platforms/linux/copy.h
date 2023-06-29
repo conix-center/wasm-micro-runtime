@@ -111,6 +111,9 @@ struct k_sigaction* copy_ksigaction (wasm_exec_env_t exec_env, Addr wasm_act,
   } else if (wasm_handler_funcptr == (FuncPtr_t)(WASM_SIG_IGN)) {
     act->handler = SIG_IGN;
     strcpy(debug_str, "SIG_IGN");
+  } else if (wasm_handler_funcptr == (FuncPtr_t)(WASM_SIG_ERR)) {
+    act->handler = SIG_ERR;
+    strcpy(debug_str, "SIG_ERR");
   } else {
     /* Setup common handler */
     act->handler = common_handler;
