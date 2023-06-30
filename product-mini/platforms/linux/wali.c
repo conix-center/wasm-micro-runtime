@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/mman.h>
+#include <semaphore.h>
 
 #include "wali.h"
 #include "copy.h"
@@ -28,6 +29,12 @@ extern char **app_argv;
   palign; \
 })
 
+/* For thread cloning TID synchronization */
+static pthread_mutex_t clone_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t mmap_lock = PTHREAD_MUTEX_INITIALIZER;
+static sem_t tid_sem;
+
+volatile int signalled_tid = -1;
 
 uint32_t NATIVE_PAGESIZE = 0;
 int MMAP_PAGELEN = 0;
@@ -37,6 +44,9 @@ uint32_t BASE_MEMSIZE = 0;
 uint32_t THREAD_ID = 0;
 
 void wali_init_native() {
+  if (sem_init(&tid_sem, 0, 0)) {
+    perror("sem_init");
+  }
   NATIVE_PAGESIZE = sysconf(_SC_PAGE_SIZE);
   MMAP_PAGELEN = 0;
   WASM_PAGELEN = 0;
@@ -150,6 +160,7 @@ long wali_syscall_lseek (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
 	SC(mmap);
   ERR("mmap args | a1: %ld, a2: 0x%x, a3: %ld, a4: %ld, a5: %ld, a6: %ld | MMAP_PAGELEN: %d", a1, a2, a3, a4, a5, a6, MMAP_PAGELEN);
+  pthread_mutex_lock(&mmap_lock);
   Addr base_addr = BASE_ADDR();
   Addr pa_aligned_addr = PA_ALIGN_MMAP_ADDR();
   Addr mmap_addr = pa_aligned_addr + MMAP_PAGELEN * NATIVE_PAGESIZE;
@@ -161,6 +172,7 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
   /* Sometimes mmap returns -9 instead of MAP_FAILED? */
   if ((mem_addr == MAP_FAILED) || (mem_addr == (void*)(-9))) {
     FATALSC(mmap, "Failed to mmap!\n");
+    pthread_mutex_unlock(&mmap_lock);
     return (long) MAP_FAILED;
   }
   /* On success */
@@ -177,6 +189,7 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
     }
   }
   long retval =  WADDR(mem_addr);
+  pthread_mutex_unlock(&mmap_lock);
   ERR("Retval: 0x%x", retval);
   return retval;
 }
@@ -190,6 +203,7 @@ long wali_syscall_mprotect (wasm_exec_env_t exec_env, long a1, long a2, long a3)
 // 11 
 long wali_syscall_munmap (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(munmap);
+  pthread_mutex_lock(&mmap_lock);
   Addr mmap_addr = MADDR(a1);
   Addr mmap_addr_end = (Addr)(mmap_addr + a2);
   /* Reclaim some mmap space if end region is unmapped */
@@ -200,6 +214,7 @@ long wali_syscall_munmap (wasm_exec_env_t exec_env, long a1, long a2) {
     MMAP_PAGELEN -= ((a2 + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE);
     ERR("End page unmapped | New MMAP_PAGELEN: %d", MMAP_PAGELEN);
   }
+  pthread_mutex_unlock(&mmap_lock);
 	return __syscall2(SYS_munmap, mmap_addr, a2);
 }
 
@@ -375,6 +390,7 @@ long wali_syscall_sched_yield (wasm_exec_env_t exec_env) {
 long wali_syscall_mremap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
 	SC(mremap);
 	ERRSC(mremap);
+  FATALSC(mremap, "Not implemented yet");
 	return __syscall5(SYS_mremap, MADDR(a1), a2, a3, a4, MADDR(a5));
 }
 
@@ -1176,13 +1192,19 @@ wali_dispatch_thread_libc(void *exec_env_ptr) {
   WasmThreadStartArg *thread_arg = (WasmThreadStartArg*) exec_env->thread_arg;
   
   wasm_exec_env_set_thread_info(exec_env);
+  int tid = gettid();
   /* Libc start fn: (int thread_id, void *arg) */
   uint32_t wasm_argv[2];
   // Dispatcher is part of child thread; can get tid using syscall
-  wasm_argv[0] = thread_arg->tid;
+  wasm_argv[0] = tid; //thread_arg->tid;
   wasm_argv[1] = thread_arg->arg;
 
-  ERR("Dispatcher | Thread ID: %d\n", wasm_argv[0]);
+  ERR("Dispatcher | Child TID: %d\n", wasm_argv[0]);
+  /* Send parent our TID */
+  signalled_tid = tid;
+  if (sem_post(&tid_sem)) {
+    perror("sem_post");
+  }
 
   if (!wasm_runtime_call_wasm(exec_env, thread_arg->start_fn, 2, wasm_argv)) {
     /* Execption has already been spread during throwing */
@@ -1239,20 +1261,41 @@ int wali_wasm_thread_spawn (wasm_exec_env_t exec_env, int setup_fnptr, int arg_w
   thread_start_arg->arg = arg_wasm;
   /** **/
 
+
   /** Create and dispatch the thread (language-independent: currently just C); 
   * Thread ID of the created thread is sent back to parent */
+  volatile int child_tid = -1;
+  pthread_mutex_lock(&clone_lock);
   ret = wasm_cluster_create_thread(exec_env, new_module_inst, false,
                                    wali_dispatch_thread_libc, thread_start_arg);
   if (ret != 0) {
       FATALSC(wasm_thread_spawn, "Failed to spawn a new thread");
-      goto thread_spawn_fail;
+      goto thread_spawn_fail_post_clone;
   }
 
-  ERR("Parent of Dispatcher | Thread ID: %d\n", thread_id);
+  /* Get the thread-id of spawned child. Wait for timeout (5 sec) for signal */
+  struct timespec dtime;
+  if (clock_gettime(CLOCK_REALTIME, &dtime) == -1) {
+    perror("clock_gettime");
+    goto thread_spawn_fail_post_clone;
+  }
+  dtime.tv_sec += 5;
+  if ( sem_timedwait(&tid_sem, &dtime) ) {
+    perror("sem_timedwait");
+    FATALSC(wasm_thread_spawn, "TID signalling error");
+    goto thread_spawn_fail_post_clone;
+  }
+
+  child_tid = signalled_tid;
+  ERR("Parent of Dispatcher | Child TID: %d\n", child_tid);
+  pthread_mutex_unlock(&clone_lock);
+
   FUNC_FREE(setup_wasm_fn);
 
-  return thread_id;
+  return child_tid;
 
+thread_spawn_fail_post_clone:
+  pthread_mutex_unlock(&clone_lock);
 thread_spawn_fail:
   if (new_module_inst)
       wasm_runtime_deinstantiate_internal(new_module_inst, true);
