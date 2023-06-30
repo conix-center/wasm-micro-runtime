@@ -55,11 +55,10 @@ void wali_init_native() {
 #define __syscall6(n, a1, a2, a3, a4, a5, a6) __syscall6(n, (long)a1, (long)a2, (long)a3, (long)a4, (long)a5, (long)a6)
 
 
-#define ATOM(f) LOG_VERBOSE("[%d] WALI: Atomic (use with care) | " # f, gettid())
-#define PC(f)  LOG_VERBOSE("[%d] WALI: | " # f, gettid())
-#define SC(f)  LOG_VERBOSE("[%d] WALI: SC | " # f, gettid())
+#define PC(f)  LOG_VERBOSE("[%d] WALI: | " # f, "PC")
+#define SC(f)  LOG_VERBOSE("[%d] WALI: SC | " # f, "PC")
 #define ERRSC(f,...) { \
-  LOG_ERROR("[%d] WALI: SC \"" # f "\" not implemented correctly yet! " __VA_ARGS__, gettid());  \
+  LOG_ERROR("[%d] WALI: SC \"" # f "\" not implemented correctly yet! " __VA_ARGS__, "PC");  \
 }
 #define FATALSC(f,...) { \
   LOG_FATAL("[%d] WALI: SC \"" # f "\" fatal error! " __VA_ARGS__, gettid());  \
@@ -920,6 +919,12 @@ long wali_syscall_exit_group (wasm_exec_env_t exec_env, long a1) {
   return -1;
 }
 
+// 233 
+long wali_syscall_epoll_ctl (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
+	SC(epoll_ctl);
+	return __syscall4(SYS_epoll_ctl, a1, a2, a3, MADDR(a4));
+}
+
 // 257 
 long wali_syscall_openat (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(openat);
@@ -1019,6 +1024,12 @@ long wali_syscall_utimensat (wasm_exec_env_t exec_env, long a1, long a2, long a3
 	return __syscall4(SYS_utimensat, a1, MADDR(a2), MADDR(a3), a4);
 }
 
+// 281 
+long wali_syscall_epoll_pwait (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
+	SC(epoll_pwait);
+	return __syscall6(SYS_epoll_pwait, a1, MADDR(a2), a3, a4, MADDR(a5), a6);
+}
+
 // 284 
 long wali_syscall_eventfd (wasm_exec_env_t exec_env, long a1) {
 	SC(eventfd);
@@ -1034,6 +1045,12 @@ long wali_syscall_eventfd2 (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(eventfd2);
 	ERRSC(eventfd2);
 	return __syscall2(SYS_eventfd2, a1, a2);
+}
+
+// 291 
+long wali_syscall_epoll_create1 (wasm_exec_env_t exec_env, long a1) {
+	SC(epoll_create1);
+	return __syscall1(SYS_epoll_create1, a1);
 }
 
 // 292 
