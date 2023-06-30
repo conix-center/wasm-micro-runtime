@@ -327,7 +327,6 @@ long wali_syscall_pwrite64 (wasm_exec_env_t exec_env, long a1, long a2, long a3,
 // 19 TODO
 long wali_syscall_readv (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(readv);
-	//ERRSC(readv);
   Addr wasm_iov = MADDR(a2);
   int iov_cnt = a3;
   
@@ -490,13 +489,21 @@ long wali_syscall_recvfrom (wasm_exec_env_t exec_env, long a1, long a2, long a3,
 // 46 
 long wali_syscall_sendmsg (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(sendmsg);
-	return __syscall3(SYS_sendmsg, a1, MADDR(a2), a3);
+  Addr wasm_msghdr = MADDR(a2);
+  struct msghdr *native_msghdr = copy_msghdr(exec_env, wasm_msghdr);
+	long retval = __syscall3(SYS_sendmsg, a1, native_msghdr, a3);
+  free(native_msghdr);
+  return retval;
 }
 
 // 47 
 long wali_syscall_recvmsg (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(recvmsg);
-	return __syscall3(SYS_recvmsg, a1, MADDR(a2), a3);
+  Addr wasm_msghdr = MADDR(a2);
+  struct msghdr *native_msghdr = copy_msghdr(exec_env, wasm_msghdr);
+	long retval = __syscall3(SYS_recvmsg, a1, native_msghdr, a3);
+  free(native_msghdr);
+  return retval;
 }
 
 // 48 

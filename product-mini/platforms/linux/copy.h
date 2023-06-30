@@ -64,12 +64,35 @@ void* copy_pselect6_sigmask(wasm_exec_env_t exec_env, Addr wasm_psel_sm, long* s
 
 /* Copy iovec structure */
 struct iovec* copy_iovec(wasm_exec_env_t exec_env, Addr wasm_iov, int iov_cnt) {
+  if (wasm_iov == NULL) { return NULL; }
   struct iovec *new_iov = (struct iovec*) malloc(iov_cnt * sizeof(struct iovec));
   for (int i = 0; i < iov_cnt; i++) {
     new_iov[i].iov_base = RD_FIELD_ADDR(wasm_iov);
     new_iov[i].iov_len = RD_FIELD(wasm_iov, int32_t);
   }
   return new_iov;
+}
+
+/* Copy msghdr structure */
+struct msghdr* copy_msghdr(wasm_exec_env_t exec_env, Addr wasm_msghdr) {
+  if (wasm_msghdr == NULL) { return NULL; }
+  struct msghdr *msg = (struct msghdr*) malloc(sizeof(struct msghdr));
+  msg->msg_name = RD_FIELD_ADDR(wasm_msghdr);
+  msg->msg_namelen = RD_FIELD(wasm_msghdr, unsigned);
+
+  Addr wasm_iov = RD_FIELD_ADDR(wasm_msghdr);
+  msg->msg_iovlen = RD_FIELD(wasm_msghdr, int);
+
+  RD_FIELD(wasm_msghdr, int); // pad1
+  
+  msg->msg_control = RD_FIELD_ADDR(wasm_msghdr);
+  msg->msg_controllen = RD_FIELD(wasm_msghdr, unsigned);
+
+  RD_FIELD(wasm_msghdr, int); // pad2
+  msg->msg_flags = RD_FIELD(wasm_msghdr, int);
+
+  msg->msg_iov =  copy_iovec(exec_env, wasm_iov, 1);
+  return msg;
 }
 
 // 0 = SIG_DFL; -1: SIG_ERR; -2: SIG_IGN
