@@ -17,7 +17,7 @@
 
 #define WR_FIELD_ADDR(wptr, nptr) ({  \
   uint32_t wasm_addr = WADDR(nptr);  \
-  if (!wasm_addr) { ERR("NULL Wasm Address generated"); }  \
+  if (!wasm_addr) { VB("NULL Wasm Address generated"); }  \
   WR_FIELD(wptr, wasm_addr, uint32_t);  \
 })
 
@@ -113,7 +113,7 @@ void copy2wasm_old_ksigaction (int signo, Addr wasm_act, struct k_sigaction *act
     old_wasm_funcptr = WASM_SIG_ERR;
   } else {
     old_wasm_funcptr = wali_sigtable[signo].func_table_idx;
-    ERR("Save old sigaction handler -- Tbl[%d]", old_wasm_funcptr);
+    VB("Save old sigaction handler -- Tbl[%d]", old_wasm_funcptr);
   }
   WR_FIELD(wasm_act, old_wasm_funcptr, FuncPtr_t);
   WR_FIELD(wasm_act, act->flags, unsigned long);

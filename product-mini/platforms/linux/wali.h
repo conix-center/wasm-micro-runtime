@@ -30,7 +30,7 @@ typedef uint32_t FuncPtr_t;
 
 #define MADDR(wasm_addr) ({  \
   Addr addr = wasm_addr ? (Addr) wasm_runtime_addr_app_to_native(get_module_inst(exec_env), wasm_addr) : NULL;  \
-  if (addr == NULL) { ERR("NULL ADDRESS!\n"); } \
+  if (addr == NULL) { VB("NULL ADDRESS!"); } \
   addr; \
 })
 
@@ -38,7 +38,9 @@ typedef uint32_t FuncPtr_t;
   wasm_runtime_addr_native_to_app(get_module_inst(exec_env), mem_addr); \
 })
 
-#define ERR(fmt, ...) LOG_VERBOSE("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
+#define VB(fmt, ...) LOG_VERBOSE("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
+#define WARN(fmt, ...)  LOG_WARNING("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
+#define ERR(fmt, ...) LOG_ERROR("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
 
 
 #define FUNC_IDX(func) ({ wasm_runtime_get_function_idx(module_inst, func); })
@@ -283,7 +285,7 @@ long wali_syscall_flistxattr (wasm_exec_env_t exec_env);
 long wali_syscall_removexattr (wasm_exec_env_t exec_env);
 long wali_syscall_lremovexattr (wasm_exec_env_t exec_env);
 long wali_syscall_fremovexattr (wasm_exec_env_t exec_env);
-long wali_syscall_tkill (wasm_exec_env_t exec_env);
+long wali_syscall_tkill (wasm_exec_env_t exec_env, long a1, long a2);
 long wali_syscall_time (wasm_exec_env_t exec_env);
 long wali_syscall_futex (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6);
 long wali_syscall_sched_setaffinity (wasm_exec_env_t exec_env);
@@ -434,6 +436,7 @@ void wali_proc_exit (wasm_exec_env_t exec_env, long v);
 int wali_cl_get_argc (wasm_exec_env_t exec_env);
 int wali_cl_get_argv_len (wasm_exec_env_t exec_env, int arg_idx);
 int wali_cl_copy_argv (wasm_exec_env_t exec_env, int argv_addr, int arg_idx);
+int wali_get_init_envfile (wasm_exec_env_t exec_env, int faddr, int fsize);
 
 /***** Threads *****/
 int wali_wasm_thread_spawn (wasm_exec_env_t exec_env, int setup_fnptr, int arg_wasm);

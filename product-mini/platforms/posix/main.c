@@ -20,6 +20,7 @@
 
 int app_argc;
 char **app_argv;
+char *app_env_file;
 
 /* clang-format off */
 static int
@@ -109,6 +110,7 @@ print_help()
 #if WASM_ENABLE_STATIC_PGO != 0
     printf("  --gen-prof-file=<path>   Generate LLVM PGO (Profile-Guided Optimization) profile file\n");
 #endif
+    printf("  --env-file=<path>        WALI environment variables initialization file\n");
     printf("  --version                Show version information\n");
     return 1;
 }
@@ -819,6 +821,11 @@ main(int argc, char *argv[])
             gen_prof_file = argv[0] + 16;
         }
 #endif
+        else if (!strncmp(argv[0], "--env-file=", 11)) {
+            if (argv[0][11] == '\0')
+                return print_help();
+            app_env_file = argv[0] + 11;
+        }
         else if (!strncmp(argv[0], "--version", 9)) {
             uint32 major, minor, patch;
             wasm_runtime_get_version(&major, &minor, &patch);
@@ -937,6 +944,7 @@ main(int argc, char *argv[])
 			NSYMBOL (     __syscall_SYS_fstatfs,      wali_syscall_fstatfs,      "(ii)I" ),
 			NSYMBOL (   __syscall_SYS_setrlimit,    wali_syscall_setrlimit,      "(ii)I" ),
 			NSYMBOL (      __syscall_SYS_gettid,       wali_syscall_gettid,        "()I" ),
+			NSYMBOL (       __syscall_SYS_tkill,        wali_syscall_tkill,      "(ii)I" ),
 			NSYMBOL (       __syscall_SYS_futex,        wali_syscall_futex,  "(iiiiii)I" ),
 			NSYMBOL (  __syscall_SYS_getdents64,   wali_syscall_getdents64,     "(iii)I" ),
 			NSYMBOL ( __syscall_SYS_set_tid_address, wali_syscall_set_tid_address,       "(i)I" ),
@@ -1003,6 +1011,7 @@ main(int argc, char *argv[])
       NSYMBOL ( __cl_get_argc, wali_cl_get_argc, "()i" ),
       NSYMBOL ( __cl_get_argv_len, wali_cl_get_argv_len, "(i)i" ),
       NSYMBOL ( __cl_copy_argv, wali_cl_copy_argv, "(ii)i" ),
+      NSYMBOL ( __get_init_envfile, wali_get_init_envfile, "(ii)i" ),
 
       // Signal
       NSYMBOL ( sigsetjmp, wali_sigsetjmp, "(ii)i" ),

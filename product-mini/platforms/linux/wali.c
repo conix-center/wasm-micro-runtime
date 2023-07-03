@@ -17,6 +17,7 @@
 
 extern int app_argc;
 extern char **app_argv;
+extern char *app_env_file;
 
 /* Get page aligned address after memory to mmap; since base is mapped it's already aligned, 
 * and memory data size is a multiple of 64kB but rounding added for safety */
@@ -159,14 +160,14 @@ long wali_syscall_lseek (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 // 9 
 long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
 	SC(mmap);
-  ERR("mmap args | a1: %ld, a2: 0x%x, a3: %ld, a4: %ld, a5: %ld, a6: %ld | MMAP_PAGELEN: %d", a1, a2, a3, a4, a5, a6, MMAP_PAGELEN);
+  VB("mmap args | a1: %ld, a2: 0x%x, a3: %ld, a4: %ld, a5: %ld, a6: %ld | MMAP_PAGELEN: %d", a1, a2, a3, a4, a5, a6, MMAP_PAGELEN);
   pthread_mutex_lock(&mmap_lock);
   Addr base_addr = BASE_ADDR();
   Addr pa_aligned_addr = PA_ALIGN_MMAP_ADDR();
   Addr mmap_addr = pa_aligned_addr + MMAP_PAGELEN * NATIVE_PAGESIZE;
 
   uint32 mem_size = wasm_runtime_get_memory_size(get_module_inst(exec_env)); 
-  ERR("Mem Base: %p | Mem End: %p | Mem Size: 0x%x | Mmap Addr: %p", base_addr, base_addr + mem_size, mem_size, mmap_addr);
+  VB("Mem Base: %p | Mem End: %p | Mem Size: 0x%x | Mmap Addr: %p", base_addr, base_addr + mem_size, mem_size, mmap_addr);
 
   Addr mem_addr = (Addr) __syscall6(SYS_mmap, mmap_addr, a2, a3, MAP_FIXED|a4, a5, a6);
   /* Sometimes mmap returns -9 instead of MAP_FAILED? */
@@ -190,7 +191,7 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
   }
   long retval =  WADDR(mem_addr);
   pthread_mutex_unlock(&mmap_lock);
-  ERR("Retval: 0x%x", retval);
+  VB("Ret Addr: 0x%x", retval);
   return retval;
 }
 
@@ -209,21 +210,20 @@ long wali_syscall_munmap (wasm_exec_env_t exec_env, long a1, long a2) {
   /* Reclaim some mmap space if end region is unmapped */
   Addr pa_aligned_addr = PA_ALIGN_MMAP_ADDR();
   int end_page = (mmap_addr_end - pa_aligned_addr + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE;
-  ERR("End page: %d | MMAP_PAGELEN: %d", end_page, MMAP_PAGELEN);
+  VB("End page: %d | MMAP_PAGELEN: %d", end_page, MMAP_PAGELEN);
   if (end_page == MMAP_PAGELEN) {
     MMAP_PAGELEN -= ((a2 + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE);
-    ERR("End page unmapped | New MMAP_PAGELEN: %d", MMAP_PAGELEN);
+    VB("End page unmapped | New MMAP_PAGELEN: %d", MMAP_PAGELEN);
   }
   pthread_mutex_unlock(&mmap_lock);
 	return __syscall2(SYS_munmap, mmap_addr, a2);
 }
 
-// 12 TODO
+// 12 
 long wali_syscall_brk (wasm_exec_env_t exec_env, long a1) {
 	SC(brk);
-  ERR("brk syscall is a NOP in WASM right now");
+  VB("brk syscall is a NOP in WASM right now");
 	return 0; 
-  //__syscall1(SYS_brk, MADDR(a1));
 }
 
 
@@ -236,7 +236,7 @@ void sa_handler_wali(int signo) {
 // 13 
 long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(rt_sigaction);
-  ERR("rt_sigaction args | a1: %ld, a2: %ld, a3: %ld, a4: %ld", a1, a2, a3, a4);
+  VB("rt_sigaction args | a1: %ld, a2: %ld, a3: %ld, a4: %ld", a1, a2, a3, a4);
   wasm_module_inst_t module_inst = get_module_inst(exec_env);
   int signo = a1;
   Addr wasm_act  = MADDR(a2);
@@ -256,7 +256,7 @@ long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long
     wasm_oldact ? &oldact : NULL;
   long retval = __syscall4(SYS_rt_sigaction, a1, act_pt, oldact_pt, a4);
 
-  ERR("Signal Registration -- \'%s\'(%d) | Sigtype: %s", strsignal(a1), signo, sigtype);
+  VB("Signal Registration -- \'%s\'(%d) | Sigtype: %s", strsignal(a1), signo, sigtype);
 
   /* Register virtual signal in WALI sigtable 
   * ---------------------------------------------------------------
@@ -279,7 +279,7 @@ long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long
                                                   module_inst, 0, target_wasm_funcptr);
       uint32_t old_fn_idx = wali_sigtable[signo].function ? FUNC_IDX(wali_sigtable[signo].function) : 0;
       uint32_t new_fn_idx = target_wasm_handler ? FUNC_IDX(target_wasm_handler) : 0;
-      ERR("Replacing target handler: Fn[%u] -> Fn[%u]\n", old_fn_idx, new_fn_idx);
+      VB("Replacing target handler: Fn[%u] -> Fn[%u]\n", old_fn_idx, new_fn_idx);
       FUNC_FREE(wali_sigtable[signo].function);
       wali_sigtable[signo].function = target_wasm_handler;
       wali_sigtable[signo].func_table_idx = target_wasm_funcptr;
@@ -563,6 +563,13 @@ long wali_syscall_execve (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(execve);
   printf("Execve string: %s\n", MADDR(a1));
   char** argv = copy_stringarr (exec_env, MADDR(a2));
+  char** argpt = argv;
+  int i = 0;
+  while (*argpt != NULL) {
+    printf("Argv[%d] : %s\n", i, *argpt);
+    argpt++;
+    i++;
+  }
   char** envp = copy_stringarr (exec_env, MADDR(a3));
 	long retval = __syscall3(SYS_execve, MADDR(a1), argv, envp);
   free(argv);
@@ -577,10 +584,9 @@ long wali_syscall_exit (wasm_exec_env_t exec_env, long a1) {
   return __syscall1(SYS_exit, a1);
 }
 
-// 61 TODO
+// 61 
 long wali_syscall_wait4 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(wait4);
-	ERRSC(wait4);
 	return __syscall4(SYS_wait4, a1, MADDR(a2), a3, MADDR(a4));
 }
 
@@ -611,10 +617,9 @@ long wali_syscall_fcntl (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
   #endif
 }
 
-// 73 TODO
+// 73 
 long wali_syscall_flock (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(flock);
-	ERRSC(flock);
 	return __syscall2(SYS_flock, a1, a2);
 }
 
@@ -897,6 +902,12 @@ long wali_syscall_gettid (wasm_exec_env_t exec_env) {
   return __syscall0(SYS_gettid);
 }
 
+// 186
+long wali_syscall_tkill (wasm_exec_env_t exec_env, long a1, long a2) {
+  SC(tkill);
+  return __syscall2(SYS_tkill, a1, a2);
+}
+
 // 202 
 long wali_syscall_futex (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
 	SC(futex);
@@ -1023,7 +1034,7 @@ long wali_syscall_faccessat (wasm_exec_env_t exec_env, long a1, long a2, long a3
 // 270 
 long wali_syscall_pselect6 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
 	SC(pselect6);
-  ERR("pselect args | a1: %ld, a2: %ld, a3: %ld, a4: %ld, a5: %ld, a6: %ld", a1, a2, a3, a4, a5, a6);
+  VB("pselect args | a1: %ld, a2: %ld, a3: %ld, a4: %ld, a5: %ld, a6: %ld", a1, a2, a3, a4, a5, a6);
   Addr wasm_psel_sm = MADDR(a6);
   long sm_struct[2];
   long* sm_struct_ptr = copy_pselect6_sigmask(exec_env, wasm_psel_sm, sm_struct);
@@ -1181,6 +1192,26 @@ int wali_cl_copy_argv (wasm_exec_env_t exec_env, int argv_addr, int arg_idx) {
   return 0;
 }
 
+int wali_get_init_envfile (wasm_exec_env_t exec_env, int faddr, int fsize) {
+  PC(get_init_envfile);
+  Addr fbuf = MADDR(faddr);
+  char *envfile = app_env_file;
+  //char envfile[] = "/home/arjun/.wasmenv";
+  if (!envfile) {
+    ERR("No WALI environment file provided\n");
+    return 0;
+  }
+
+  if ((int)(strlen(envfile) + 1) > fsize) {
+    ERR("WALI env initialization filepath too large (max length: %d)."
+          "Defaulting to NULL\n", fsize);
+    ((char*)fbuf)[0] = 0;
+  } else {
+    strcpy((char*)fbuf, envfile);
+    ERR("WALI init env file: \'%s\'\n", fbuf);
+  }
+  return 1;
+}
 
 /***** Threads *****/
 typedef struct {
@@ -1206,7 +1237,7 @@ wali_dispatch_thread_libc(void *exec_env_ptr) {
   wasm_argv[0] = tid; //thread_arg->tid;
   wasm_argv[1] = thread_arg->arg;
 
-  ERR("Dispatcher | Child TID: %d\n", wasm_argv[0]);
+  VB("Dispatcher | Child TID: %d\n", wasm_argv[0]);
   /* Send parent our TID */
   signalled_tid = tid;
   if (sem_post(&tid_sem)) {
@@ -1217,7 +1248,7 @@ wali_dispatch_thread_libc(void *exec_env_ptr) {
     /* Execption has already been spread during throwing */
   }
 
-  ERR("================ Thread [%d] exiting ==============\n", gettid());
+  VB("================ Thread [%d] exiting ==============\n", gettid());
   // Cleanup
   wasm_runtime_free(thread_arg);
   exec_env->thread_arg = NULL;
@@ -1294,7 +1325,7 @@ int wali_wasm_thread_spawn (wasm_exec_env_t exec_env, int setup_fnptr, int arg_w
   }
 
   child_tid = signalled_tid;
-  ERR("Parent of Dispatcher | Child TID: %d\n", child_tid);
+  VB("Parent of Dispatcher | Child TID: %d\n", child_tid);
   pthread_mutex_unlock(&clone_lock);
 
   FUNC_FREE(setup_wasm_fn);
