@@ -1196,7 +1196,6 @@ int wali_get_init_envfile (wasm_exec_env_t exec_env, int faddr, int fsize) {
   PC(get_init_envfile);
   Addr fbuf = MADDR(faddr);
   char *envfile = app_env_file;
-  //char envfile[] = "/home/arjun/.wasmenv";
   if (!envfile) {
     ERR("No WALI environment file provided\n");
     return 0;
