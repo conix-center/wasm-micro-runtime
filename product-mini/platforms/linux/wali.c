@@ -66,10 +66,10 @@ void wali_init_native() {
 #define __syscall6(n, a1, a2, a3, a4, a5, a6) __syscall6(n, (long)a1, (long)a2, (long)a3, (long)a4, (long)a5, (long)a6)
 
 
-#define PC(f)  LOG_VERBOSE("[%d] WALI: | " # f, "PC")
-#define SC(f)  LOG_VERBOSE("[%d] WALI: SC | " # f, "PC")
+#define PC(f)  LOG_VERBOSE("[%d] WALI: | " # f, gettid())
+#define SC(f)  LOG_VERBOSE("[%d] WALI: SC | " # f, gettid())
 #define ERRSC(f,...) { \
-  LOG_ERROR("[%d] WALI: SC \"" # f "\" not implemented correctly yet! " __VA_ARGS__, "PC");  \
+  LOG_ERROR("[%d] WALI: SC \"" # f "\" not implemented correctly yet! " __VA_ARGS__, gettid());  \
 }
 #define FATALSC(f,...) { \
   LOG_FATAL("[%d] WALI: SC \"" # f "\" fatal error! " __VA_ARGS__, gettid());  \
@@ -558,19 +558,31 @@ long wali_syscall_fork (wasm_exec_env_t exec_env) {
   #endif
 }
 
+void create_pass_env_file(char **envp) {
+  char filename[100];
+  sprintf(filename, "/tmp/wali_env.%d", getpid());
+  FILE *fp = fopen(filename, "w");
+  for (char **e = envp; *e; e++) {
+    fprintf(fp, "%s\n", *e);
+  }
+  fclose(fp);
+}
 // 59 
 long wali_syscall_execve (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(execve);
-  printf("Execve string: %s\n", MADDR(a1));
+  VB("Execve string: %s\n", MADDR(a1));
   char** argv = copy_stringarr (exec_env, MADDR(a2));
   char** argpt = argv;
   int i = 0;
   while (*argpt != NULL) {
-    printf("Argv[%d] : %s\n", i, *argpt);
+    VB("Argv[%d] : %s\n", i, *argpt);
     argpt++;
     i++;
   }
   char** envp = copy_stringarr (exec_env, MADDR(a3));
+  /* Pass env through temporary file-descriptor that is read on init */ 
+  create_pass_env_file(envp);
+
 	long retval = __syscall3(SYS_execve, MADDR(a1), argv, envp);
   free(argv);
   free(envp);
@@ -1195,7 +1207,14 @@ int wali_cl_copy_argv (wasm_exec_env_t exec_env, int argv_addr, int arg_idx) {
 int wali_get_init_envfile (wasm_exec_env_t exec_env, int faddr, int fsize) {
   PC(get_init_envfile);
   Addr fbuf = MADDR(faddr);
-  char *envfile = app_env_file;
+
+  /* Check for passthrough env from an execve call */
+  char pass_filename[100];
+  sprintf(pass_filename, "/tmp/wali_env.%d", getpid());
+  int execve_invoked = !access(pass_filename, R_OK);
+  
+  char *envfile = execve_invoked ? pass_filename : app_env_file;
+
   if (!envfile) {
     ERR("No WALI environment file provided\n");
     return 0;

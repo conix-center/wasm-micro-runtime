@@ -18,6 +18,11 @@
 #error "Unsupported architecture for WALI -- Only supports [x86_64, aarch64, riscv64]"
 #endif
 
+/* Logging */
+#define VB(fmt, ...) LOG_VERBOSE("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
+#define WARN(fmt, ...)  LOG_WARNING("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
+#define ERR(fmt, ...) LOG_ERROR("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
+
 
 #define WASM_PAGESIZE 65536
 
@@ -30,7 +35,7 @@ typedef uint32_t FuncPtr_t;
 
 #define MADDR(wasm_addr) ({  \
   Addr addr = wasm_addr ? (Addr) wasm_runtime_addr_app_to_native(get_module_inst(exec_env), wasm_addr) : NULL;  \
-  if (addr == NULL) { VB("NULL ADDRESS!"); } \
+  if (addr == NULL) { } \
   addr; \
 })
 
@@ -38,9 +43,6 @@ typedef uint32_t FuncPtr_t;
   wasm_runtime_addr_native_to_app(get_module_inst(exec_env), mem_addr); \
 })
 
-#define VB(fmt, ...) LOG_VERBOSE("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
-#define WARN(fmt, ...)  LOG_WARNING("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
-#define ERR(fmt, ...) LOG_ERROR("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
 
 
 #define FUNC_IDX(func) ({ wasm_runtime_get_function_idx(module_inst, func); })
