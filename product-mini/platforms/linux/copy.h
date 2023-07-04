@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <sys/syscall.h>
 #include <sys/mman.h>
+#include <sys/epoll.h>
 #include <signal.h>
 #include <setjmp.h>
 
@@ -71,6 +72,21 @@ struct iovec* copy_iovec(wasm_exec_env_t exec_env, Addr wasm_iov, int iov_cnt) {
     new_iov[i].iov_len = RD_FIELD(wasm_iov, int32_t);
   }
   return new_iov;
+}
+
+/* Copy epoll_event structure */
+struct epoll_event* copy_epoll_event(wasm_exec_env_t exec_env, Addr wasm_epoll, struct epoll_event *n_epoll) {
+  if (wasm_epoll == NULL) { return NULL; }
+  n_epoll->events = RD_FIELD(wasm_epoll, uint32_t);
+  n_epoll->data.u64 = RD_FIELD(wasm_epoll, uint64_t);
+  return n_epoll;
+}
+
+void copy2wasm_epoll_event(wasm_exec_env_t exec_env, Addr wasm_epoll, struct epoll_event *n_epoll) {
+  if (n_epoll == NULL) { return; }
+  WR_FIELD(wasm_epoll, n_epoll->events, uint32_t);
+  WR_FIELD(wasm_epoll, n_epoll->data.u64, uint64_t);
+  return;
 }
 
 /* Copy msghdr structure */

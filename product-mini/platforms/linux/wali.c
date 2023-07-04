@@ -968,7 +968,8 @@ long wali_syscall_exit_group (wasm_exec_env_t exec_env, long a1) {
 // 233 
 long wali_syscall_epoll_ctl (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(epoll_ctl);
-	return __syscall4(SYS_epoll_ctl, a1, a2, a3, MADDR(a4));
+  struct epoll_event *nev = copy_epoll_event(exec_env, MADDR(a4), &(struct epoll_event){0});
+	return __syscall4(SYS_epoll_ctl, a1, a2, a3, nev);
 }
 
 // 257 
@@ -1073,7 +1074,11 @@ long wali_syscall_utimensat (wasm_exec_env_t exec_env, long a1, long a2, long a3
 // 281 
 long wali_syscall_epoll_pwait (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
 	SC(epoll_pwait);
-	return __syscall6(SYS_epoll_pwait, a1, MADDR(a2), a3, a4, MADDR(a5), a6);
+  Addr wasm_epoll = MADDR(a2);
+  struct epoll_event *nev = copy_epoll_event(exec_env, wasm_epoll, &(struct epoll_event){0});
+	long retval = __syscall6(SYS_epoll_pwait, a1, nev, a3, a4, MADDR(a5), a6);
+  copy2wasm_epoll_event(exec_env, wasm_epoll, nev);
+  return retval;
 }
 
 // 284 
