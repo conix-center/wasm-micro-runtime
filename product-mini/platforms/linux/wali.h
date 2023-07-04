@@ -140,7 +140,7 @@ long wali_syscall_bind (wasm_exec_env_t exec_env, long a1, long a2, long a3);
 long wali_syscall_listen (wasm_exec_env_t exec_env, long a1, long a2);
 long wali_syscall_getsockname (wasm_exec_env_t exec_env, long a1, long a2, long a3);
 long wali_syscall_getpeername (wasm_exec_env_t exec_env, long a1, long a2, long a3);
-long wali_syscall_socketpair (wasm_exec_env_t exec_env);
+long wali_syscall_socketpair (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4);
 long wali_syscall_setsockopt (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5);
 long wali_syscall_getsockopt (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5);
 long wali_syscall_clone (wasm_exec_env_t exec_env);

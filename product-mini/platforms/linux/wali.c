@@ -536,6 +536,12 @@ long wali_syscall_getpeername (wasm_exec_env_t exec_env, long a1, long a2, long 
 	return __syscall3(SYS_getpeername, a1, MADDR(a2), MADDR(a3));
 }
 
+// 53 
+long wali_syscall_socketpair (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
+	SC(socketpair);
+	return __syscall4(SYS_socketpair, a1, a2, a3, MADDR(a4));
+}
+
 // 54 
 long wali_syscall_setsockopt (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
 	SC(setsockopt);
@@ -581,7 +587,9 @@ long wali_syscall_execve (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
   }
   char** envp = copy_stringarr (exec_env, MADDR(a3));
   /* Pass env through temporary file-descriptor that is read on init */ 
-  create_pass_env_file(envp);
+  if (envp) {
+    create_pass_env_file(envp);
+  }
 
 	long retval = __syscall3(SYS_execve, MADDR(a1), argv, envp);
   free(argv);

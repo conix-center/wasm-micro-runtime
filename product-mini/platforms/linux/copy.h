@@ -190,7 +190,7 @@ char** copy_stringarr (wasm_exec_env_t exec_env, Addr wasm_arr) {
     num_strings++; 
   }
   /* Set stringarr */
-  char **stringarr = (char**) malloc(num_strings * sizeof(char*));
+  char **stringarr = (char**) malloc((num_strings+1) * sizeof(char*));
   for (int i = 0; i < num_strings; i++) {
     stringarr[i] = (char*)RD_FIELD_ADDR(wasm_arr);
   }

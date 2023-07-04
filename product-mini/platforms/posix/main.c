@@ -896,6 +896,7 @@ main(int argc, char *argv[])
 			NSYMBOL (      __syscall_SYS_listen,       wali_syscall_listen,      "(ii)I" ),
 			NSYMBOL ( __syscall_SYS_getsockname,  wali_syscall_getsockname,     "(iii)I" ),
 			NSYMBOL ( __syscall_SYS_getpeername,  wali_syscall_getpeername,     "(iii)I" ),
+			NSYMBOL (  __syscall_SYS_socketpair,   wali_syscall_socketpair,    "(iiii)I" ),
 			NSYMBOL (  __syscall_SYS_setsockopt,   wali_syscall_setsockopt,   "(iiiii)I" ),
 			NSYMBOL (  __syscall_SYS_getsockopt,   wali_syscall_getsockopt,   "(iiiii)I" ),
 			NSYMBOL (        __syscall_SYS_fork,         wali_syscall_fork,        "()I" ),
