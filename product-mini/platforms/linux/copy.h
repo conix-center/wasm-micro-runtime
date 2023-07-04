@@ -91,7 +91,7 @@ struct msghdr* copy_msghdr(wasm_exec_env_t exec_env, Addr wasm_msghdr) {
   RD_FIELD(wasm_msghdr, int); // pad2
   msg->msg_flags = RD_FIELD(wasm_msghdr, int);
 
-  msg->msg_iov =  copy_iovec(exec_env, wasm_iov, 1);
+  msg->msg_iov =  copy_iovec(exec_env, wasm_iov, msg->msg_iovlen);
   return msg;
 }
 
@@ -170,7 +170,9 @@ char** copy_stringarr (wasm_exec_env_t exec_env, Addr wasm_arr) {
   /* Find num elems */
   Addr arr_it = wasm_arr;
   char *str;
-  while ((str = (char*)RD_FIELD_ADDR(arr_it))) { num_strings++; }
+  while ((str = (char*)RD_FIELD_ADDR(arr_it))) { 
+    num_strings++; 
+  }
   /* Set stringarr */
   char **stringarr = (char**) malloc(num_strings * sizeof(char*));
   for (int i = 0; i < num_strings; i++) {
