@@ -283,6 +283,7 @@ long wali_syscall_rt_sigaction (wasm_exec_env_t exec_env, long a1, long a2, long
       FUNC_FREE(wali_sigtable[signo].function);
       wali_sigtable[signo].function = target_wasm_handler;
       wali_sigtable[signo].func_table_idx = target_wasm_funcptr;
+      wali_sigtable[signo].func_idx = new_fn_idx;
     }
   }
   /* Reset block signals */

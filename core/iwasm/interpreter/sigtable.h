@@ -12,6 +12,8 @@ typedef struct {
   wasm_function_inst_t function;
   /* Index in the table, required to return back to old_sigaction */
   uint32_t func_table_idx;
+  /* Index in function space of the handler */
+  uint32_t func_idx;
 } wali_sigentry;
 
 extern pthread_mutex_t sigtable_mut;

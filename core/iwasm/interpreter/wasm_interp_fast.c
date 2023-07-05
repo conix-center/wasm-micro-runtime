@@ -1124,7 +1124,7 @@ wasm_interp_dump_op_count()
     int signo;  \
     if ((signo = get_pending_signal()) != -1) {  \
       pthread_mutex_lock(&sigtable_mut);  \
-      WASMFunctionInstance* sigfn = wali_sigtable[signo].function; \
+      WASMFunctionInstance* sigfn = module->e->functions + wali_sigtable[signo].func_idx; \
       pthread_mutex_unlock(&sigtable_mut);  \
       wasm_runtime_call_wasm(exec_env, sigfn, 1, (uint32_t*)&signo); \
     } \
