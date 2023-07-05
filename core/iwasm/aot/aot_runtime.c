@@ -1711,11 +1711,18 @@ aot_copy_exception(AOTModuleInstance *module_inst, char *exception_buf)
 void
 aot_poll_pending_signal(WASMExecEnv *exec_env)
 {
-  //printf("CALLS INTO POLL PENDING SIGNAL\n");
+  //printf("Call into AoT Signal Poll\n");
   int signo;
   if ((signo = get_pending_signal()) != -1) {
     pthread_mutex_lock(&sigtable_mut);
+    AOTModuleInstance *module_inst = (AOTModuleInstance*) wasm_runtime_get_module_inst(exec_env);
     AOTFunctionInstance* sigfn = wali_sigtable[signo].function;
+    /* Patch function pointer in case of reassignment */
+    uint32 func_idx = wali_sigtable[signo].func_idx;
+    uint32 func_type_idx = module_inst->func_type_indexes[func_idx]; 
+    sigfn->u.func.func_type = ((AOTModule*)module_inst->module)->func_types[func_type_idx];
+    sigfn->u.func.func_ptr = module_inst->func_ptrs[func_idx];
+    /* */
     pthread_mutex_unlock(&sigtable_mut);
     wasm_runtime_call_wasm(exec_env, sigfn, 1, (uint32_t*)&signo);
   }
