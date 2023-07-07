@@ -823,6 +823,18 @@ long wali_syscall_getgid (wasm_exec_env_t exec_env) {
 	return __syscall0(SYS_getgid);
 }
 
+// 105 
+long wali_syscall_setuid (wasm_exec_env_t exec_env, long a1) {
+	SC(setuid);
+	return __syscall1(SYS_setuid, a1);
+}
+
+// 106 
+long wali_syscall_setgid (wasm_exec_env_t exec_env, long a1) {
+	SC(setgid);
+	return __syscall1(SYS_setgid, a1);
+}
+
 // 107 
 long wali_syscall_geteuid (wasm_exec_env_t exec_env) {
 	SC(geteuid);
@@ -851,6 +863,30 @@ long wali_syscall_getppid (wasm_exec_env_t exec_env) {
 long wali_syscall_setsid (wasm_exec_env_t exec_env) {
 	SC(setsid);
 	return __syscall0(SYS_setsid);
+}
+
+// 115 
+long wali_syscall_getgroups (wasm_exec_env_t exec_env, long a1, long a2) {
+	SC(getgroups);
+	return __syscall2(SYS_getgroups, a1, MADDR(a2));
+}
+
+// 116 
+long wali_syscall_setgroups (wasm_exec_env_t exec_env, long a1, long a2) {
+	SC(setgroups);
+	return __syscall2(SYS_setgroups, a1, MADDR(a2));
+}
+
+// 117 
+long wali_syscall_setresuid (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
+	SC(setresuid);
+	return __syscall3(SYS_setresuid, a1, a2, a3);
+}
+
+// 119 
+long wali_syscall_setresgid (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
+	SC(setresgid);
+	return __syscall3(SYS_setresgid, a1, a2, a3);
 }
 
 // 121 
@@ -915,6 +951,12 @@ long wali_syscall_fstatfs (wasm_exec_env_t exec_env, long a1, long a2) {
 long wali_syscall_setrlimit (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(setrlimit);
 	return __syscall2(SYS_setrlimit, a1, MADDR(a2));
+}
+
+// 161 
+long wali_syscall_chroot (wasm_exec_env_t exec_env, long a1) {
+	SC(chroot);
+	return __syscall1(SYS_chroot, MADDR(a1));
 }
 
 // 186
