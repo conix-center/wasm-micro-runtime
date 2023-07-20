@@ -1033,7 +1033,6 @@ main(int argc, char *argv[])
     init_args.running_mode = running_mode;
 
     /* Register WALI symbols */
-    wali_init_native();
     init_args.native_symbols = wali_native_symbols;
     init_args.n_native_symbols = sizeof(wali_native_symbols) / sizeof(NativeSymbol);
     init_args.native_module_name = "wali";
@@ -1139,6 +1138,8 @@ main(int argc, char *argv[])
         wasm_runtime_set_bounds_checks(wasm_module_inst, false);
     }
 #endif
+
+    wali_init_native(wasm_module_inst);
 
 #if WASM_ENABLE_DEBUG_INTERP != 0
     if (ip_addr != NULL) {

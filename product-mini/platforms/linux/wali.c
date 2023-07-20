@@ -44,10 +44,28 @@ int WASM_TO_NATIVE_PAGE = 0;
 uint32_t BASE_MEMSIZE = 0;
 uint32_t THREAD_ID = 0;
 
-void wali_init_native() {
+wasm_module_inst_t main_mod_inst = NULL;
+
+void wali_memory_profile_dump(int signo) {
+  wasm_runtime_dump_mem_consumption(wasm_runtime_get_exec_env_singleton(main_mod_inst));
+}
+
+void wali_init_native(wasm_module_inst_t module_inst) {
   if (sem_init(&tid_sem, 0, 0)) {
     perror("sem_init");
   }
+
+  main_mod_inst = module_inst;
+
+  // Register signal for memory profiling
+  struct sigaction act = {0};
+  act.sa_handler = wali_memory_profile_dump;
+  sigemptyset (&act.sa_mask);
+  if (sigaction(37, &act, NULL) == -1) {
+    perror("Could not install WALI memory prof signal\n");
+    exit(1);
+  }
+
   NATIVE_PAGESIZE = sysconf(_SC_PAGE_SIZE);
   MMAP_PAGELEN = 0;
   WASM_PAGELEN = 0;
@@ -191,6 +209,7 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
     }
   }
   long retval =  WADDR(mem_addr);
+  VB("New MMAP Pagelen: %d\n", MMAP_PAGELEN);
   pthread_mutex_unlock(&mmap_lock);
   VB("Ret Addr: 0x%x", retval);
   RETURN(retval);
