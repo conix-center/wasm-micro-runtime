@@ -18,11 +18,16 @@
 #error "Unsupported architecture for WALI -- Only supports [x86_64, aarch64, riscv64]"
 #endif
 
-/* Logging */
+/* Logging: Disable when profiling */
+#if WALI_ENABLE_SYSCALL_PROFILE
 #define VB(fmt, ...) LOG_VERBOSE("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
 #define WARN(fmt, ...)  LOG_WARNING("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
 #define ERR(fmt, ...) LOG_ERROR("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
-
+#else
+#define VB(fmt, ...)
+#define WARN(fmt, ...)  
+#define ERR(fmt, ...) 
+#endif
 
 #define WASM_PAGESIZE 65536
 

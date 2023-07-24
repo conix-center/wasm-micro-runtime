@@ -15,6 +15,8 @@
 
 #include "syscall_arch.h"
 
+#define WALI_ENABLE_SYSCALL_PROFILE 1
+
 /* For startup environment */
 extern int app_argc;
 extern char **app_argv;
@@ -23,12 +25,14 @@ extern char *app_env_file;
 /* For WALI syscall stats */
 #define MAX_SYSCALLS 500
 typedef struct  {
-  uint64_t count;
-  uint64_t time;
+  int64_t vt_count;
+  int64_t vt_time;
+  int64_t nt_count;
+  int64_t nt_time;
 } sysmetric_t;
 
 static pthread_mutex_t metrics_lock = PTHREAD_MUTEX_INITIALIZER;
-sysmetric_t syscall_metrics[MAX_SYSCALLS] = {0};
+sysmetric_t syscall_metrics[MAX_SYSCALLS] = {{0}};
 
 /* For thread cloning TID synchronization */
 static pthread_mutex_t clone_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -54,12 +58,13 @@ void wali_memory_profile_dump(int signo) {
   wasm_runtime_dump_mem_consumption(wasm_runtime_get_exec_env_singleton(main_mod_inst));
 }
 void wali_syscall_profile_dump(int signo) {
+  printf("Save WALI syscall metrics\n");
   pthread_mutex_lock(&metrics_lock);
   FILE *f = fopen("wali_syscalls.profile", "w");
   for (int i = 0; i < (MAX_SYSCALLS-1); i++) {
-    fprintf(f, "%lu/%lu,", syscall_metrics[i].count, syscall_metrics[i].time);
+    fprintf(f, "%ld:%ld/%ld,", syscall_metrics[i].vt_count, syscall_metrics[i].nt_time, syscall_metrics[i].vt_time);
   }
-  fprintf(f, "0");
+  fprintf(f, "%d:%d/%d", 0, 0, 0);
   pthread_mutex_unlock(&metrics_lock);
 }
 
@@ -108,38 +113,67 @@ void wali_init_native(wasm_module_inst_t module_inst) {
 })
 
 
-#define __syscall1(n, a1) __syscall1(n, (long)a1)
-#define __syscall2(n, a1, a2) __syscall2(n, (long)a1, (long)a2)
-#define __syscall3(n, a1, a2, a3) __syscall3(n, (long)a1, (long)a2, (long)a3)
-#define __syscall4(n, a1, a2, a3, a4) __syscall4(n, (long)a1, (long)a2, (long)a3, (long)a4)
-#define __syscall5(n, a1, a2, a3, a4, a5) __syscall5(n, (long)a1, (long)a2, (long)a3, (long)a4, (long)a5)
-#define __syscall6(n, a1, a2, a3, a4, a5, a6) __syscall6(n, (long)a1, (long)a2, (long)a3, (long)a4, (long)a5, (long)a6)
+inline void gettime(struct timespec *ts) {
+  clock_gettime(CLOCK_MONOTONIC_RAW, ts);
+}
+inline int64_t timediff(struct timespec *tstart, struct timespec *tend) {
+  int64_t timed = ((int64_t)tend->tv_sec - (int64_t)tstart->tv_sec) * 1000000000ull + \
+      ((int64_t)tend->tv_nsec - (int64_t)tstart->tv_nsec);
+  return timed;
+}
+
+static __thread int64_t nsys_exectime = 0;
+#if WALI_ENABLE_SYSCALL_PROFILE
+#define NATIVE_TIME(code) ({ \
+  struct timespec nt_tstart={0,0};  \
+  struct timespec nt_tend={0,0}; \
+  gettime(&nt_tstart);  \
+  long rv = code; \
+  gettime(&nt_tend); \
+  nsys_exectime = timediff(&nt_tstart, &nt_tend); \
+  rv; \
+})
+#else /* WALI_ENABLE_SYSCALL_PROFILE = 0 */
+#define NATIVE_TIME(code) code;
+#endif
+
+
+#define __syscall1(n, a1)  NATIVE_TIME(__syscall1(n, (long)a1));
+#define __syscall2(n, a1, a2) NATIVE_TIME(__syscall2(n, (long)a1, (long)a2));
+#define __syscall3(n, a1, a2, a3) NATIVE_TIME(__syscall3(n, (long)a1, (long)a2, (long)a3));
+#define __syscall4(n, a1, a2, a3, a4) NATIVE_TIME(__syscall4(n, (long)a1, (long)a2, (long)a3, (long)a4));
+#define __syscall5(n, a1, a2, a3, a4, a5) NATIVE_TIME(__syscall5(n, (long)a1, (long)a2, (long)a3, (long)a4, (long)a5));
+#define __syscall6(n, a1, a2, a3, a4, a5, a6) NATIVE_TIME(__syscall6(n, (long)a1, (long)a2, (long)a3, (long)a4, (long)a5, (long)a6));
 
 
 #define PC(f)     LOG_VERBOSE("[%d] WALI: | " # f, gettid())
 
+#if WALI_ENABLE_SYSCALL_PROFILE
+
 #define SC(nr, f) \
     LOG_VERBOSE("[%d] WALI: SC | " # f, gettid()); \
     int scno = nr;  \
-    struct timespec tstart={0,0}; \
-    clock_gettime(CLOCK_MONOTONIC_RAW, &tstart);
+    struct timespec vt_tstart={0,0}; \
+    gettime(&vt_tstart);
 
 #define RETURN(v) { \
-    struct timespec tend={0,0}; \
-    clock_gettime(CLOCK_MONOTONIC_RAW, &tend);  \
-    uint64_t sysexec_time = \
-      ((uint64_t)tend.tv_sec - (uint64_t)tstart.tv_sec) * 1000000000ull + \
-      ((uint64_t)tend.tv_nsec - (uint64_t)tstart.tv_nsec);  \
+    long frv = v;  \
+    struct timespec vt_tend={0,0}; \
+    gettime(&vt_tend); \
+    int64_t virtsys_exectime = timediff(&vt_tstart, &vt_tend);  \
     pthread_mutex_lock(&metrics_lock);  \
-    if (!syscall_metrics[scno].count) { \
-      syscall_metrics[scno].time = sysexec_time;  \
-    } else {  \
-      syscall_metrics[scno].time -= ((syscall_metrics[scno].time + sysexec_time) / (syscall_metrics[scno].count+1));  \
-    } \
-    syscall_metrics[scno].count++;  \
+    syscall_metrics[scno].vt_time += ((virtsys_exectime - syscall_metrics[scno].vt_time) / (syscall_metrics[scno].vt_count+1));  \
+    syscall_metrics[scno].vt_count++;  \
+    syscall_metrics[scno].nt_time += ((nsys_exectime - syscall_metrics[scno].nt_time) / (syscall_metrics[scno].nt_count+1));  \
+    syscall_metrics[scno].nt_count++;  \
     pthread_mutex_unlock(&metrics_lock);  \
-    return v; \
+    return frv; \
   }
+
+#else /* WALI_ENABLE_SYSCALL_PROFILE = 0 */
+#define SC(nr, f)   LOG_VERBOSE("[%d] WALI: SC | " # f, gettid());
+#define RETURN(v)   return v;
+#endif
 
 #define ERRSC(f,...) { \
   LOG_ERROR("[%d] WALI: SC \"" # f "\" not implemented correctly yet! " __VA_ARGS__, gettid());  \
@@ -150,6 +184,7 @@ void wali_init_native(wasm_module_inst_t module_inst) {
 #define MISSC(f,...) { \
   LOG_FATAL("[%d] WALI: SC \"" # f "\" fatal error! No such syscall on platform", gettid());  \
 }
+
 
 
 /***** WALI Methods *******/
@@ -294,7 +329,8 @@ long wali_syscall_munmap (wasm_exec_env_t exec_env, long a1, long a2) {
 long wali_syscall_brk (wasm_exec_env_t exec_env, long a1) {
 	SC(12 ,brk);
   VB("brk syscall is a NOP in WASM right now");
-	RETURN(0); 
+	return 0;
+  RETURN(0); 
 }
 
 
@@ -512,8 +548,8 @@ long wali_syscall_alarm (wasm_exec_env_t exec_env, long a1) {
 	  RETURN(__syscall1(SYS_alarm, a1));
   #elif __aarch64__ || __riscv64__
     MISSC(alarm);
+    wali_proc_exit(exec_env, 1);
   #endif
-  exit(1);
 }
 
 // 38 TODO
@@ -1295,7 +1331,7 @@ _Noreturn void wali_siglongjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, i
   PC(siglongjmp);
   struct __libc_jmp_buf_tag* env = copy_jmp_buf(exec_env, MADDR(sigjmp_buf_addr));
   FATALSC(siglongjmp, "Not supported in WALI yet, exiting code...");
-  exit(1);
+  wali_proc_exit(exec_env, 1);
   //__libc_siglongjmp(env, val);
 }
 
@@ -1311,6 +1347,8 @@ void wali_call_dtors(wasm_exec_env_t exec_env) {
 
 void wali_proc_exit(wasm_exec_env_t exec_env, long v) {
   PC(exit);
+  // Dump profile
+  wali_syscall_profile_dump(0);
   exit(v);
 }
 
