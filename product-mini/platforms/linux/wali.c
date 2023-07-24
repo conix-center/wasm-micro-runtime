@@ -138,6 +138,7 @@ static __thread int64_t nsys_exectime = 0;
 #endif
 
 
+#define __syscall0(n)  NATIVE_TIME(__syscall0(n));
 #define __syscall1(n, a1)  NATIVE_TIME(__syscall1(n, (long)a1));
 #define __syscall2(n, a1, a2) NATIVE_TIME(__syscall2(n, (long)a1, (long)a2));
 #define __syscall3(n, a1, a2, a3) NATIVE_TIME(__syscall3(n, (long)a1, (long)a2, (long)a3));
