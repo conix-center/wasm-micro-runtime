@@ -5,6 +5,9 @@
 #include "bh_platform.h"
 #include "aot_export.h"
 
+#define WALI_ENABLE_SYSCALL_PROFILE 0
+#define WALI_ENABLE_NATIVE_SYSCALL_PROFILE 1
+
 /* Architecture defines */
 #ifndef __riscv64__
 #if __riscv
@@ -20,13 +23,13 @@
 
 /* Logging: Disable when profiling */
 #if WALI_ENABLE_SYSCALL_PROFILE
-#define VB(fmt, ...) LOG_VERBOSE("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
-#define WARN(fmt, ...)  LOG_WARNING("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
-#define ERR(fmt, ...) LOG_ERROR("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
-#else
 #define VB(fmt, ...)
 #define WARN(fmt, ...)  
 #define ERR(fmt, ...) 
+#else
+#define VB(fmt, ...) LOG_VERBOSE("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
+#define WARN(fmt, ...)  LOG_WARNING("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
+#define ERR(fmt, ...) LOG_ERROR("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
 #endif
 
 #define WASM_PAGESIZE 65536

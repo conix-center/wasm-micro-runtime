@@ -15,7 +15,6 @@
 
 #include "syscall_arch.h"
 
-#define WALI_ENABLE_SYSCALL_PROFILE 1
 
 /* For startup environment */
 extern int app_argc;
@@ -84,11 +83,13 @@ void wali_init_native(wasm_module_inst_t module_inst) {
     perror("Could not install WALI memory prof signal\n");
     exit(1);
   }
+#if WALI_ENABLE_SYSCALL_PROFILE
   act.sa_handler = wali_syscall_profile_dump;
   if (sigaction(38, &act, NULL) == -1) {
     perror("Could not install WALI syscall prof signal\n");
     exit(1);
   }
+#endif
 
   NATIVE_PAGESIZE = sysconf(_SC_PAGE_SIZE);
   MMAP_PAGELEN = 0;
@@ -124,6 +125,7 @@ inline int64_t timediff(struct timespec *tstart, struct timespec *tend) {
 
 static __thread int64_t nsys_exectime = 0;
 #if WALI_ENABLE_SYSCALL_PROFILE
+#if WALI_ENABLE_NATIVE_SYSCALL_PROFILE
 #define NATIVE_TIME(code) ({ \
   struct timespec nt_tstart={0,0};  \
   struct timespec nt_tend={0,0}; \
@@ -133,6 +135,9 @@ static __thread int64_t nsys_exectime = 0;
   nsys_exectime = timediff(&nt_tstart, &nt_tend); \
   rv; \
 })
+#else /* WALI_ENABLE_NATIVE_SYSCALL_PROFILE = 0 */
+#define NATIVE_TIME(code) code;
+#endif
 #else /* WALI_ENABLE_SYSCALL_PROFILE = 0 */
 #define NATIVE_TIME(code) code;
 #endif
@@ -169,6 +174,18 @@ static __thread int64_t nsys_exectime = 0;
     syscall_metrics[scno].nt_count++;  \
     pthread_mutex_unlock(&metrics_lock);  \
     return frv; \
+  }
+
+#define FIN_TIME() { \
+    struct timespec vt_tend={0,0}; \
+    gettime(&vt_tend); \
+    int64_t virtsys_exectime = timediff(&vt_tstart, &vt_tend);  \
+    pthread_mutex_lock(&metrics_lock);  \
+    syscall_metrics[scno].vt_time += ((virtsys_exectime - syscall_metrics[scno].vt_time) / (syscall_metrics[scno].vt_count+1));  \
+    syscall_metrics[scno].vt_count++;  \
+    syscall_metrics[scno].nt_time += ((nsys_exectime - syscall_metrics[scno].nt_time) / (syscall_metrics[scno].nt_count+1));  \
+    syscall_metrics[scno].nt_count++;  \
+    pthread_mutex_unlock(&metrics_lock);  \
   }
 
 #else /* WALI_ENABLE_SYSCALL_PROFILE = 0 */
@@ -1348,8 +1365,9 @@ void wali_call_dtors(wasm_exec_env_t exec_env) {
 
 void wali_proc_exit(wasm_exec_env_t exec_env, long v) {
   PC(exit);
-  // Dump profile
+#if WALI_ENABLE_SYSCALL_PROFILE
   wali_syscall_profile_dump(0);
+#endif
   exit(v);
 }
 
