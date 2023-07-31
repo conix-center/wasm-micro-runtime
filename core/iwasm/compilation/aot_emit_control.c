@@ -462,9 +462,11 @@ aot_compile_op_block(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         if (label_type == LABEL_TYPE_LOOP) {
             aot_checked_addr_list_destroy(func_ctx);
             /* Insert Signal Polling for WALI here for Loops*/
+#if WALI_ENABLE_LOOP_SIGPOLL
             if (!aot_emit_sigpoll(comp_ctx, func_ctx)) {
                 goto fail;
             }
+#endif
         }
     }
     else if (label_type == LABEL_TYPE_IF) {

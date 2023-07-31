@@ -30,6 +30,7 @@
 #include "simd/simd_sat_int_arith.h"
 #include "../aot/aot_runtime.h"
 #include "../interpreter/wasm_opcode.h"
+#include "aot_emit_sigpoll.h"
 #include <errno.h>
 
 #if WASM_ENABLE_DEBUG_AOT != 0
@@ -198,7 +199,11 @@ aot_compile_func(AOTCompContext *comp_ctx, uint32 func_index)
             (frame_ip - 1) - comp_ctx->comp_data->wasm_module->buf_code);
         LLVMSetCurrentDebugLocation2(comp_ctx->builder, location);
 #endif
-
+#if WALI_ENABLE_ALL_SIGPOLL
+        if (!aot_emit_sigpoll(comp_ctx, func_ctx)) {
+          return false;
+        }
+#endif
         switch (opcode) {
             case WASM_OP_UNREACHABLE:
                 if (!aot_compile_op_unreachable(comp_ctx, func_ctx, &frame_ip))

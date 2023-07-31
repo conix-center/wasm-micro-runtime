@@ -5,6 +5,7 @@
 
 bool
 aot_emit_sigpoll(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx) {
+#if WALI_ENABLE_SIGNAL_HANDLING
     /* For WALI Signal Poll handling */
     LLVMValueRef func;
     LLVMTypeRef func_type, ret_type, param_types[1];
@@ -33,6 +34,6 @@ aot_emit_sigpoll(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx) {
         aot_set_last_error("llvm build call failed.");
         return false;
     }
-
+#endif /* WALI_ENABLE_SIGNAL_HANDLING */
     return true;
 }
