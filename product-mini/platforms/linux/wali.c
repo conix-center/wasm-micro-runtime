@@ -1,3 +1,27 @@
+/*
+  MIT License
+
+  Copyright (c) [2023] [Arjun Ramesh]
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
+
 #define _GNU_SOURCE
 #include <stdlib.h>
 #include <unistd.h>
@@ -136,10 +160,10 @@ static __thread int64_t nsys_exectime = 0;
   rv; \
 })
 #else /* WALI_ENABLE_NATIVE_SYSCALL_PROFILE = 0 */
-#define NATIVE_TIME(code) code;
+#define NATIVE_TIME(code) code
 #endif
 #else /* WALI_ENABLE_SYSCALL_PROFILE = 0 */
-#define NATIVE_TIME(code) code;
+#define NATIVE_TIME(code) code
 #endif
 
 
@@ -712,11 +736,11 @@ long wali_syscall_execve (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
     i++;
   }
   char** envp = copy_stringarr (exec_env, MADDR(a3));
-  /* Pass env through temporary file-descriptor that is read on init */ 
+  /* For child WALI processes: Pass env through temporary file-descriptor that is read on init 
+  *  For child native processes: envp is passed through the syscall invocation */ 
   if (envp) {
     create_pass_env_file(envp);
   }
-
 	long retval = __syscall3(SYS_execve, MADDR(a1), argv, envp);
   free(argv);
   free(envp);
