@@ -5,8 +5,6 @@
 #include "bh_platform.h"
 #include "aot_export.h"
 
-#define WALI_ENABLE_SYSCALL_PROFILE 0
-#define WALI_ENABLE_NATIVE_SYSCALL_PROFILE 1
 
 /* Architecture defines */
 #ifndef __riscv64__
