@@ -167,13 +167,13 @@ static __thread int64_t nsys_exectime = 0;
 #endif
 
 
-#define __syscall0(n)  NATIVE_TIME(__syscall0(n));
-#define __syscall1(n, a1)  NATIVE_TIME(__syscall1(n, (long)a1));
-#define __syscall2(n, a1, a2) NATIVE_TIME(__syscall2(n, (long)a1, (long)a2));
-#define __syscall3(n, a1, a2, a3) NATIVE_TIME(__syscall3(n, (long)a1, (long)a2, (long)a3));
-#define __syscall4(n, a1, a2, a3, a4) NATIVE_TIME(__syscall4(n, (long)a1, (long)a2, (long)a3, (long)a4));
-#define __syscall5(n, a1, a2, a3, a4, a5) NATIVE_TIME(__syscall5(n, (long)a1, (long)a2, (long)a3, (long)a4, (long)a5));
-#define __syscall6(n, a1, a2, a3, a4, a5, a6) NATIVE_TIME(__syscall6(n, (long)a1, (long)a2, (long)a3, (long)a4, (long)a5, (long)a6));
+#define __syscall0(n)  NATIVE_TIME(__syscall0(n))
+#define __syscall1(n, a1)  NATIVE_TIME(__syscall1(n, (long)a1))
+#define __syscall2(n, a1, a2) NATIVE_TIME(__syscall2(n, (long)a1, (long)a2))
+#define __syscall3(n, a1, a2, a3) NATIVE_TIME(__syscall3(n, (long)a1, (long)a2, (long)a3))
+#define __syscall4(n, a1, a2, a3, a4) NATIVE_TIME(__syscall4(n, (long)a1, (long)a2, (long)a3, (long)a4))
+#define __syscall5(n, a1, a2, a3, a4, a5) NATIVE_TIME(__syscall5(n, (long)a1, (long)a2, (long)a3, (long)a4, (long)a5))
+#define __syscall6(n, a1, a2, a3, a4, a5, a6) NATIVE_TIME(__syscall6(n, (long)a1, (long)a2, (long)a3, (long)a4, (long)a5, (long)a6))
 
 
 #define PC(f)     LOG_VERBOSE("[%d] WALI: | " # f, gettid())
