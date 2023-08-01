@@ -12,7 +12,6 @@ include_directories(${LIBC_WALI_DIR}/sandboxed-system-primitives/include
 add_compile_definitions(WALI_ENABLE_SYSCALL_PROFILE=0)
 add_compile_definitions(WALI_ENABLE_NATIVE_SYSCALL_PROFILE=0)
 add_compile_definitions(WALI_ENABLE_SIGNAL_HANDLING=1)
-add_compile_definitions(WASM_ENABLE_OPCODE_COUNTER=1)
 
 # Setup files to compile
 file (COPY ${CMAKE_CURRENT_LIST_DIR}/wali_arch/${CMAKE_SYSTEM_PROCESSOR}/syscall.h DESTINATION ${CMAKE_CURRENT_LIST_DIR})

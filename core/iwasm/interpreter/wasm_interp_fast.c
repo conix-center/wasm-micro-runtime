@@ -1128,7 +1128,8 @@ wasm_interp_dump_op_count()
 #if WASM_ENABLE_OPCODE_COUNTER != 0
 #define HANDLE_OP(opcode) HANDLE_##opcode : \
   { \
-    opcode_table[opcode].count++; \
+    /* opcode_table[opcode].count++; */ \
+    exec_env->opcode_table[opcode]++; \
     HANDLE_WALI_SIGNAL(); \
   };
 #else
@@ -4051,6 +4052,6 @@ wasm_interp_call_wasm(WASMModuleInstance *module_inst, WASMExecEnv *exec_env,
     wasm_exec_env_set_cur_frame(exec_env, prev_frame);
     FREE_FRAME(exec_env, frame);
 #if WASM_ENABLE_OPCODE_COUNTER != 0
-    wasm_interp_dump_op_count();
+    //wasm_interp_dump_op_count();
 #endif
 }
