@@ -257,6 +257,14 @@ typedef struct WASMModuleInstanceExtra {
         && WASM_ENABLE_LAZY_JIT != 0)
     WASMModuleInstance *next;
 #endif
+
+#if WASM_ENABLE_WASI_NN != 0
+    WASINNContext *wasi_nn_ctx;
+#endif
+
+#if WASM_ENABLE_OPCODE_COUNTER != 0
+    uint64 opcode_table[256];
+#endif
 } WASMModuleInstanceExtra;
 
 struct AOTFuncPerfProfInfo;

@@ -147,10 +147,6 @@ typedef struct WASMExecEnv {
 
     /* Custom addition for dynamic thread creating tracking */
     uint64 uid;
-#if WASM_ENABLE_OPCODE_COUNTER != 0
-    /* Custom addition for opcode counting */
-    uint64 opcode_table[256];
-#endif
 
     /* The WASM stack size */
     uint32 wasm_stack_size;

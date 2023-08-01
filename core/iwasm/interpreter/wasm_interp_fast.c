@@ -1129,7 +1129,7 @@ wasm_interp_dump_op_count()
 #define HANDLE_OP(opcode) HANDLE_##opcode : \
   { \
     /* opcode_table[opcode].count++; */ \
-    exec_env->opcode_table[opcode]++; \
+    module->e->opcode_table[opcode]++; \
     HANDLE_WALI_SIGNAL(); \
   };
 #else
