@@ -151,15 +151,16 @@ endif ()
 
 include (${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 
-add_compile_definitions(WALI_ENABLE_SYSCALL_PROFILE=0)
-add_compile_definitions(WALI_ENABLE_NATIVE_SYSCALL_PROFILE=0)
-add_compile_definitions(WALI_ENABLE_SIGNAL_HANDLING=1)
-file (COPY ${CMAKE_CURRENT_LIST_DIR}/wali_arch/${CMAKE_SYSTEM_PROCESSOR}/syscall.h DESTINATION ${CMAKE_CURRENT_LIST_DIR})
-file (RENAME ${CMAKE_CURRENT_LIST_DIR}/syscall.h ${CMAKE_CURRENT_LIST_DIR}/syscall_arch.h)
-file (GLOB_RECURSE wali_arch_sources ${CMAKE_CURRENT_LIST_DIR}/wali_arch/${CMAKE_SYSTEM_PROCESSOR}/*.s ${CMAKE_CURRENT_LIST_DIR}/wali_arch/*.c)
-set (WALI_SOURCES wali.c ${wali_arch_sources})
+#add_compile_definitions(WALI_ENABLE_SYSCALL_PROFILE=0)
+#add_compile_definitions(WALI_ENABLE_NATIVE_SYSCALL_PROFILE=0)
+#add_compile_definitions(WALI_ENABLE_SIGNAL_HANDLING=1)
+#add_compile_definitions(WASM_ENABLE_OPCODE_COUNTER=1)
+#file (COPY ${CMAKE_CURRENT_LIST_DIR}/wali_arch/${CMAKE_SYSTEM_PROCESSOR}/syscall.h DESTINATION ${CMAKE_CURRENT_LIST_DIR})
+#file (RENAME ${CMAKE_CURRENT_LIST_DIR}/syscall.h ${CMAKE_CURRENT_LIST_DIR}/syscall_arch.h)
+#file (GLOB_RECURSE wali_arch_sources ${CMAKE_CURRENT_LIST_DIR}/wali_arch/${CMAKE_SYSTEM_PROCESSOR}/*.s ${CMAKE_CURRENT_LIST_DIR}/wali_arch/*.c)
+#set (WALI_SOURCES wali.c ${wali_arch_sources})
 
-add_executable (iwasm main.c ${WALI_SOURCES} ${UNCOMMON_SHARED_SOURCE})
+add_executable (iwasm main.c ${UNCOMMON_SHARED_SOURCE})
 
 set_target_properties (iwasm PROPERTIES POSITION_INDEPENDENT_CODE ON)
 

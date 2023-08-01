@@ -36,6 +36,9 @@
 #endif
 #include "../common/wasm_c_api_internal.h"
 #include "../../version.h"
+#if WASM_ENABLE_LIBC_WALI != 0
+#include "../libraries/libc-wali/wali_init.h"
+#endif
 
 /**
  * For runtime build, BH_MALLOC/BH_FREE should be defined as
@@ -1351,8 +1354,12 @@ wasm_runtime_instantiate(WASMModuleCommon *module, uint32 stack_size,
                          uint32 heap_size, char *error_buf,
                          uint32 error_buf_size)
 {
-    return wasm_runtime_instantiate_internal(
+    WASMModuleInstanceCommon *module_inst = wasm_runtime_instantiate_internal(
         module, NULL, NULL, stack_size, heap_size, error_buf, error_buf_size);
+#if WASM_ENABLE_LIBC_WALI != 0
+    wali_init_native(module_inst);
+#endif
+    return module_inst;
 }
 
 void

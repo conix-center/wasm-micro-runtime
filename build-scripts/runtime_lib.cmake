@@ -122,6 +122,17 @@ if (WAMR_BUILD_LIB_WASI_THREADS EQUAL 1)
     set (WAMR_BUILD_SHARED_MEMORY 1)
 endif ()
 
+if (WAMR_BUILD_LIBC_WALI EQUAL 1)
+    include (${IWASM_DIR}/libraries/libc-wali/libc_wali.cmake)
+    # Enable the dependent feature if lib wali is enabled
+    set (WAMR_BUILD_THREAD_MGR 1)
+    set (WAMR_BUILD_BULK_MEMORY 1)
+    set (WAMR_BUILD_SHARED_MEMORY 1)
+    # Currently these settings are required
+    set (WAMR_BUILD_FAST_INTERP 1)
+    set (WAMR_BUILD_MULTI_MODULE 1)
+endif ()
+
 if (WAMR_BUILD_DEBUG_INTERP EQUAL 1)
     set (WAMR_BUILD_THREAD_MGR 1)
     include (${IWASM_DIR}/libraries/debug-engine/debug_engine.cmake)
@@ -194,6 +205,7 @@ set (source_all
     ${LIBC_EMCC_SOURCE}
     ${LIB_RATS_SOURCE}
     ${DEBUG_ENGINE_SOURCE}
+    ${LIBC_WALI_SOURCE}
 )
 
 set (WAMR_RUNTIME_LIB_SOURCE ${source_all})

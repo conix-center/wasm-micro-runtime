@@ -1113,21 +1113,28 @@ wasm_interp_dump_op_count()
 }
 #endif
 
+#define HANDLE_WALI_SIGNAL()  \
+  int signo;  \
+  if ((signo = get_pending_signal()) != -1) { \
+    pthread_mutex_lock(&sigtable_mut);  \
+    WASMFunctionInstance* sigfn = module->e->functions + wali_sigtable[signo].func_idx; \
+    pthread_mutex_unlock(&sigtable_mut);  \
+    wasm_runtime_call_wasm(exec_env, sigfn, 1, (uint32_t*)&signo);  \
+  } \
+
 #if WASM_ENABLE_LABELS_AS_VALUES != 0
 
 /* #define HANDLE_OP(opcode) HANDLE_##opcode:printf(#opcode"\n"); */
 #if WASM_ENABLE_OPCODE_COUNTER != 0
-#define HANDLE_OP(opcode) HANDLE_##opcode : opcode_table[opcode].count++;
+#define HANDLE_OP(opcode) HANDLE_##opcode : \
+  { \
+    opcode_table[opcode].count++; \
+    HANDLE_WALI_SIGNAL(); \
+  };
 #else
 #define HANDLE_OP(opcode) HANDLE_##opcode:  \
   {  \
-    int signo;  \
-    if ((signo = get_pending_signal()) != -1) {  \
-      pthread_mutex_lock(&sigtable_mut);  \
-      WASMFunctionInstance* sigfn = module->e->functions + wali_sigtable[signo].func_idx; \
-      pthread_mutex_unlock(&sigtable_mut);  \
-      wasm_runtime_call_wasm(exec_env, sigfn, 1, (uint32_t*)&signo); \
-    } \
+    HANDLE_WALI_SIGNAL(); \
   };
 #endif
 #if WASM_CPU_SUPPORTS_UNALIGNED_ADDR_ACCESS != 0

@@ -90,7 +90,7 @@ typedef __libc_jmp_buf __libc_sigjmp_buf;
 /** **/
 
 /** Init function **/
-void wali_init_native (wasm_module_inst_t module_inst);
+//void wali_init_native (wasm_module_inst_t module_inst);
 
 /** Syscalls **/
 long wali_syscall_read (wasm_exec_env_t exec_env, long a1, long a2, long a3);

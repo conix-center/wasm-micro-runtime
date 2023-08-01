@@ -180,6 +180,10 @@
 #error "Heap aux stack allocation must be enabled for WASI threads"
 #endif
 
+#ifndef WASM_ENABLE_LIBC_WALI
+#define WASM_ENABLE_LIBC_WALI 0
+#endif
+
 #ifndef WASM_ENABLE_BASE_LIB
 #define WASM_ENABLE_BASE_LIB 0
 #endif
