@@ -226,6 +226,10 @@ execute_main(WASMModuleInstanceCommon *module_inst, int32 argc, char *argv[])
     return ret;
 }
 
+int app_argc;
+char **app_argv;
+char *app_env_file;
+
 bool
 wasm_application_execute_main(WASMModuleInstanceCommon *module_inst, int32 argc,
                               char *argv[])
@@ -234,6 +238,10 @@ wasm_application_execute_main(WASMModuleInstanceCommon *module_inst, int32 argc,
 #if (WASM_ENABLE_MEMORY_PROFILING != 0)
     WASMExecEnv *exec_env;
 #endif
+
+    app_argc = argc;
+    app_argv = argv;
+    app_env_file = NULL;
 
     ret = execute_main(module_inst, argc, argv);
 
