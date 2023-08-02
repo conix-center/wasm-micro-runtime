@@ -20,7 +20,7 @@
 
 static int app_argc;
 static char **app_argv;
-static char *app_env_file;
+char *app_env_file;
 
 /* clang-format off */
 static int

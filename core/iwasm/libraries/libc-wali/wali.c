@@ -317,22 +317,31 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
   uint32 mem_size = wasm_runtime_get_memory_size(get_module_inst(exec_env)); 
   VB("Mem Base: %p | Mem End: %p | Mem Size: 0x%x | Mmap Addr: %p", base_addr, base_addr + mem_size, mem_size, mmap_addr);
 
+  wasm_module_inst_t module = get_module_inst(exec_env);
+  int inc_wasm_pages = 0;
+  int num_pages = ((a2 + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE);
+  int extended_mmap_pagelen = MMAP_PAGELEN + num_pages;
+  /* Expand wasm memory if needed */
+  if (extended_mmap_pagelen > WASM_PAGELEN * WASM_TO_NATIVE_PAGE) {
+    int new_wasm_pagelen = ((extended_mmap_pagelen + WASM_TO_NATIVE_PAGE - 1) / WASM_TO_NATIVE_PAGE);
+    inc_wasm_pages = new_wasm_pagelen - WASM_PAGELEN;
+    if (!wasm_can_enlarge_memory((WASMModuleInstance*)module, inc_wasm_pages)) {
+      FATALSC(mmap, "Out of memory!\n");
+      goto mmap_fail;
+    }
+  }
+
   Addr mem_addr = (Addr) __syscall6(SYS_mmap, mmap_addr, a2, a3, MAP_FIXED|a4, a5, a6);
   /* Sometimes mmap returns -9 instead of MAP_FAILED? */
   if ((mem_addr == MAP_FAILED) || (mem_addr == (void*)(-9))) {
     FATALSC(mmap, "Failed to mmap!\n");
-    pthread_mutex_unlock(&mmap_lock);
-    RETURN((long) MAP_FAILED);
+    goto mmap_fail;
   }
   /* On success */
   else {
-    int num_pages = ((a2 + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE);
     MMAP_PAGELEN += num_pages;
     /* Expand wasm memory if needed */
-    if (MMAP_PAGELEN > WASM_PAGELEN * WASM_TO_NATIVE_PAGE) {
-      int new_wasm_pagelen = ((MMAP_PAGELEN + WASM_TO_NATIVE_PAGE - 1) / WASM_TO_NATIVE_PAGE);
-      int inc_wasm_pages = new_wasm_pagelen - WASM_PAGELEN;
-      wasm_module_inst_t module = get_module_inst(exec_env);
+    if (inc_wasm_pages) {
       wasm_enlarge_memory((WASMModuleInstance*)module, inc_wasm_pages, true);
       WASM_PAGELEN += inc_wasm_pages;
     }
@@ -342,6 +351,10 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
   pthread_mutex_unlock(&mmap_lock);
   VB("Ret Addr: 0x%x", retval);
   RETURN(retval);
+
+mmap_fail:
+  pthread_mutex_unlock(&mmap_lock);
+  RETURN((long) MAP_FAILED);
 }
 
 // 10

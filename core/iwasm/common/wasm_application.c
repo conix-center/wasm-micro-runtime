@@ -228,7 +228,7 @@ execute_main(WASMModuleInstanceCommon *module_inst, int32 argc, char *argv[])
 
 int app_argc;
 char **app_argv;
-char *app_env_file;
+//char *app_env_file;
 
 bool
 wasm_application_execute_main(WASMModuleInstanceCommon *module_inst, int32 argc,
@@ -241,7 +241,6 @@ wasm_application_execute_main(WASMModuleInstanceCommon *module_inst, int32 argc,
 
     app_argc = argc;
     app_argv = argv;
-    app_env_file = NULL;
 
     ret = execute_main(module_inst, argc, argv);
 

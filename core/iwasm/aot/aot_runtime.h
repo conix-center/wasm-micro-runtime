@@ -530,6 +530,9 @@ aot_module_dup_data(AOTModuleInstance *module_inst, const char *src,
                     uint32 size);
 
 bool
+aot_can_enlarge_memory(AOTModuleInstance *module_inst, uint32 inc_page_count);
+
+bool
 aot_enlarge_memory(AOTModuleInstance *module_inst, uint32 inc_page_count);
 
 /**

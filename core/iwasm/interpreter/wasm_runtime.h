@@ -513,6 +513,9 @@ WASMMemoryInstance *
 wasm_get_default_memory(WASMModuleInstance *module_inst);
 
 bool
+wasm_can_enlarge_memory(WASMModuleInstance *module_inst, uint32 inc_page_count);
+
+bool
 wasm_enlarge_memory(WASMModuleInstance *module_inst, uint32 inc_page_count, bool is_mmap);
 
 WASMFunctionInstance* 
