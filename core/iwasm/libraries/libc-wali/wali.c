@@ -321,7 +321,7 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
   int inc_wasm_pages = 0;
   int num_pages = ((a2 + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE);
   int extended_mmap_pagelen = MMAP_PAGELEN + num_pages;
-  /* Expand wasm memory if needed */
+  /* Check if wasm memory needs to be expanded and it is safe */
   if (extended_mmap_pagelen > WASM_PAGELEN * WASM_TO_NATIVE_PAGE) {
     int new_wasm_pagelen = ((extended_mmap_pagelen + WASM_TO_NATIVE_PAGE - 1) / WASM_TO_NATIVE_PAGE);
     inc_wasm_pages = new_wasm_pagelen - WASM_PAGELEN;
@@ -552,9 +552,55 @@ long wali_syscall_sched_yield (wasm_exec_env_t exec_env) {
 // 25 TODO
 long wali_syscall_mremap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
 	SC(25 ,mremap);
-	ERRSC(mremap);
-  FATALSC(mremap, "Not implemented yet");
-	RETURN(__syscall5(SYS_mremap, MADDR(a1), a2, a3, a4, MADDR(a5)));
+  VB("mremap args | a1: %ld, a2: 0x%x, a3: 0x%x, a4: %ld, a5: %ld | MMAP_PAGELEN: %d", a1, a2, a3, a4, a5, MMAP_PAGELEN);
+  /* Remap pages to the end of the wasm memory, like mmap */
+  pthread_mutex_lock(&mmap_lock);
+  Addr base_addr = BASE_ADDR();
+  Addr pa_aligned_addr = PA_ALIGN_MMAP_ADDR();
+  Addr mmap_addr = pa_aligned_addr + MMAP_PAGELEN * NATIVE_PAGESIZE;
+
+  uint32 mem_size = wasm_runtime_get_memory_size(get_module_inst(exec_env)); 
+  VB("Mem Base: %p | Mem End: %p | Mem Size: 0x%x | Mmap Addr: %p", base_addr, base_addr + mem_size, mem_size, mmap_addr);
+
+  wasm_module_inst_t module = get_module_inst(exec_env);
+  int inc_wasm_pages = 0;
+  int num_pages = ((a3 + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE);
+  int extended_mmap_pagelen = MMAP_PAGELEN + num_pages;
+  /* Check if wasm memory needs to be expanded and it is safe */
+  if (extended_mmap_pagelen > WASM_PAGELEN * WASM_TO_NATIVE_PAGE) {
+    int new_wasm_pagelen = ((extended_mmap_pagelen + WASM_TO_NATIVE_PAGE - 1) / WASM_TO_NATIVE_PAGE);
+    inc_wasm_pages = new_wasm_pagelen - WASM_PAGELEN;
+    if (!wasm_can_enlarge_memory((WASMModuleInstance*)module, inc_wasm_pages)) {
+      FATALSC(mremap, "Out of memory!\n");
+      goto mremap_fail;
+    }
+  }
+
+  Addr mem_addr = (Addr) __syscall5(SYS_mremap, MADDR(a1), a2, a3, MREMAP_MAYMOVE|MREMAP_FIXED, mmap_addr);
+  VB("Mem Addr: %p\n", mem_addr);
+  /* Sometimes mremap returns -9 instead of MAP_FAILED? */
+  if ((mem_addr == MAP_FAILED) || (mem_addr == (void*)(-9))) {
+    FATALSC(mremap, "Failed to mremap!\n");
+    goto mremap_fail;
+  }
+  /* On success */
+  else {
+    MMAP_PAGELEN += num_pages;
+    /* Expand wasm memory if needed */
+    if (inc_wasm_pages) {
+      wasm_enlarge_memory((WASMModuleInstance*)module, inc_wasm_pages, true);
+      WASM_PAGELEN += inc_wasm_pages;
+    }
+  }
+  long retval =  WADDR(mem_addr);
+  VB("New MMAP Pagelen: %d\n", MMAP_PAGELEN);
+  pthread_mutex_unlock(&mmap_lock);
+  VB("Ret Addr: 0x%x", retval);
+	RETURN(retval);
+
+mremap_fail:
+  pthread_mutex_unlock(&mmap_lock);
+  RETURN((long) MAP_FAILED);
 }
 
 // 26 
