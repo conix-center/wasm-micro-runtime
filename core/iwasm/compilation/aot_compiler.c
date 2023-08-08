@@ -190,6 +190,13 @@ aot_compile_func(AOTCompContext *comp_ctx, uint32 func_index)
     LLVMPositionBuilderAtEnd(
         comp_ctx->builder,
         func_ctx->block_stack.block_list_head->llvm_entry_block);
+
+#if WALI_ENABLE_FUNC_SIGPOLL
+    if (!aot_emit_sigpoll(comp_ctx, func_ctx)) {
+      return false;
+    }
+#endif
+
     while (frame_ip < frame_ip_end) {
         opcode = *frame_ip++;
 

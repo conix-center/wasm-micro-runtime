@@ -55,6 +55,9 @@ typedef struct  {
   int64_t nt_time;
 } sysmetric_t;
 
+int64_t total_wali_time = 0;
+int64_t total_native_time = 0;
+
 static pthread_mutex_t metrics_lock = PTHREAD_MUTEX_INITIALIZER;
 sysmetric_t syscall_metrics[MAX_SYSCALLS] = {{0}};
 
@@ -74,6 +77,18 @@ int WASM_TO_NATIVE_PAGE = 0;
 uint32_t BASE_MEMSIZE = 0;
 uint32_t THREAD_ID = 0; // unused irl
 
+
+inline void gettime(struct timespec *ts) {
+  clock_gettime(CLOCK_MONOTONIC_RAW, ts);
+}
+inline void gettimethread(struct timespec *ts) {
+  clock_gettime(CLOCK_THREAD_CPUTIME_ID, ts);
+}
+inline int64_t timediff(struct timespec *tstart, struct timespec *tend) {
+  int64_t timed = ((int64_t)tend->tv_sec - (int64_t)tstart->tv_sec) * 1000000000ull + \
+      ((int64_t)tend->tv_nsec - (int64_t)tstart->tv_nsec);
+  return timed;
+}
 
 /* Miscellaneous Callbacks */
 wasm_module_inst_t main_mod_inst = NULL;
@@ -139,14 +154,6 @@ void wali_init_native(wasm_module_inst_t module_inst) {
 })
 
 
-inline void gettime(struct timespec *ts) {
-  clock_gettime(CLOCK_MONOTONIC_RAW, ts);
-}
-inline int64_t timediff(struct timespec *tstart, struct timespec *tend) {
-  int64_t timed = ((int64_t)tend->tv_sec - (int64_t)tstart->tv_sec) * 1000000000ull + \
-      ((int64_t)tend->tv_nsec - (int64_t)tstart->tv_nsec);
-  return timed;
-}
 
 static __thread volatile int64_t nsys_exectime = 0;
 #if WALI_ENABLE_SYSCALL_PROFILE
@@ -182,7 +189,6 @@ static __thread volatile int64_t nsys_exectime = 0;
 #if WALI_ENABLE_SYSCALL_PROFILE
 
 #define SC(nr, f) \
-    LOG_VERBOSE("[%d] WALI: SC | " # f, gettid()); \
     int scno = nr;  \
     struct timespec vt_tstart={0,0}; \
     gettime(&vt_tstart);
@@ -197,6 +203,8 @@ static __thread volatile int64_t nsys_exectime = 0;
     syscall_metrics[scno].vt_count++;  \
     syscall_metrics[scno].nt_time += ((nsys_exectime - syscall_metrics[scno].nt_time) / (syscall_metrics[scno].nt_count+1));  \
     syscall_metrics[scno].nt_count++;  \
+    total_native_time += nsys_exectime; \
+    total_wali_time += (virtsys_exectime - nsys_exectime);  \
     pthread_mutex_unlock(&metrics_lock);  \
     return frv; \
   }

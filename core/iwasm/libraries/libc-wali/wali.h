@@ -41,7 +41,7 @@ typedef uint32_t FuncPtr_t;
 
 #define MADDR(wasm_addr) ({  \
   Addr addr = wasm_addr ? (Addr) wasm_runtime_addr_app_to_native(get_module_inst(exec_env), wasm_addr) : NULL;  \
-  if (addr == NULL) { } \
+  if (addr == NULL) { }  \
   addr; \
 })
 
