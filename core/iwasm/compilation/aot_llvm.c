@@ -116,6 +116,27 @@ create_basic_func_context(const AOTCompContext *comp_ctx,
         goto fail;
     }
 
+    LLVMValueRef offset, sigpoll_addr;
+    offset = I32_TEN;
+    if (!(sigpoll_addr = LLVMBuildInBoundsGEP2(
+              comp_ctx->builder, OPQ_PTR_TYPE, func_ctx->exec_env, &offset, 1,
+              "sigpoll_addr_ptr"))) {
+        aot_set_last_error("llvm build in bounds gep failed");
+        return false;
+    }
+    if (!(sigpoll_addr =
+              LLVMBuildBitCast(comp_ctx->builder, sigpoll_addr,
+                               INT64_PTR_TYPE, "sigpoll_addr_ptr_cast"))) {
+        aot_set_last_error("llvm build bit cast failed");
+        return false;
+    }
+    if (!(func_ctx->sigpoll_ptr =
+              LLVMBuildLoad2(comp_ctx->builder, INT64_PTR_TYPE, sigpoll_addr,
+                             "sigpoll_addr"))) {
+        aot_set_last_error("llvm build LOAD failed");
+        return false;
+    }
+
     return true;
 fail:
     return false;

@@ -1711,7 +1711,6 @@ aot_copy_exception(AOTModuleInstance *module_inst, char *exception_buf)
 void
 aot_poll_pending_signal(WASMExecEnv *exec_env)
 {
-  //printf("Call into AoT Signal Poll\n");
   int signo;
   if ((signo = get_pending_signal()) != -1) {
     pthread_mutex_lock(&sigtable_mut);

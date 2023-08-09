@@ -24,6 +24,7 @@
 #include "../libraries/debug-engine/debug_engine.h"
 #endif
 #endif
+#include "../interpreter/sigtable.h"
 
 
 WASMExecEnv *
@@ -67,6 +68,7 @@ wasm_exec_env_create_internal(struct WASMModuleInstanceCommon *module_inst,
 
     static _Atomic uint64 uid = 1;
     exec_env->uid = uid++;
+    exec_env->sigpending_ptr = &wali_sigpending;
 
     exec_env->module_inst = module_inst;
     exec_env->wasm_stack_size = stack_size;

@@ -170,6 +170,7 @@ typedef struct AOTFuncContext {
     LLVMValueRef aux_stack_bottom;
     LLVMValueRef native_symbol;
     LLVMValueRef func_ptrs;
+    LLVMValueRef sigpoll_ptr;
 
     AOTMemInfo *mem_info;
 
