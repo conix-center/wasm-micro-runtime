@@ -34,11 +34,7 @@
 #include "../interpreter/wasm_runtime.h"
 #include "thread_manager.h"
 
-#if !__x86_64__ && !__aarch64__ && !__riscv64__
-#error "Unsupported architecture for WALI -- Currently only supports [x86_64, aarch64, riscv64]"
-#endif
-
-#include "syscall_arch.h"
+#include "syscall.h"
 
 
 /* For startup environment */
@@ -496,7 +492,7 @@ long wali_syscall_pwrite64 (wasm_exec_env_t exec_env, long a1, long a2, long a3,
 	RETURN(__syscall4(SYS_pwrite64, a1, MADDR(a2), a3, a4));
 }
 
-// 19 TODO
+// 19 
 long wali_syscall_readv (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(19 ,readv);
   Addr wasm_iov = MADDR(a2);
@@ -557,7 +553,7 @@ long wali_syscall_sched_yield (wasm_exec_env_t exec_env) {
 	RETURN(__syscall0(SYS_sched_yield));
 }
 
-// 25 TODO
+// 25 
 long wali_syscall_mremap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
 	SC(25 ,mremap);
   VB("mremap args | a1: %ld, a2: 0x%x, a3: 0x%x, a4: %ld, a5: %ld | MMAP_PAGELEN: %d", a1, a2, a3, a4, a5, MMAP_PAGELEN);
@@ -662,7 +658,7 @@ long wali_syscall_alarm (wasm_exec_env_t exec_env, long a1) {
   #endif
 }
 
-// 38 TODO
+// 38 
 long wali_syscall_setitimer (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(38 ,setitimer);
 	RETURN(__syscall3(SYS_setitimer, a1, MADDR(a2), MADDR(a3)));
@@ -873,7 +869,7 @@ long wali_syscall_ftruncate (wasm_exec_env_t exec_env, long a1, long a2) {
 	RETURN(__syscall2(SYS_ftruncate, a1, a2));
 }
 
-// 78 TODO
+// 78 
 long wali_syscall_getdents (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(78 ,getdents);
 	FATALSC(getdents, "Not going to support this legacy call; use getdents64");
@@ -1783,27 +1779,6 @@ static NativeSymbol wali_native_symbols[] = {
   NSYMBOL (  __syscall_SYS_faccessat2,   wali_syscall_faccessat2,    "(iiii)I" ),
 
   /* Libc imports */
-  // Atomics
-  //NSYMBOL ( a_cas, wali_a_cas, "(iii)i" ),
-  //NSYMBOL ( a_cas_p, wali_a_cas_p, "(iii)i" ),
-  //NSYMBOL ( a_swap, wali_a_swap, "(ii)i" ),
-  //NSYMBOL ( a_fetch_add, wali_a_fetch_add, "(ii)i" ),
-  //NSYMBOL ( a_and, wali_a_and, "(ii)" ),
-  //NSYMBOL ( a_or, wali_a_or, "(ii)" ),
-  //NSYMBOL ( a_and_64, wali_a_and_64, "(iI)" ),
-  //NSYMBOL ( a_or_64, wali_a_or_64, "(iI)" ),
-
-  //NSYMBOL ( a_inc, wali_a_inc, "(i)" ),
-  //NSYMBOL ( a_dec, wali_a_dec, "(i)" ),
-  //NSYMBOL ( a_store, wali_a_store, "(ii)" ),
-  //
-  //NSYMBOL ( a_barrier, wali_a_barrier, "()" ),
-  //NSYMBOL ( a_spin, wali_a_spin, "()" ),
-  //NSYMBOL ( a_crash, wali_a_crash, "()" ),
-
-  //NSYMBOL ( a_ctz_64, wali_a_ctz_64, "(I)i" ),
-  //NSYMBOL ( a_clz_64, wali_a_clz_64, "(I)i" ),
-
   // Threads
   // thread_spawn is the substitute for syscall(clone)
   NSYMBOL ( __wasm_thread_spawn, wali_wasm_thread_spawn, "(ii)i" ),

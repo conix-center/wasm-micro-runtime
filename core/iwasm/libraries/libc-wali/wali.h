@@ -5,8 +5,7 @@
 #include "bh_platform.h"
 #include "aot_export.h"
 
-
-/* Architecture defines */
+/** Architecture defines **/
 #ifndef __riscv64__
 #if __riscv
   #if __riscv_xlen == 64
@@ -19,7 +18,7 @@
 #error "Unsupported architecture for WALI -- Only supports [x86_64, aarch64, riscv64]"
 #endif
 
-/* Logging: Disable when profiling */
+/** Logging: Disable when profiling **/
 #if WALI_ENABLE_SYSCALL_PROFILE
 #define VB(fmt, ...)
 #define WARN(fmt, ...)  
@@ -30,6 +29,8 @@
 #define ERR(fmt, ...) LOG_ERROR("[%d] WALI: " fmt, gettid(), ## __VA_ARGS__)
 #endif
 
+
+/** Memory defines/translations **/
 #define WASM_PAGESIZE 65536
 
 typedef uint8_t* Addr;
@@ -48,9 +49,10 @@ typedef uint32_t FuncPtr_t;
 #define WADDR(mem_addr) ({  \
   wasm_runtime_addr_native_to_app(get_module_inst(exec_env), mem_addr); \
 })
+/** **/
 
 
-
+/** Function translations **/
 #define FUNC_IDX(func) ({ wasm_runtime_get_function_idx(module_inst, func); })
 
 /* Needs to be called only for AoT when using wasm_runtime_get_indirect_function */
@@ -60,10 +62,12 @@ typedef uint32_t FuncPtr_t;
   } \
 }
 
-/* 0 = SIG_DFL; */
 #define WASM_SIG_DFL (0)
 #define WASM_SIG_ERR (-1)
 #define WASM_SIG_IGN (-2)
+/** **/
+
+
 /** Some internal structs for syscalls **/
 
 /* This is the structure used for the rt_sigaction syscall on most archs,
@@ -89,8 +93,6 @@ typedef __libc_jmp_buf __libc_sigjmp_buf;
 
 /** **/
 
-/** Init function **/
-//void wali_init_native (wasm_module_inst_t module_inst);
 
 /** Syscalls **/
 long wali_syscall_read (wasm_exec_env_t exec_env, long a1, long a2, long a3);
@@ -430,14 +432,14 @@ long wali_syscall_io_pgetevents (wasm_exec_env_t exec_env);
 long wali_syscall_rseq (wasm_exec_env_t exec_env);
 long wali_syscall_faccessat2 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4);
 
-/* Alias calls */
+/** Alias calls **/
 long wali_syscall_ppoll_aliased (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5);
 
 /** Auxillary **/
 int wali_sigsetjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int savesigs);
 void wali_siglongjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int val);
 
-/***** Startup *****/
+/** Startup/Environment **/
 void wali_call_ctors (wasm_exec_env_t exec_env);
 void wali_call_dtors (wasm_exec_env_t exec_env);
 void wali_proc_exit (wasm_exec_env_t exec_env, long v);
@@ -446,7 +448,7 @@ int wali_cl_get_argv_len (wasm_exec_env_t exec_env, int arg_idx);
 int wali_cl_copy_argv (wasm_exec_env_t exec_env, int argv_addr, int arg_idx);
 int wali_get_init_envfile (wasm_exec_env_t exec_env, int faddr, int fsize);
 
-/***** Threads *****/
+/** Threads **/
 int wali_wasm_thread_spawn (wasm_exec_env_t exec_env, int setup_fnptr, int arg_wasm);
 
 #endif

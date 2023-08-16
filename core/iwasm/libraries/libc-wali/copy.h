@@ -35,6 +35,7 @@
 #include "wali.h"
 #include "../interpreter/sigtable.h"
 
+/** Memory Copy Macros **/
 #define WR_FIELD(wptr, val, ty) ({ \
   memcpy(wptr, &val, sizeof(ty)); \
   wptr += sizeof(ty); \
@@ -67,7 +68,9 @@
   memcpy(&dest, ptr, sizeof(ty) * num);  \
   ptr += (sizeof(ty) * num);  \
 })
+/** **/
 
+/** Debug Macro **/
 #define PRINT_BYTES(var, num) { \
   printf(#var " bytes: "); \
   char* v = (char*) var;  \
@@ -78,7 +81,7 @@
 }
 
 /* Copy pselect6 sigmask structure */
-void* copy_pselect6_sigmask(wasm_exec_env_t exec_env, Addr wasm_psel_sm, long* sm_struct) {
+inline void* copy_pselect6_sigmask(wasm_exec_env_t exec_env, Addr wasm_psel_sm, long* sm_struct) {
   /* Libc stores the address in a long (64-bit). Cannot use RD_FIELD_ADDR since
    * it reads 32-bit values */
   long sigmask_addr = RD_FIELD(wasm_psel_sm, long);
@@ -88,7 +91,7 @@ void* copy_pselect6_sigmask(wasm_exec_env_t exec_env, Addr wasm_psel_sm, long* s
 }
 
 /* Copy iovec structure */
-struct iovec* copy_iovec(wasm_exec_env_t exec_env, Addr wasm_iov, int iov_cnt) {
+inline struct iovec* copy_iovec(wasm_exec_env_t exec_env, Addr wasm_iov, int iov_cnt) {
   if (wasm_iov == NULL) { return NULL; }
   struct iovec *new_iov = (struct iovec*) malloc(iov_cnt * sizeof(struct iovec));
   for (int i = 0; i < iov_cnt; i++) {
@@ -99,14 +102,14 @@ struct iovec* copy_iovec(wasm_exec_env_t exec_env, Addr wasm_iov, int iov_cnt) {
 }
 
 /* Copy epoll_event structure */
-struct epoll_event* copy_epoll_event(wasm_exec_env_t exec_env, Addr wasm_epoll, struct epoll_event *n_epoll) {
+inline struct epoll_event* copy_epoll_event(wasm_exec_env_t exec_env, Addr wasm_epoll, struct epoll_event *n_epoll) {
   if (wasm_epoll == NULL) { return NULL; }
   n_epoll->events = RD_FIELD(wasm_epoll, uint32_t);
   n_epoll->data.u64 = RD_FIELD(wasm_epoll, uint64_t);
   return n_epoll;
 }
 
-void copy2wasm_epoll_event(wasm_exec_env_t exec_env, Addr wasm_epoll, struct epoll_event *n_epoll) {
+inline void copy2wasm_epoll_event(wasm_exec_env_t exec_env, Addr wasm_epoll, struct epoll_event *n_epoll) {
   if (n_epoll == NULL) { return; }
   WR_FIELD(wasm_epoll, n_epoll->events, uint32_t);
   WR_FIELD(wasm_epoll, n_epoll->data.u64, uint64_t);
@@ -114,7 +117,7 @@ void copy2wasm_epoll_event(wasm_exec_env_t exec_env, Addr wasm_epoll, struct epo
 }
 
 /* Copy msghdr structure */
-struct msghdr* copy_msghdr(wasm_exec_env_t exec_env, Addr wasm_msghdr) {
+inline struct msghdr* copy_msghdr(wasm_exec_env_t exec_env, Addr wasm_msghdr) {
   if (wasm_msghdr == NULL) { return NULL; }
   struct msghdr *msg = (struct msghdr*) malloc(sizeof(struct msghdr));
   msg->msg_name = RD_FIELD_ADDR(wasm_msghdr);
@@ -135,15 +138,12 @@ struct msghdr* copy_msghdr(wasm_exec_env_t exec_env, Addr wasm_msghdr) {
   return msg;
 }
 
-// 0 = SIG_DFL; -1: SIG_ERR; -2: SIG_IGN
-#define WASM_SIG_DFL (0)
-#define WASM_SIG_ERR (-1)
-#define WASM_SIG_IGN (-2)
 
 // ASM restorer function '__libc_restore_rt'.
 extern void __libc_restore_rt();
 
-void copy2wasm_old_ksigaction (int signo, Addr wasm_act, struct k_sigaction *act) {
+/* Copy sigaction back to WASM */
+inline void copy2wasm_old_ksigaction (int signo, Addr wasm_act, struct k_sigaction *act) {
   FuncPtr_t old_wasm_funcptr;
   if (act->handler == SIG_DFL) {
     old_wasm_funcptr = WASM_SIG_DFL;
@@ -161,8 +161,8 @@ void copy2wasm_old_ksigaction (int signo, Addr wasm_act, struct k_sigaction *act
   WR_FIELD_ARRAY(wasm_act, act->mask, unsigned, 2);
 }
 
-/* Copy Sigaction structure to native: Function pointers are padded */
-struct k_sigaction* copy_ksigaction (wasm_exec_env_t exec_env, Addr wasm_act, 
+/* Copy sigaction to native: Function pointers are padded */
+inline struct k_sigaction* copy_ksigaction (wasm_exec_env_t exec_env, Addr wasm_act, 
     struct k_sigaction *act, void (*common_handler)(int), 
     FuncPtr_t *target_wasm_funcptr, char* debug_str) {
   if (wasm_act == NULL) { return NULL; }
@@ -194,7 +194,7 @@ struct k_sigaction* copy_ksigaction (wasm_exec_env_t exec_env, Addr wasm_act,
 }
 
 /* Copy sigstack structure */
-stack_t* copy_sigstack (wasm_exec_env_t exec_env, Addr wasm_sigstack,
+inline stack_t* copy_sigstack (wasm_exec_env_t exec_env, Addr wasm_sigstack,
     stack_t* ss) {
   if (!wasm_sigstack) { return NULL; }
   ss->ss_sp = RD_FIELD_ADDR(wasm_sigstack);
@@ -204,7 +204,7 @@ stack_t* copy_sigstack (wasm_exec_env_t exec_env, Addr wasm_sigstack,
 }
 
 /* Copy array of strings (strings are not malloced)*/
-char** copy_stringarr (wasm_exec_env_t exec_env, Addr wasm_arr) {
+inline char** copy_stringarr (wasm_exec_env_t exec_env, Addr wasm_arr) {
   if (!wasm_arr) { return NULL; }
   int num_strings = 0;
   /* Find num elems */
@@ -213,7 +213,6 @@ char** copy_stringarr (wasm_exec_env_t exec_env, Addr wasm_arr) {
   while ((str = (char*)RD_FIELD_ADDR(arr_it))) { 
     num_strings++; 
   }
-  /* Set stringarr */
   char **stringarr = (char**) malloc((num_strings+1) * sizeof(char*));
   for (int i = 0; i < num_strings; i++) {
     stringarr[i] = (char*)RD_FIELD_ADDR(wasm_arr);
@@ -227,13 +226,15 @@ extern _Noreturn void __libc_longjmp_asm(__libc_sigjmp_buf, int);
 extern int __libc_sigsetjmp_asm(__libc_sigjmp_buf, int);
 #define __libc_siglongjmp __libc_longjmp_asm
 
-void copy2wasm_jmp_buf (wasm_exec_env_t exec_env, Addr wasm_buf, struct __libc_jmp_buf_tag* buf) {
+/* Copy jmpbuf struct to WASM for setjmp */
+inline void copy2wasm_jmp_buf (wasm_exec_env_t exec_env, Addr wasm_buf, struct __libc_jmp_buf_tag* buf) {
   WR_FIELD_ARRAY(wasm_buf, buf->__jb, unsigned long, 8);
   WR_FIELD(wasm_buf, buf->__fl, unsigned long);
   WR_FIELD_ARRAY(wasm_buf, buf->__ss, unsigned long, (128/sizeof(long)));
 }
 
-struct __libc_jmp_buf_tag* copy_jmp_buf (wasm_exec_env_t exec_env, Addr wasm_jmp_buf) {
+/* Copy jmpbuf struct to native for setjmp */
+inline struct __libc_jmp_buf_tag* copy_jmp_buf (wasm_exec_env_t exec_env, Addr wasm_jmp_buf) {
   if (!wasm_jmp_buf) { return NULL; }
   struct __libc_jmp_buf_tag* buf = (struct __libc_jmp_buf_tag *) malloc(sizeof(struct __libc_jmp_buf_tag));
   RD_FIELD_ARRAY(buf->__jb, wasm_jmp_buf, unsigned long, 8);
@@ -244,88 +245,90 @@ struct __libc_jmp_buf_tag* copy_jmp_buf (wasm_exec_env_t exec_env, Addr wasm_jmp
 
 
 
-
-/* Architecture-specific copies */
-
-#if __aarch64__
-
-/* Copy for differing `struct stat` */
-void copy2wasm_stat_struct (wasm_exec_env_t exec_env, Addr wasm_stat, struct stat *n_stat) {
-  if (n_stat == NULL) { return; }
-  WR_FIELD(wasm_stat, n_stat->st_dev, uint64_t);
-  WR_FIELD(wasm_stat, n_stat->st_ino, uint64_t);
-
-  long nlink = n_stat->st_nlink;
-  WR_FIELD(wasm_stat, nlink, uint64_t);
-  WR_FIELD(wasm_stat, n_stat->st_mode, uint32_t);
-
-  WR_FIELD(wasm_stat, n_stat->st_uid, uint32_t);
-  WR_FIELD(wasm_stat, n_stat->st_gid, uint32_t);
-  int pad = 0;
-  WR_FIELD(wasm_stat, pad, uint32_t); // Pad
-  WR_FIELD(wasm_stat, n_stat->st_rdev, uint64_t);
-  WR_FIELD(wasm_stat, n_stat->st_size, uint64_t);
-
-  long blksize = n_stat->st_blksize;
-  WR_FIELD(wasm_stat, blksize, uint64_t);
-  WR_FIELD(wasm_stat, n_stat->st_blocks, uint64_t);
-
-  WR_FIELD(wasm_stat, n_stat->st_atim, struct timespec);
-  WR_FIELD(wasm_stat, n_stat->st_mtim, struct timespec);
-  WR_FIELD(wasm_stat, n_stat->st_ctim, struct timespec);
-}
-
-
-static int swap_bits (int val, int b1pos, int b2pos) {
-  int b1 = (val >> b1pos) & 1;
-  int b2 = (val >> b2pos) & 1;
-  int x = b1 ^ b2;
-  x = ((x << b1pos) | (x << b2pos));
-  return val ^ x;
-}
-/* aarch64 swaps O_DIRECTORY <-> O_DIRECT
- *    and O_NOFOLLOW <-> O_LARGEFILE */
-int swap_open_flags (int open_flags) {
-  int odirectory_shf = __builtin_ctz(O_DIRECTORY);
-  int odirect_shf = __builtin_ctz(O_DIRECT);
-  int olargefile_shf = __builtin_ctz(O_LARGEFILE);
-  int onofollow_shf = __builtin_ctz(O_NOFOLLOW);
-  int one_swap = swap_bits(open_flags, odirectory_shf, odirect_shf);
-  int result = swap_bits(one_swap, olargefile_shf, onofollow_shf);
-  return result;
-}
-
-
-
-#elif __riscv64__
-
-/* Copy for differing `struct stat` */
-void copy2wasm_stat_struct (wasm_exec_env_t exec_env, Addr wasm_stat, struct stat *n_stat) {
-  if (n_stat == NULL) { return; }
-  WR_FIELD(wasm_stat, n_stat->st_dev, uint64_t);
-  WR_FIELD(wasm_stat, n_stat->st_ino, uint64_t);
-
-  long nlink = n_stat->st_nlink;
-  WR_FIELD(wasm_stat, nlink, uint64_t);
-  WR_FIELD(wasm_stat, n_stat->st_mode, uint32_t);
-
-  WR_FIELD(wasm_stat, n_stat->st_uid, uint32_t);
-  WR_FIELD(wasm_stat, n_stat->st_gid, uint32_t);
-  int pad = 0;
-  WR_FIELD(wasm_stat, pad, uint32_t); // Pad
-  WR_FIELD(wasm_stat, n_stat->st_rdev, uint64_t);
-  WR_FIELD(wasm_stat, n_stat->st_size, uint64_t);
-
-  long blksize = n_stat->st_blksize;
-  WR_FIELD(wasm_stat, blksize, uint64_t);
-  WR_FIELD(wasm_stat, n_stat->st_blocks, uint64_t);
-
-  WR_FIELD(wasm_stat, n_stat->st_atim, struct timespec);
-  WR_FIELD(wasm_stat, n_stat->st_mtim, struct timespec);
-  WR_FIELD(wasm_stat, n_stat->st_ctim, struct timespec);
-}
-
+/** Architecture-specific copies **/
+#if __has_include("copy_arch.h")
+#include "copy_arch.h"
 #endif
+
+//#if __aarch64__
+//
+///* Copy for differing `struct stat` */
+//inline void copy2wasm_stat_struct (wasm_exec_env_t exec_env, Addr wasm_stat, struct stat *n_stat) {
+//  if (n_stat == NULL) { return; }
+//  WR_FIELD(wasm_stat, n_stat->st_dev, uint64_t);
+//  WR_FIELD(wasm_stat, n_stat->st_ino, uint64_t);
+//
+//  long nlink = n_stat->st_nlink;
+//  WR_FIELD(wasm_stat, nlink, uint64_t);
+//  WR_FIELD(wasm_stat, n_stat->st_mode, uint32_t);
+//
+//  WR_FIELD(wasm_stat, n_stat->st_uid, uint32_t);
+//  WR_FIELD(wasm_stat, n_stat->st_gid, uint32_t);
+//  int pad = 0;
+//  WR_FIELD(wasm_stat, pad, uint32_t); // Pad
+//  WR_FIELD(wasm_stat, n_stat->st_rdev, uint64_t);
+//  WR_FIELD(wasm_stat, n_stat->st_size, uint64_t);
+//
+//  long blksize = n_stat->st_blksize;
+//  WR_FIELD(wasm_stat, blksize, uint64_t);
+//  WR_FIELD(wasm_stat, n_stat->st_blocks, uint64_t);
+//
+//  WR_FIELD(wasm_stat, n_stat->st_atim, struct timespec);
+//  WR_FIELD(wasm_stat, n_stat->st_mtim, struct timespec);
+//  WR_FIELD(wasm_stat, n_stat->st_ctim, struct timespec);
+//}
+//
+//
+//inline static int swap_bits (int val, int b1pos, int b2pos) {
+//  int b1 = (val >> b1pos) & 1;
+//  int b2 = (val >> b2pos) & 1;
+//  int x = b1 ^ b2;
+//  x = ((x << b1pos) | (x << b2pos));
+//  return val ^ x;
+//}
+///* aarch64 swaps O_DIRECTORY <-> O_DIRECT
+// *    and O_NOFOLLOW <-> O_LARGEFILE */
+//inline int swap_open_flags (int open_flags) {
+//  int odirectory_shf = __builtin_ctz(O_DIRECTORY);
+//  int odirect_shf = __builtin_ctz(O_DIRECT);
+//  int olargefile_shf = __builtin_ctz(O_LARGEFILE);
+//  int onofollow_shf = __builtin_ctz(O_NOFOLLOW);
+//  int one_swap = swap_bits(open_flags, odirectory_shf, odirect_shf);
+//  int result = swap_bits(one_swap, olargefile_shf, onofollow_shf);
+//  return result;
+//}
+//
+//
+//
+//#elif __riscv64__
+//
+///* Copy for differing `struct stat` */
+//inline void copy2wasm_stat_struct (wasm_exec_env_t exec_env, Addr wasm_stat, struct stat *n_stat) {
+//  if (n_stat == NULL) { return; }
+//  WR_FIELD(wasm_stat, n_stat->st_dev, uint64_t);
+//  WR_FIELD(wasm_stat, n_stat->st_ino, uint64_t);
+//
+//  long nlink = n_stat->st_nlink;
+//  WR_FIELD(wasm_stat, nlink, uint64_t);
+//  WR_FIELD(wasm_stat, n_stat->st_mode, uint32_t);
+//
+//  WR_FIELD(wasm_stat, n_stat->st_uid, uint32_t);
+//  WR_FIELD(wasm_stat, n_stat->st_gid, uint32_t);
+//  int pad = 0;
+//  WR_FIELD(wasm_stat, pad, uint32_t); // Pad
+//  WR_FIELD(wasm_stat, n_stat->st_rdev, uint64_t);
+//  WR_FIELD(wasm_stat, n_stat->st_size, uint64_t);
+//
+//  long blksize = n_stat->st_blksize;
+//  WR_FIELD(wasm_stat, blksize, uint64_t);
+//  WR_FIELD(wasm_stat, n_stat->st_blocks, uint64_t);
+//
+//  WR_FIELD(wasm_stat, n_stat->st_atim, struct timespec);
+//  WR_FIELD(wasm_stat, n_stat->st_mtim, struct timespec);
+//  WR_FIELD(wasm_stat, n_stat->st_ctim, struct timespec);
+//}
+//
+//#endif
 
 
 #endif

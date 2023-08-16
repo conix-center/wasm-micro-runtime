@@ -1,5 +1,5 @@
 #include "../wali.h"
-#include "syscall.h"
+#include <sys/syscall.h>
 
 __attribute__ ((visibility("hidden")))
 int __libc_sigsetjmp_tail(__libc_sigjmp_buf jb, int ret) {
