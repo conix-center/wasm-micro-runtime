@@ -52,7 +52,7 @@ inline void copy2wasm_stat_struct (wasm_exec_env_t exec_env, Addr wasm_stat, str
 }
 
 
-inline static int swap_bits (int val, int b1pos, int b2pos) {
+inline int swap_bits (int val, int b1pos, int b2pos) {
   int b1 = (val >> b1pos) & 1;
   int b2 = (val >> b2pos) & 1;
   int x = b1 ^ b2;
