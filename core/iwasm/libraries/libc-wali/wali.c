@@ -113,12 +113,14 @@ void wali_init_native(wasm_module_inst_t module_inst) {
 
   // Register signals for profiling
   struct sigaction act = {0};
+#if WASM_ENABLE_MEMORY_PROFILING
   act.sa_handler = wali_memory_profile_dump;
   sigemptyset (&act.sa_mask);
   if (sigaction(37, &act, NULL) == -1) {
     perror("Could not install WALI memory prof signal\n");
     exit(1);
   }
+#endif
 #if WALI_ENABLE_SYSCALL_PROFILE
   act.sa_handler = wali_syscall_profile_dump;
   if (sigaction(38, &act, NULL) == -1) {
