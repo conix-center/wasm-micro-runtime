@@ -41,6 +41,8 @@
 extern int app_argc;
 extern char **app_argv;
 extern char *app_env_file;
+extern bool invoked_wali;
+
 
 /* For WALI syscall stats */
 #define MAX_SYSCALLS 500
@@ -1447,12 +1449,15 @@ _Noreturn void wali_siglongjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, i
 
 
 /***** Startup *****/
+static bool dtor_called = false;
 void wali_call_ctors(wasm_exec_env_t exec_env) {
   PC(wali_call_ctors);
+  invoked_wali = true;
 }
 
 void wali_call_dtors(wasm_exec_env_t exec_env) {
   PC(wali_call_dtors);
+  dtor_called = true;
 }
 
 void wali_proc_exit(wasm_exec_env_t exec_env, long v) {
@@ -1460,7 +1465,14 @@ void wali_proc_exit(wasm_exec_env_t exec_env, long v) {
 #if WALI_ENABLE_SYSCALL_PROFILE
   wali_syscall_profile_dump(0);
 #endif
-  exit(v);
+  wasm_module_inst_t module_inst = get_module_inst(exec_env);
+  WALIContext *wali_ctx = wasm_runtime_get_wali_ctx(module_inst);
+  /* if destructor is invoked, main ended successfully, do 
+    * not set exception */
+  if (!dtor_called || v) {
+    wasm_runtime_set_exception(module_inst, "wali proc exit");
+  }
+  wali_ctx->exit_code = v;
 }
 
 int wali_cl_get_argc (wasm_exec_env_t exec_env) {

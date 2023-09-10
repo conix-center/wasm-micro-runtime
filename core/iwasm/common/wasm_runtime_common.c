@@ -2072,6 +2072,34 @@ wasm_runtime_finalize_call_function(WASMExecEnv *exec_env,
 }
 #endif
 
+static bool
+clear_wasi_proc_exit_exception(WASMModuleInstanceCommon *module_inst_comm)
+{
+#if WASM_ENABLE_LIBC_WASI != 0 || WASM_ENABLE_LIBC_WALI != 0
+    bool has_exception;
+    char exception[EXCEPTION_BUF_LEN];
+    WASMModuleInstance *module_inst = (WASMModuleInstance *)module_inst_comm;
+
+    bh_assert(module_inst_comm->module_type == Wasm_Module_Bytecode
+              || module_inst_comm->module_type == Wasm_Module_AoT);
+
+    has_exception = wasm_copy_exception(module_inst, exception);
+    if (has_exception && (!strcmp(exception, "Exception: wasi proc exit") ||
+                        !strcmp(exception, "Exception: wali proc exit"))) {
+        /* The "wasi proc exit" exception is thrown by native lib to
+           let wasm app exit, which is a normal behavior, we clear
+           the exception here. And just clear the exception of current
+           thread, don't call `wasm_set_exception(module_inst, NULL)`
+           which will clear the exception of all threads. */
+        module_inst->cur_exception[0] = '\0';
+        return true;
+    }
+    return false;
+#else
+    return false;
+#endif
+}
+
 bool
 wasm_runtime_call_wasm(WASMExecEnv *exec_env,
                        WASMFunctionInstanceCommon *function, uint32 argc,
@@ -3435,6 +3463,41 @@ wasm_runtime_get_wasi_exit_code(WASMModuleInstanceCommon *module_inst)
     return wasi_ctx->exit_code;
 }
 #endif /* end of WASM_ENABLE_LIBC_WASI */
+
+#if WASM_ENABLE_LIBC_WALI
+
+WALIContext *
+wasm_runtime_get_wali_ctx(WASMModuleInstanceCommon *module_inst_comm)
+{
+    WASMModuleInstance *module_inst = (WASMModuleInstance *)module_inst_comm;
+
+    bh_assert(module_inst_comm->module_type == Wasm_Module_Bytecode
+              || module_inst_comm->module_type == Wasm_Module_AoT);
+    return &module_inst->wali_ctx;
+}
+
+uint32_t
+wasm_runtime_get_wali_exit_code(WASMModuleInstanceCommon *module_inst)
+{
+    WALIContext *wali_ctx = wasm_runtime_get_wali_ctx(module_inst);
+#if WASM_ENABLE_THREAD_MGR != 0
+    WASMCluster *cluster;
+    WASMExecEnv *exec_env;
+
+    exec_env = wasm_runtime_get_exec_env_singleton(module_inst);
+    if (exec_env && (cluster = wasm_exec_env_get_cluster(exec_env))) {
+        /**
+         * The main thread may exit earlier than other threads, and
+         * the exit_code of wasi_ctx may be changed by other thread
+         * when it runs into wasi_proc_exit, here we wait until all
+         * other threads exit to avoid getting invalid exit_code.
+         */
+        wasm_cluster_wait_for_all_except_self(cluster, exec_env);
+    }
+#endif
+    return wali_ctx->exit_code;
+}
+#endif /* end of WASM_ENABLE_LIBC_WALI */
 
 WASMModuleCommon *
 wasm_exec_env_get_module(WASMExecEnv *exec_env)

@@ -382,6 +382,14 @@ typedef struct WASIContext {
 #endif
 #endif
 
+#if WASM_ENABLE_LIBC_WALI != 0
+typedef struct WALIContext {
+  uint32_t exit_code;
+  /* Currently unused */
+  char *env_filepath;
+} WALIContext;
+#endif
+
 #if WASM_ENABLE_MULTI_MODULE != 0
 typedef struct WASMRegisteredModule {
     bh_list_link l;
@@ -916,6 +924,16 @@ wasm_runtime_set_wasi_ns_lookup_pool(wasm_module_t module,
                                      const char *ns_lookup_pool[],
                                      uint32 ns_lookup_pool_size);
 #endif /* end of WASM_ENABLE_LIBC_WASI */
+
+#if WASM_ENABLE_LIBC_WALI
+WALIContext *
+wasm_runtime_get_wali_ctx(WASMModuleInstanceCommon *module_inst_comm);
+
+/* See wasm_export.h for description */
+WASM_RUNTIME_API_EXTERN uint32_t
+wasm_runtime_get_wali_exit_code(WASMModuleInstanceCommon *module_inst);
+#endif /* end of WASM_ENABLE_LIBC_WASI */
+
 
 #if WASM_ENABLE_REF_TYPES != 0
 /* See wasm_export.h for description */

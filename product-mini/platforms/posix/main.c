@@ -21,6 +21,7 @@
 static int app_argc;
 static char **app_argv;
 char *app_env_file;
+bool invoked_wali = false;
 
 /* clang-format off */
 static int
@@ -1004,10 +1005,17 @@ main(int argc, char *argv[])
         }
     }
 
-#if WASM_ENABLE_LIBC_WASI != 0
+#if WASM_ENABLE_LIBC_WASI != 0 || WASM_ENABLE_LIBC_WALI != 0
     if (ret == 0) {
-        /* propagate wasi exit code. */
-        ret = wasm_runtime_get_wasi_exit_code(wasm_module_inst);
+        /* wait for threads to finish and propagate exit code. */
+        if (invoked_wali)
+          ret = wasm_runtime_get_wali_exit_code(wasm_module_inst);
+        else
+          ret = wasm_runtime_get_wasi_exit_code(wasm_module_inst);
+        if (wasm_runtime_get_exception(wasm_module_inst)) {
+            /* got an exception in spawned thread */
+            ret = 1;
+        }
     }
 #endif
 

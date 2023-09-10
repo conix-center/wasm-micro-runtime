@@ -354,6 +354,11 @@ struct WASMModuleInstance {
         WASMMemoryInstance memory_instances[1];
         uint8 bytes[1];
     } global_table_data;
+
+#if WASM_ENABLE_LIBC_WALI
+    WALIContext wali_ctx;
+#endif
+
 };
 
 struct WASMInterpFrame;

@@ -1339,6 +1339,18 @@ WASM_RUNTIME_API_EXTERN int32_t
 wasm_runtime_join_thread(wasm_thread_t tid, void **retval);
 
 /**
+ * Get WALI exit code.
+ *
+ * After a WALI bytecode completed its execution, an embedder can
+ * call this function to get its exit code
+ *
+ * @param module_inst the module instance
+ */
+WASM_RUNTIME_API_EXTERN uint32_t
+wasm_runtime_get_wali_exit_code(wasm_module_inst_t module_inst);
+
+
+/**
  * Map external object to an internal externref index: if the index
  *   has been created, return it, otherwise create the index.
  *
