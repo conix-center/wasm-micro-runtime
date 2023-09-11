@@ -105,6 +105,10 @@ void wali_syscall_profile_dump(int signo) {
   pthread_mutex_unlock(&metrics_lock);
 }
 
+void wali_terminate_process_sighandler(int signo) {
+  VB("WALI termination handler called by process %d", getpid());
+}
+
 /* Startup init */
 void wali_init_native(wasm_module_inst_t module_inst) {
   if (sem_init(&tid_sem, 0, 0)) {
@@ -118,18 +122,25 @@ void wali_init_native(wasm_module_inst_t module_inst) {
 #if WASM_ENABLE_MEMORY_PROFILING
   act.sa_handler = wali_memory_profile_dump;
   sigemptyset (&act.sa_mask);
-  if (sigaction(37, &act, NULL) == -1) {
+  if (sigaction(SIG_MEM_PROF, &act, NULL) == -1) {
     perror("Could not install WALI memory prof signal\n");
     exit(1);
   }
 #endif
 #if WALI_ENABLE_SYSCALL_PROFILE
   act.sa_handler = wali_syscall_profile_dump;
-  if (sigaction(38, &act, NULL) == -1) {
+  if (sigaction(SIG_SYSCALL_PROF, &act, NULL) == -1) {
     perror("Could not install WALI syscall prof signal\n");
     exit(1);
   }
 #endif
+
+  act.sa_handler = wali_terminate_process_sighandler;
+  if (sigaction(SIG_WASM_THREAD_TERM, &act, NULL) == -1) {
+    perror("Could not install WALI termination signal\n");
+    exit(1);
+  }
+
 
   NATIVE_PAGESIZE = sysconf(_SC_PAGE_SIZE);
   MMAP_PAGELEN = 0;
@@ -1583,7 +1594,7 @@ int wali_wasm_thread_spawn (wasm_exec_env_t exec_env, int setup_fnptr, int arg_w
 
   /* New module instance -- custom data, import function registration, etc. */
   if (!(new_module_inst = wasm_runtime_instantiate_internal(
-            module, true, exec_env, stack_size, 0, NULL, 0)))
+            module, module_inst, exec_env, stack_size, 0, NULL, 0)))
       return -1;
 
   wasm_runtime_set_custom_data_internal(

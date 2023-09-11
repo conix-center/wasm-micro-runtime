@@ -62,9 +62,15 @@ typedef uint32_t FuncPtr_t;
   } \
 }
 
+/** Signal translations/defines **/
 #define WASM_SIG_DFL (0)
 #define WASM_SIG_ERR (-1)
 #define WASM_SIG_IGN (-2)
+
+#define SIG_MEM_PROF 37
+#define SIG_SYSCALL_PROF 38
+#define SIG_WASM_THREAD_TERM 39
+
 /** **/
 
 
