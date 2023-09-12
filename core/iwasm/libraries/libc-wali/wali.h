@@ -4,15 +4,7 @@
 #include "wasm_export.h"
 #include "bh_platform.h"
 #include "aot_export.h"
-
-/** Architecture defines **/
-#ifndef __riscv64__
-#if __riscv
-  #if __riscv_xlen == 64
-    #define __riscv64__ 1
-  #endif
-#endif
-#endif
+#include "wali_defs.h"
 
 #if !__x86_64__ && !__aarch64__ && !__riscv64__
 #error "Unsupported architecture for WALI -- Only supports [x86_64, aarch64, riscv64]"
@@ -31,8 +23,6 @@
 
 
 /** Memory defines/translations **/
-#define WASM_PAGESIZE 65536
-
 typedef uint8_t* Addr;
 typedef uint32_t FuncPtr_t;
 
@@ -62,16 +52,6 @@ typedef uint32_t FuncPtr_t;
   } \
 }
 
-/** Signal translations/defines **/
-#define WASM_SIG_DFL (0)
-#define WASM_SIG_ERR (-1)
-#define WASM_SIG_IGN (-2)
-
-#define SIG_MEM_PROF 37
-#define SIG_SYSCALL_PROF 38
-#define SIG_WASM_THREAD_TERM 39
-
-/** **/
 
 
 /** Some internal structs for syscalls **/

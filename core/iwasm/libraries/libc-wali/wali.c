@@ -88,7 +88,7 @@ inline int64_t timediff(struct timespec *tstart, struct timespec *tend) {
   return timed;
 }
 
-/* Miscellaneous Callbacks */
+/** Miscellaneous Callbacks **/
 wasm_module_inst_t main_mod_inst = NULL;
 
 void wali_memory_profile_dump(int signo) {
@@ -105,9 +105,13 @@ void wali_syscall_profile_dump(int signo) {
   pthread_mutex_unlock(&metrics_lock);
 }
 
+/* Dummy callback to be invoked after termination flags are set 
+* for all threads in process */
 void wali_terminate_process_sighandler(int signo) {
   VB("WALI termination handler called by process %d", getpid());
 }
+/** **/
+
 
 /* Startup init */
 void wali_init_native(wasm_module_inst_t module_inst) {
@@ -117,7 +121,7 @@ void wali_init_native(wasm_module_inst_t module_inst) {
 
   main_mod_inst = module_inst;
 
-  // Register signals for profiling
+  // Register signals for profiling / termination
   struct sigaction act = {0};
 #if WASM_ENABLE_MEMORY_PROFILING
   act.sa_handler = wali_memory_profile_dump;
@@ -247,7 +251,7 @@ static __thread volatile int64_t nsys_exectime = 0;
   LOG_FATAL("[%d] WALI: SC \"" # f "\" fatal error! No such syscall on platform", gettid());  \
 }
 
-
+static void wali_thread_exit (wasm_exec_env_t exec_env, long v);
 
 /***** WALI Methods *******/
 // 0
@@ -830,7 +834,8 @@ long wali_syscall_execve (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 long wali_syscall_exit (wasm_exec_env_t exec_env, long a1) {
 	SC(60 ,exit);
   ERRSC(exit);
-  RETURN(__syscall1(SYS_exit, a1));
+  wali_thread_exit(exec_env, a1);
+  return 0;
 }
 
 // 61 
@@ -1472,7 +1477,7 @@ void wali_call_dtors(wasm_exec_env_t exec_env) {
 }
 
 void wali_proc_exit(wasm_exec_env_t exec_env, long v) {
-  PC(exit);
+  PC(proc_exit);
 #if WALI_ENABLE_SYSCALL_PROFILE
   wali_syscall_profile_dump(0);
 #endif
@@ -1481,9 +1486,19 @@ void wali_proc_exit(wasm_exec_env_t exec_env, long v) {
   /* if destructor is invoked, main ended successfully, do 
     * not set exception */
   if (!dtor_called || v) {
+    VB("WALI process exit called prematurely");
     wasm_runtime_set_exception(module_inst, "wali proc exit");
+  } else {
+    VB("Main ended successfully");
   }
   wali_ctx->exit_code = v;
+}
+
+static void wali_thread_exit(wasm_exec_env_t exec_env, long v) {
+  PC(thread_exit);
+  /* Have to use cancel thread as opposed to exit thread
+  * so that it is caught after native functions (WALI) returns */
+  wasm_cluster_cancel_thread(exec_env);
 }
 
 int wali_cl_get_argc (wasm_exec_env_t exec_env) {
@@ -1562,7 +1577,7 @@ wali_dispatch_thread_libc(void *exec_env_ptr) {
   }
 
   if (!wasm_runtime_call_wasm(exec_env, thread_arg->start_fn, 2, wasm_argv)) {
-    /* Execption has already been spread during throwing */
+    /* Exception has already been spread during throwing */
   }
 
   VB("================ Thread [%d] exiting ==============\n", gettid());

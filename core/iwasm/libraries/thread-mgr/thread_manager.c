@@ -16,6 +16,10 @@
 #include "debug_engine.h"
 #endif
 
+#if WASM_ENABLE_LIBC_WALI != 0
+#include "../../../libc-wali/wali_defs.h"
+#endif
+
 typedef struct {
     bh_list_link l;
     void (*destroy_cb)(WASMCluster *);
@@ -1278,6 +1282,10 @@ set_exception_visitor(void *node, void *user_data)
         /* Terminate the thread so it can exit from dead loops */
         if (data->exception != NULL) {
             set_thread_cancel_flags(exec_env);
+#if WASM_ENABLE_LIBC_WALI != 0
+            /* Force suspended threads to wake */
+            pthread_kill(exec_env->handle, SIG_WASM_THREAD_TERM);
+#endif
         }
         else {
             clear_thread_cancel_flags(exec_env);

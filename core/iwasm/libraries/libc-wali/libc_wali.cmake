@@ -11,7 +11,6 @@ include_directories(${LIBC_WALI_DIR}/wali_arch/${ARCH})
 # Compile flags
 add_compile_definitions(WALI_ENABLE_SYSCALL_PROFILE=0)
 add_compile_definitions(WALI_ENABLE_NATIVE_SYSCALL_PROFILE=0)
-add_compile_definitions(WALI_ENABLE_SIGNAL_HANDLING=1)
 
 # Setup files to compile
 file (GLOB_RECURSE wali_arch_sources ${LIBC_WALI_DIR}/wali_arch/${ARCH}/*.s ${LIBC_WALI_DIR}/wali_arch/*.c)
