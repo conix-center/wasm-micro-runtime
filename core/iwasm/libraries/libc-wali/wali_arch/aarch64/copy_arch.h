@@ -26,7 +26,7 @@
 #define WALI_COPY_ARCH_H
 
 /* Copy for differing `struct stat` */
-inline void copy2wasm_stat_struct (wasm_exec_env_t exec_env, Addr wasm_stat, struct stat *n_stat) {
+extern inline void copy2wasm_stat_struct (wasm_exec_env_t exec_env, Addr wasm_stat, struct stat *n_stat) {
   if (n_stat == NULL) { return; }
   WR_FIELD(wasm_stat, n_stat->st_dev, uint64_t);
   WR_FIELD(wasm_stat, n_stat->st_ino, uint64_t);
@@ -52,7 +52,7 @@ inline void copy2wasm_stat_struct (wasm_exec_env_t exec_env, Addr wasm_stat, str
 }
 
 
-inline int swap_bits (int val, int b1pos, int b2pos) {
+extern inline int swap_bits (int val, int b1pos, int b2pos) {
   int b1 = (val >> b1pos) & 1;
   int b2 = (val >> b2pos) & 1;
   int x = b1 ^ b2;
