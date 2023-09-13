@@ -27,4 +27,9 @@
 #define SIG_SYSCALL_PROF 38
 #define SIG_WASM_THREAD_TERM 39
 
+extern bool invoked_wali;
+extern int wali_app_argc;
+extern char **wali_app_argv;
+extern char *wali_app_env_file;
+
 #endif

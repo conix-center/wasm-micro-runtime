@@ -18,10 +18,13 @@
 #include <dlfcn.h>
 #endif
 
+#if WASM_ENABLE_LIBC_WALI != 0
+#include "../libraries/libc-wali/wali_defs.h"
+#endif
+
 static int app_argc;
 static char **app_argv;
-char *app_env_file;
-bool invoked_wali = false;
+static char *app_env_file;
 
 /* clang-format off */
 static int
@@ -822,11 +825,14 @@ main(int argc, char *argv[])
             gen_prof_file = argv[0] + 16;
         }
 #endif
+#if WASM_ENABLE_LIBC_WALI != 0
         else if (!strncmp(argv[0], "--env-file=", 11)) {
             if (argv[0][11] == '\0')
                 return print_help();
             app_env_file = argv[0] + 11;
+            wali_app_env_file = app_env_file;
         }
+#endif
         else if (!strncmp(argv[0], "--version", 9)) {
             uint32 major, minor, patch;
             wasm_runtime_get_version(&major, &minor, &patch);

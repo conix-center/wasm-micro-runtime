@@ -38,10 +38,10 @@
 
 
 /* For startup environment */
-extern int app_argc;
-extern char **app_argv;
-extern char *app_env_file;
-extern bool invoked_wali;
+int wali_app_argc;
+char **wali_app_argv;
+char *wali_app_env_file;
+bool invoked_wali;
 
 
 /* For WALI syscall stats */
@@ -1503,18 +1503,18 @@ static void wali_thread_exit(wasm_exec_env_t exec_env, long v) {
 
 int wali_cl_get_argc (wasm_exec_env_t exec_env) {
   PC(cl_get_argc);
-  return app_argc;
+  return wali_app_argc;
 }
 
 int wali_cl_get_argv_len (wasm_exec_env_t exec_env, int arg_idx) {
   PC(cl_get_argc_len);
-  return strlen(app_argv[arg_idx]);
+  return strlen(wali_app_argv[arg_idx]);
 }
 
 int wali_cl_copy_argv (wasm_exec_env_t exec_env, int argv_addr, int arg_idx) {
   PC(cl_copy_argv);
   Addr argv = MADDR(argv_addr);
-  strcpy((char*)argv, app_argv[arg_idx]);
+  strcpy((char*)argv, wali_app_argv[arg_idx]);
   return 0;
 }
 
@@ -1527,7 +1527,7 @@ int wali_get_init_envfile (wasm_exec_env_t exec_env, int faddr, int fsize) {
   sprintf(pass_filename, "/tmp/wali_env.%d", getpid());
   int execve_invoked = !access(pass_filename, R_OK);
   
-  char *envfile = execve_invoked ? pass_filename : app_env_file;
+  char *envfile = execve_invoked ? pass_filename : wali_app_env_file;
 
   if (!envfile) {
     ERR("No WALI environment file provided\n");
