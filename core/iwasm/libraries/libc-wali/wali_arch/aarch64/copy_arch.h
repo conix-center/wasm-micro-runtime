@@ -61,7 +61,7 @@ extern inline int swap_bits (int val, int b1pos, int b2pos) {
 }
 /* aarch64 swaps O_DIRECTORY <-> O_DIRECT
  *    and O_NOFOLLOW <-> O_LARGEFILE */
-inline int swap_open_flags (int open_flags) {
+extern inline int swap_open_flags (int open_flags) {
   int odirectory_shf = __builtin_ctz(O_DIRECTORY);
   int odirect_shf = __builtin_ctz(O_DIRECT);
   int olargefile_shf = __builtin_ctz(O_LARGEFILE);
