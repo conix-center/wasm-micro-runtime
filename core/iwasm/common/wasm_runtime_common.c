@@ -2072,34 +2072,6 @@ wasm_runtime_finalize_call_function(WASMExecEnv *exec_env,
 }
 #endif
 
-static bool
-clear_wasi_proc_exit_exception(WASMModuleInstanceCommon *module_inst_comm)
-{
-#if WASM_ENABLE_LIBC_WASI != 0 || WASM_ENABLE_LIBC_WALI != 0
-    bool has_exception;
-    char exception[EXCEPTION_BUF_LEN];
-    WASMModuleInstance *module_inst = (WASMModuleInstance *)module_inst_comm;
-
-    bh_assert(module_inst_comm->module_type == Wasm_Module_Bytecode
-              || module_inst_comm->module_type == Wasm_Module_AoT);
-
-    has_exception = wasm_copy_exception(module_inst, exception);
-    if (has_exception && (!strcmp(exception, "Exception: wasi proc exit") ||
-                        !strcmp(exception, "Exception: wali proc exit"))) {
-        /* The "wasi proc exit" exception is thrown by native lib to
-           let wasm app exit, which is a normal behavior, we clear
-           the exception here. And just clear the exception of current
-           thread, don't call `wasm_set_exception(module_inst, NULL)`
-           which will clear the exception of all threads. */
-        module_inst->cur_exception[0] = '\0';
-        return true;
-    }
-    return false;
-#else
-    return false;
-#endif
-}
-
 bool
 wasm_runtime_call_wasm(WASMExecEnv *exec_env,
                        WASMFunctionInstanceCommon *function, uint32 argc,
