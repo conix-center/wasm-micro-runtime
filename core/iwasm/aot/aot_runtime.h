@@ -87,6 +87,17 @@ typedef struct AOTFunctionInstance {
     } u;
 } AOTFunctionInstance;
 
+/* AOT global instance */
+typedef struct AOTGlobalInstance {
+  char *name;
+  uint32 index;
+  bool is_import_global;
+  union {
+    AOTGlobal *glob;
+    AOTImportGlobal *glob_import;
+  } u;
+} AOTGlobalInstance;
+
 typedef struct AOTModuleInstanceExtra {
     DefPointer(const uint32 *, stack_sizes);
     WASMModuleInstanceExtraCommon common;
@@ -421,6 +432,18 @@ aot_deinstantiate(AOTModuleInstance *module_inst, bool is_sub_inst);
 AOTFunctionInstance *
 aot_lookup_function(const AOTModuleInstance *module_inst, const char *name,
                     const char *signature);
+
+/**
+ * Lookup an exported global in the AOT module instance.
+ *
+ * @param module_inst the module instance
+ * @param name the name of the global
+ *
+ * @return the global instance found
+ */
+AOTGlobalInstance*
+aot_lookup_global(const AOTModuleInstance *module_inst, const char *name);
+
 /**
  * Call the given AOT function of a AOT module instance with
  * arguments.

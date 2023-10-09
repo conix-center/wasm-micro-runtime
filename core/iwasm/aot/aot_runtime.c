@@ -856,6 +856,48 @@ create_export_funcs(AOTModuleInstance *module_inst, AOTModule *module,
 }
 
 static bool
+create_export_globals(AOTModuleInstance *module_inst, AOTModule *module,
+                    char *error_buf, uint32 error_buf_size)
+{
+    AOTExport *exports = module->exports;
+    AOTGlobalInstance *export_global;
+    uint64 size;
+    uint32 i, global_index;
+
+    if (module_inst->export_global_count > 0) {
+        /* Allocate memory */
+        size = sizeof(AOTGlobalInstance)
+               * (uint64)module_inst->export_global_count;
+        if (!(export_global = runtime_malloc(size, error_buf, error_buf_size))) {
+            return false;
+        }
+        module_inst->export_globals = (void *)export_global;
+
+        for (i = 0; i < module->export_count; i++) {
+            if (exports[i].kind == EXPORT_KIND_GLOBAL) {
+                export_global->name = exports[i].name;
+                export_global->index = exports[i].index;
+                if (export_global->index < module->import_global_count) {
+                    export_global->is_import_global = true;
+                    export_global->u.glob_import =
+                        &module->import_globals[export_global->index];
+                }
+                else {
+                    export_global->is_import_global = false;
+                    global_index =
+                        export_global->index - module->import_global_count;
+                    export_global->u.glob =
+                        &module->globals[global_index];
+                }
+                export_global++;
+            }
+        }
+    }
+
+    return true;
+}
+
+static bool
 create_exports(AOTModuleInstance *module_inst, AOTModule *module,
                char *error_buf, uint32 error_buf_size)
 {
@@ -881,7 +923,8 @@ create_exports(AOTModuleInstance *module_inst, AOTModule *module,
         }
     }
 
-    return create_export_funcs(module_inst, module, error_buf, error_buf_size);
+    return create_export_funcs(module_inst, module, error_buf, error_buf_size)
+        && create_export_globals(module_inst, module, error_buf, error_buf_size);
 }
 
 static AOTFunctionInstance *
@@ -1285,6 +1328,9 @@ aot_deinstantiate(AOTModuleInstance *module_inst, bool is_sub_inst)
     if (module_inst->export_functions)
         wasm_runtime_free(module_inst->export_functions);
 
+    if (module_inst->export_globals)
+        wasm_runtime_free(module_inst->export_globals);
+
     if (module_inst->func_ptrs)
         wasm_runtime_free(module_inst->func_ptrs);
 
@@ -1317,6 +1363,19 @@ aot_lookup_function(const AOTModuleInstance *module_inst, const char *name,
         if (!strcmp(export_funcs[i].func_name, name))
             return &export_funcs[i];
     (void)signature;
+    return NULL;
+}
+
+AOTGlobalInstance*
+aot_lookup_global(const AOTModuleInstance *module_inst, const char *name)
+{
+    uint32 i;
+    AOTGlobalInstance *export_globs =
+        (AOTGlobalInstance*)module_inst->export_globals;
+
+    for (i = 0; i < module_inst->export_global_count; i++)
+        if (!strcmp(export_globs[i].name, name))
+            return &export_globs[i];
     return NULL;
 }
 
