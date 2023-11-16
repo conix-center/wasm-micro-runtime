@@ -886,6 +886,12 @@ long wali_syscall_fsync (wasm_exec_env_t exec_env, long a1) {
 	RETURN(__syscall1(SYS_fsync, a1));
 }
 
+// 75 
+long wali_syscall_fdatasync (wasm_exec_env_t exec_env, long a1) {
+	SC(75 ,fdatasync);
+	RETURN(__syscall1(SYS_fdatasync, a1));
+}
+
 // 77 
 long wali_syscall_ftruncate (wasm_exec_env_t exec_env, long a1, long a2) {
 	SC(77 ,ftruncate);
@@ -1238,6 +1244,12 @@ long wali_syscall_clock_gettime (wasm_exec_env_t exec_env, long a1, long a2) {
 	RETURN(__syscall2(SYS_clock_gettime, a1, MADDR(a2)));
 }
 
+// 229 
+long wali_syscall_clock_getres (wasm_exec_env_t exec_env, long a1, long a2) {
+	SC(229 ,clock_getres);
+	RETURN(__syscall2(SYS_clock_getres, a1, MADDR(a2)));
+}
+
 // 230 
 long wali_syscall_clock_nanosleep (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(230 ,clock_nanosleep);
@@ -1376,6 +1388,12 @@ long wali_syscall_eventfd (wasm_exec_env_t exec_env, long a1) {
   #elif __aarch64__ || __riscv64__
     RETURN(wali_syscall_eventfd2(exec_env, a1, 0));
   #endif
+}
+
+// 288 
+long wali_syscall_accept4 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
+	SC(288 ,accept4);
+	RETURN(__syscall4(SYS_accept4, a1, MADDR(a2), MADDR(a3), a4));
 }
 
 // 290 TODO
@@ -1743,6 +1761,7 @@ static NativeSymbol wali_native_symbols[] = {
   NSYMBOL (       SYS_fcntl,        wali_syscall_fcntl,     "(iii)I" ),
   NSYMBOL (       SYS_flock,        wali_syscall_flock,      "(ii)I" ),
   NSYMBOL (       SYS_fsync,        wali_syscall_fsync,       "(i)I" ),
+	NSYMBOL (   SYS_fdatasync,    wali_syscall_fdatasync,       "(i)I" ),
   NSYMBOL (   SYS_ftruncate,    wali_syscall_ftruncate,      "(iI)I" ),
   NSYMBOL (    SYS_getdents,     wali_syscall_getdents,     "(iii)I" ),
   NSYMBOL (      SYS_getcwd,       wali_syscall_getcwd,      "(ii)I" ),
@@ -1793,6 +1812,7 @@ static NativeSymbol wali_native_symbols[] = {
   NSYMBOL ( SYS_set_tid_address, wali_syscall_set_tid_address,       "(i)I" ),
   NSYMBOL (     SYS_fadvise,      wali_syscall_fadvise,    "(iIIi)I" ),
   NSYMBOL ( SYS_clock_gettime, wali_syscall_clock_gettime,      "(ii)I" ),
+	NSYMBOL ( SYS_clock_getres, wali_syscall_clock_getres,      "(ii)I" ),
   NSYMBOL ( SYS_clock_nanosleep, wali_syscall_clock_nanosleep,    "(iiii)I" ),
   NSYMBOL (  SYS_exit_group,   wali_syscall_exit_group,       "(i)I" ),
   NSYMBOL (   SYS_epoll_ctl,    wali_syscall_epoll_ctl,    "(iiii)I" ),
@@ -1811,6 +1831,7 @@ static NativeSymbol wali_native_symbols[] = {
   NSYMBOL (   SYS_utimensat,    wali_syscall_utimensat,    "(iiii)I" ),
   NSYMBOL ( SYS_epoll_pwait,  wali_syscall_epoll_pwait,  "(iiiiii)I" ),
   NSYMBOL (     SYS_eventfd,      wali_syscall_eventfd,       "(i)I" ),
+	NSYMBOL (     SYS_accept4,      wali_syscall_accept4,    "(iiii)I" ),
   NSYMBOL (    SYS_eventfd2,     wali_syscall_eventfd2,      "(ii)I" ),
   NSYMBOL ( SYS_epoll_create1, wali_syscall_epoll_create1,       "(i)I" ),
   NSYMBOL (        SYS_dup3,         wali_syscall_dup3,     "(iii)I" ),
