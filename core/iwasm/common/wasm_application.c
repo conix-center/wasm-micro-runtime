@@ -104,13 +104,14 @@ execute_main(WASMModuleInstanceCommon *module_inst, int32 argc, char *argv[])
         return false;
     }
 
-#if WASM_ENABLE_LIBC_WASI != 0
+#if WASM_ENABLE_LIBC_WASI != 0 || WASM_ENABLE_LIBC_WALI != 0
     /* In wasi mode, we should call the function named "_start"
        which initializes the wasi envrionment and then calls
        the actual main function. Directly calling main function
        may cause exception thrown. */
     if ((func = wasm_runtime_lookup_wasi_start_function(module_inst))) {
         const char *wasi_proc_exit_exception = "wasi proc exit";
+        const char *wali_proc_exit_exception = "wali proc exit";
 
         ret = wasm_runtime_call_wasm(exec_env, func, 0, NULL);
 #if WASM_ENABLE_THREAD_MGR != 0
@@ -125,15 +126,18 @@ execute_main(WASMModuleInstanceCommon *module_inst, int32 argc, char *argv[])
                  returns w/o calling `proc_exit`.
                - A process termination should terminate threads in
                  the process. */
-
-            wasm_runtime_set_exception(module_inst, wasi_proc_exit_exception);
+            if (invoked_wali)
+              wasm_runtime_set_exception(module_inst, wali_proc_exit_exception);
+            else
+              wasm_runtime_set_exception(module_inst, wasi_proc_exit_exception);
             /* exit_code is zero-initialized */
             ret = false;
         }
 #endif
         /* report wasm proc exit as a success */
         WASMModuleInstance *inst = (WASMModuleInstance *)module_inst;
-        if (!ret && strstr(inst->cur_exception, wasi_proc_exit_exception)) {
+        if (!ret && (strstr(inst->cur_exception, wasi_proc_exit_exception) 
+                      || strstr(inst->cur_exception, wali_proc_exit_exception)) ) {
             inst->cur_exception[0] = 0;
             ret = true;
         }
