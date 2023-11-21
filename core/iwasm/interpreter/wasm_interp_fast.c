@@ -1425,7 +1425,9 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
                     cur_func_type = cur_func->u.func->func_type;
 
                 if (cur_type != cur_func_type) {
-                    wasm_set_exception(module, "indirect call type mismatch");
+                    char except_msg[100];
+                    sprintf(except_msg, "indirect call type mismatch | Fn[%d]", fidx);
+                    wasm_set_exception(module, except_msg);
                     goto got_exception;
                 }
 
