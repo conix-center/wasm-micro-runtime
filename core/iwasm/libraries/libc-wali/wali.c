@@ -1474,6 +1474,12 @@ int wali_sigsetjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int savesigs)
   return retval;
 }
 
+int wali_setjmp (wasm_exec_env_t exec_env, int jmp_buf_addr) {
+  PC(setjmp);
+  ERRSC(setjmp, "Unsupported in WALI right now, continuing execution with flag on longjmp");
+  return 0;
+}
+
 _Noreturn void wali_siglongjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, int val) {
   PC(siglongjmp);
   //struct __libc_jmp_buf_tag* env = copy_jmp_buf(exec_env, MADDR(sigjmp_buf_addr));
@@ -1858,6 +1864,7 @@ static NativeSymbol wali_native_symbols[] = {
 
   // Signal
   NSYMBOL ( sigsetjmp, wali_sigsetjmp, "(ii)i" ),
+  NSYMBOL ( setjmp, wali_setjmp, "(i)i" ),
   NSYMBOL ( longjmp, wali_siglongjmp, "(ii)" ),
 
 };
