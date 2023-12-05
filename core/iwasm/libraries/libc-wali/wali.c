@@ -1528,16 +1528,37 @@ static void wali_thread_exit(wasm_exec_env_t exec_env, long v) {
   wasm_cluster_cancel_thread(exec_env);
 }
 
+/**
+* Returns the number of arguments that were provided to the module
+*
+* @return The number of arguments that were provided to the module
+*/
 int wali_cl_get_argc (wasm_exec_env_t exec_env) {
   PC(cl_get_argc);
   return wali_app_argc;
 }
 
+/**
+* Returns the length of the specified argument
+* 
+* @param arg_idx The index of the specified argument (the first argument has the index 0)
+*
+* @return The length of the specified argument (the number of bytes that the argument will
+* occupy in the module memory when represented as a C string). Returns -1 on error.
+*/
 int wali_cl_get_argv_len (wasm_exec_env_t exec_env, int arg_idx) {
   PC(cl_get_argc_len);
   return strlen(wali_app_argv[arg_idx]);
 }
 
+/**
+* Copies the specified argument to the specified location in the (shared) memory of the calling module
+*
+* @param argv_addr The location in the (shared) module memory, specified as the offset from the start
+* @param arg_idx The index of the specified argument (the first argument has the index 0)
+*
+* @return The number of bytes which were written into the memory. Returns -1 on error
+*/
 int wali_cl_copy_argv (wasm_exec_env_t exec_env, int argv_addr, int arg_idx) {
   PC(cl_copy_argv);
   Addr argv = MADDR(argv_addr);
