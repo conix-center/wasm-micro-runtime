@@ -62,6 +62,9 @@ int64_t total_native_time = 0;
 static pthread_mutex_t metrics_lock = PTHREAD_MUTEX_INITIALIZER;
 sysmetric_t syscall_metrics[MAX_SYSCALLS] = {{0}};
 
+/* For exit code handling */
+static bool is_multithreaded = false;
+
 /* For thread cloning TID synchronization */
 static pthread_mutex_t clone_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mmap_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -76,7 +79,7 @@ int MMAP_PAGELEN = 0;
 int WASM_PAGELEN = 0;
 int WASM_TO_NATIVE_PAGE = 0;
 uint32_t BASE_MEMSIZE = 0;
-uint32_t THREAD_ID = 0; // unused irl
+uint32_t THREAD_ID = 0; // unused atm
 
 
 inline void gettime(struct timespec *ts) {
@@ -123,6 +126,7 @@ void wali_init_native(wasm_module_inst_t module_inst) {
   }
 
   main_mod_inst = module_inst;
+  is_multithreaded = false;
 
   // Register signals for profiling / termination
   struct sigaction act = {0};
@@ -274,9 +278,7 @@ long wali_syscall_open (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	SC(2,open);
   #if __x86_64__
 	  RETURN(__syscall3(SYS_open, MADDR(a1), a2, a3));
-  #elif __aarch64__
-    RETURN(wali_syscall_openat(exec_env, AT_FDCWD, a1, a2, a3));
-  #elif __riscv64__
+  #elif __aarch64__ || __riscv64__
     RETURN(wali_syscall_openat(exec_env, AT_FDCWD, a1, a2, a3));
   #endif
 }
@@ -410,7 +412,7 @@ long wali_syscall_munmap (wasm_exec_env_t exec_env, long a1, long a2) {
 // 12 
 long wali_syscall_brk (wasm_exec_env_t exec_env, long a1) {
 	SC(12 ,brk);
-  VB("brk syscall is a NOP in WASM right now");
+  VB("brk syscall is a NOP in WASM");
 	return 0;
   RETURN(0); 
 }
@@ -500,17 +502,15 @@ long wali_syscall_ioctl (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 	RETURN(__syscall3(SYS_ioctl, a1, a2, MADDR(a3)));
 }
 
-// 17 TODO
+// 17 
 long wali_syscall_pread64 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(17 ,pread64);
-	ERRSC(pread64);
 	RETURN(__syscall4(SYS_pread64, a1, MADDR(a2), a3, a4));
 }
 
-// 18 TODO
+// 18 
 long wali_syscall_pwrite64 (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4) {
 	SC(18 ,pwrite64);
-	ERRSC(pwrite64);
 	RETURN(__syscall4(SYS_pwrite64, a1, MADDR(a2), a3, a4));
 }
 
@@ -836,8 +836,14 @@ long wali_syscall_execve (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 // 60 TODO
 long wali_syscall_exit (wasm_exec_env_t exec_env, long a1) {
 	SC(60 ,exit);
-  ERRSC(exit);
-  wali_thread_exit(exec_env, a1);
+  if (is_multithreaded) {
+    ERRSC(exit, "Program detected as multithreaded; exiting current thread but "
+    "cannot guarantee process-level exit code generation. It is recommended to use exit_group instead");
+    wali_thread_exit(exec_env, a1);
+  } else {
+    ERRSC(exit, "Program detected as single-threaded; invoking proc_exit to exit program");
+    wali_proc_exit(exec_env, a1);
+  }
   return 0;
 }
 
@@ -1268,10 +1274,9 @@ long wali_syscall_clock_nanosleep (wasm_exec_env_t exec_env, long a1, long a2, l
 	RETURN(__syscall4(SYS_clock_nanosleep, a1, a2, MADDR(a3), MADDR(a4)));
 }
 
-// 231 TODO
+// 231 
 long wali_syscall_exit_group (wasm_exec_env_t exec_env, long a1) {
 	SC(231 ,exit_group);
-  ERRSC(exit_group);
   wali_proc_exit(exec_env, a1);
   RETURN(-1);
 }
@@ -1504,10 +1509,13 @@ _Noreturn void wali_siglongjmp (wasm_exec_env_t exec_env, int sigjmp_buf_addr, i
 
 
 /***** Startup *****/
+static bool ctor_called = false;
 static bool dtor_called = false;
+
 void wali_call_ctors(wasm_exec_env_t exec_env) {
   PC(wali_call_ctors);
   invoked_wali = true;
+  ctor_called = true;
 }
 
 void wali_call_dtors(wasm_exec_env_t exec_env) {
@@ -1682,6 +1690,8 @@ int wali_wasm_thread_spawn (wasm_exec_env_t exec_env, int setup_fnptr, int arg_w
       goto thread_spawn_fail_post_clone;
   }
 
+  /* Mark current program as multithreaded (relevant for SYS_exit) */
+  is_multithreaded = true;
   /* Get the thread-id of spawned child. Wait for timeout (5 sec) for signal */
   struct timespec dtime;
   if (clock_gettime(CLOCK_REALTIME, &dtime) == -1) {
