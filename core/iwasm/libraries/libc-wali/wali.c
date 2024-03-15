@@ -163,6 +163,39 @@ void wali_init_native(wasm_module_inst_t module_inst) {
 }
 
 
+/** Helper methods **/
+static uint32_t get_current_memory_size(wasm_exec_env_t exec_env) {
+  wasm_module_inst_t module_inst = get_module_inst(exec_env);
+  wasm_function_inst_t memorysize_fn = wasm_runtime_lookup_function(module_inst, "wasm_memory_size", "()i");
+  uint32_t cur_wasm_pages[1];
+  uint32_t mem_size = 0;
+  if (memorysize_fn && wasm_runtime_call_wasm(exec_env, memorysize_fn, 0, cur_wasm_pages)) {
+    // Success
+    VB("Used \'wasm_memory_size\' export for size query");
+    mem_size = cur_wasm_pages[0] * WASM_PAGESIZE;
+  } else {
+    // Failure: Fallback to internal implementation
+    mem_size = wasm_runtime_get_memory_size(get_module_inst(exec_env)); 
+  }
+  return mem_size;
+}
+
+/* Not currently used since WAMR internal API for memory.grow performs 
+ * additional OS protection when growing memory which may interfere with 
+ * any mmap specifications */
+static void grow_memory_size(wasm_exec_env_t exec_env, uint32_t inc_wasm_pages) {
+  wasm_module_inst_t module_inst = get_module_inst(exec_env);
+  wasm_function_inst_t memorygrow_fn = wasm_runtime_lookup_function(module_inst, "wasm_memory_grow", "(i)i");
+  uint32_t prev_wasm_pages[1] = { inc_wasm_pages };
+  if (memorygrow_fn && wasm_runtime_call_wasm(exec_env, memorygrow_fn, 1, prev_wasm_pages)) {
+    // Success
+    VB("Used \'wasm_memory_grow\' export for grow query");
+  } else {
+    // Failure: Fallback to internal implementation
+    wasm_enlarge_memory((WASMModuleInstance*)module_inst, inc_wasm_pages, true);
+  }
+}
+
 
 /* Get page aligned address after memory to mmap; since base is mapped it's already aligned, 
 * and memory data size is a multiple of 64kB but rounding added for safety */
@@ -337,23 +370,25 @@ long wali_syscall_lseek (wasm_exec_env_t exec_env, long a1, long a2, long a3) {
 long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5, long a6) {
 	SC(9 ,mmap);
   VB("mmap args | a1: %ld, a2: 0x%x, a3: %ld, a4: %ld, a5: %ld, a6: %ld | MMAP_PAGELEN: %d", a1, a2, a3, a4, a5, a6, MMAP_PAGELEN);
+  wasm_module_inst_t module_inst = get_module_inst(exec_env);
+
   pthread_mutex_lock(&mmap_lock);
   Addr base_addr = BASE_ADDR();
   Addr pa_aligned_addr = PA_ALIGN_MMAP_ADDR();
   Addr mmap_addr = pa_aligned_addr + MMAP_PAGELEN * NATIVE_PAGESIZE;
 
-  uint32 mem_size = wasm_runtime_get_memory_size(get_module_inst(exec_env)); 
+  /* Get current memory size */
+  uint32_t mem_size = get_current_memory_size(exec_env);
   VB("Mem Base: %p | Mem End: %p | Mem Size: 0x%x | Mmap Addr: %p", base_addr, base_addr + mem_size, mem_size, mmap_addr);
 
-  wasm_module_inst_t module = get_module_inst(exec_env);
+  /* Check if wasm memory needs to be expanded and it is safe */
   int inc_wasm_pages = 0;
   int num_pages = ((a2 + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE);
   int extended_mmap_pagelen = MMAP_PAGELEN + num_pages;
-  /* Check if wasm memory needs to be expanded and it is safe */
   if (extended_mmap_pagelen > WASM_PAGELEN * WASM_TO_NATIVE_PAGE) {
     int new_wasm_pagelen = ((extended_mmap_pagelen + WASM_TO_NATIVE_PAGE - 1) / WASM_TO_NATIVE_PAGE);
     inc_wasm_pages = new_wasm_pagelen - WASM_PAGELEN;
-    if (!wasm_can_enlarge_memory((WASMModuleInstance*)module, inc_wasm_pages)) {
+    if (!wasm_can_enlarge_memory((WASMModuleInstance*)module_inst, inc_wasm_pages)) {
       FATALSC(mmap, "Out of memory!\n");
       goto mmap_fail;
     }
@@ -365,12 +400,12 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
     FATALSC(mmap, "Failed to mmap!\n");
     goto mmap_fail;
   }
-  /* On success */
+  /* On successful mmap */
   else {
     MMAP_PAGELEN += num_pages;
     /* Expand wasm memory if needed */
     if (inc_wasm_pages) {
-      wasm_enlarge_memory((WASMModuleInstance*)module, inc_wasm_pages, true);
+      wasm_enlarge_memory((WASMModuleInstance*)module_inst, inc_wasm_pages, true);
       WASM_PAGELEN += inc_wasm_pages;
     }
   }
@@ -579,24 +614,25 @@ long wali_syscall_sched_yield (wasm_exec_env_t exec_env) {
 long wali_syscall_mremap (wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4, long a5) {
 	SC(25 ,mremap);
   VB("mremap args | a1: %ld, a2: 0x%x, a3: 0x%x, a4: %ld, a5: %ld | MMAP_PAGELEN: %d", a1, a2, a3, a4, a5, MMAP_PAGELEN);
+  wasm_module_inst_t module_inst = get_module_inst(exec_env);
+
   /* Remap pages to the end of the wasm memory, like mmap */
   pthread_mutex_lock(&mmap_lock);
   Addr base_addr = BASE_ADDR();
   Addr pa_aligned_addr = PA_ALIGN_MMAP_ADDR();
   Addr mmap_addr = pa_aligned_addr + MMAP_PAGELEN * NATIVE_PAGESIZE;
 
-  uint32 mem_size = wasm_runtime_get_memory_size(get_module_inst(exec_env)); 
+  uint32 mem_size = get_current_memory_size(exec_env);
   VB("Mem Base: %p | Mem End: %p | Mem Size: 0x%x | Mmap Addr: %p", base_addr, base_addr + mem_size, mem_size, mmap_addr);
 
-  wasm_module_inst_t module = get_module_inst(exec_env);
+  /* Check if wasm memory needs to be expanded and it is safe */
   int inc_wasm_pages = 0;
   int num_pages = ((a3 + NATIVE_PAGESIZE - 1) / NATIVE_PAGESIZE);
   int extended_mmap_pagelen = MMAP_PAGELEN + num_pages;
-  /* Check if wasm memory needs to be expanded and it is safe */
   if (extended_mmap_pagelen > WASM_PAGELEN * WASM_TO_NATIVE_PAGE) {
     int new_wasm_pagelen = ((extended_mmap_pagelen + WASM_TO_NATIVE_PAGE - 1) / WASM_TO_NATIVE_PAGE);
     inc_wasm_pages = new_wasm_pagelen - WASM_PAGELEN;
-    if (!wasm_can_enlarge_memory((WASMModuleInstance*)module, inc_wasm_pages)) {
+    if (!wasm_can_enlarge_memory((WASMModuleInstance*)module_inst, inc_wasm_pages)) {
       FATALSC(mremap, "Out of memory!\n");
       goto mremap_fail;
     }
@@ -614,7 +650,7 @@ long wali_syscall_mremap (wasm_exec_env_t exec_env, long a1, long a2, long a3, l
     MMAP_PAGELEN += num_pages;
     /* Expand wasm memory if needed */
     if (inc_wasm_pages) {
-      wasm_enlarge_memory((WASMModuleInstance*)module, inc_wasm_pages, true);
+      wasm_enlarge_memory((WASMModuleInstance*)module_inst, inc_wasm_pages, true);
       WASM_PAGELEN += inc_wasm_pages;
     }
   }
