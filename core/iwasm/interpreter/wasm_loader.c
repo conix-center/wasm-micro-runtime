@@ -3764,10 +3764,10 @@ load_memory_section(const uint8 *buf, const uint8 *buf_end, WASMModule *module,
 
     read_leb_uint32(p, p_end, memory_count);
     /* a total of one memory is allowed */
-    if (module->import_memory_count + memory_count > 1) {
-        set_error_buf(error_buf, error_buf_size, "multiple memories");
-        return false;
-    }
+    //if (module->import_memory_count + memory_count > 1) {
+    //    set_error_buf(error_buf, error_buf_size, "multiple memories");
+    //    return false;
+    //}
 
     if (memory_count) {
         module->memory_count = memory_count;
@@ -10503,6 +10503,16 @@ wasm_loader_get_custom_section(WASMModule *module, const char *name,
 }
 #endif
 
+static bool parse_memarg_align(uint32 *align, uint32 *mem_idx) {
+    if (((*align) >> 6) & 1) {
+      *align &= 0x3F;
+      return true;
+    }
+    /* Set default memory index of 0 */
+    *mem_idx = 0;
+    return false;
+}
+
 static bool
 wasm_loader_prepare_bytecode(WASMModule *module, WASMFunction *func,
                              uint32 cur_func_idx, char *error_buf,
@@ -10514,7 +10524,7 @@ wasm_loader_prepare_bytecode(WASMModule *module, WASMFunction *func,
     BlockType func_block_type;
     uint16 *local_offsets, local_offset;
     uint32 type_idx, func_idx, local_idx, global_idx, table_idx;
-    uint32 table_seg_idx, data_seg_idx, count, align, mem_offset, i;
+    uint32 table_seg_idx, data_seg_idx, count, align, mem_offset, mem_idx, dst_mem_idx, i;
     int32 i32_const = 0;
     int64 i64_const;
     uint8 opcode;
@@ -12731,12 +12741,16 @@ re_scan:
 #endif
                 CHECK_MEMORY();
                 read_leb_uint32(p, p_end, align);      /* align */
+                if (parse_memarg_align(&align, &mem_idx)) { /* mem_idx + align */
+                  read_leb_uint32(p, p_end, mem_idx);
+                }
                 read_leb_uint32(p, p_end, mem_offset); /* offset */
                 if (!check_memory_access_align(opcode, align, error_buf,
                                                error_buf_size)) {
                     goto fail;
                 }
 #if WASM_ENABLE_FAST_INTERP != 0
+                emit_uint32(loader_ctx, mem_idx);
                 emit_uint32(loader_ctx, mem_offset);
 #endif
 #if WASM_ENABLE_JIT != 0 || WASM_ENABLE_WAMR_COMPILER != 0
@@ -12796,14 +12810,13 @@ re_scan:
 
             case WASM_OP_MEMORY_SIZE:
                 CHECK_MEMORY();
-                /* reserved byte 0x00 */
-                if (*p++ != 0x00) {
-                    set_error_buf(error_buf, error_buf_size,
-                                  "zero byte expected");
-                    goto fail;
-                }
+                read_leb_uint32(p, p_end, mem_idx);
+
                 PUSH_I32();
 
+#if WASM_ENABLE_FAST_INTERP != 0
+                emit_uint32(loader_ctx, mem_idx);
+#endif
                 module->possible_memory_grow = true;
 #if WASM_ENABLE_JIT != 0 || WASM_ENABLE_WAMR_COMPILER != 0
                 func->has_memory_operations = true;
@@ -12812,14 +12825,13 @@ re_scan:
 
             case WASM_OP_MEMORY_GROW:
                 CHECK_MEMORY();
-                /* reserved byte 0x00 */
-                if (*p++ != 0x00) {
-                    set_error_buf(error_buf, error_buf_size,
-                                  "zero byte expected");
-                    goto fail;
-                }
+                read_leb_uint32(p, p_end, mem_idx);
+
                 POP_AND_PUSH(VALUE_TYPE_I32, VALUE_TYPE_I32);
 
+#if WASM_ENABLE_FAST_INTERP != 0
+                emit_uint32(loader_ctx, mem_idx);
+#endif
                 module->possible_memory_grow = true;
 #if WASM_ENABLE_FAST_JIT != 0 || WASM_ENABLE_JIT != 0 \
     || WASM_ENABLE_WAMR_COMPILER != 0
@@ -14157,15 +14169,14 @@ re_scan:
                     case WASM_OP_MEMORY_INIT:
                     {
                         read_leb_uint32(p, p_end, data_seg_idx);
+                        read_leb_uint32(p, p_end, mem_idx);
 #if WASM_ENABLE_FAST_INTERP != 0
                         emit_uint32(loader_ctx, data_seg_idx);
+                        emit_uint32(loader_ctx, mem_idx);
 #endif
                         if (module->import_memory_count == 0
                             && module->memory_count == 0)
                             goto fail_unknown_memory;
-
-                        if (*p++ != 0x00)
-                            goto fail_zero_byte_expected;
 
                         if (data_seg_idx >= module->data_seg_count) {
                             set_error_buf_v(error_buf, error_buf_size,
@@ -14213,18 +14224,21 @@ re_scan:
                     }
                     case WASM_OP_MEMORY_COPY:
                     {
-                        /* both src and dst memory index should be 0 */
-                        if (*(int16 *)p != 0x0000)
-                            goto fail_zero_byte_expected;
-                        p += 2;
+                        read_leb_uint32(p, p_end, dst_mem_idx);
+                        read_leb_uint32(p, p_end, mem_idx);
 
                         if (module->import_memory_count == 0
                             && module->memory_count == 0)
                             goto fail_unknown_memory;
 
+#if WASM_ENABLE_FAST_INTERP != 0
+                        emit_uint32(loader_ctx, dst_mem_idx);
+                        emit_uint32(loader_ctx, mem_idx);
+#endif
                         POP_I32();
                         POP_I32();
                         POP_I32();
+
 #if WASM_ENABLE_JIT != 0 || WASM_ENABLE_WAMR_COMPILER != 0
                         func->has_memory_operations = true;
 #endif
@@ -14235,14 +14249,16 @@ re_scan:
                     }
                     case WASM_OP_MEMORY_FILL:
                     {
-                        if (*p++ != 0x00) {
-                            goto fail_zero_byte_expected;
-                        }
+                        read_leb_uint32(p, p_end, mem_idx);
+
                         if (module->import_memory_count == 0
                             && module->memory_count == 0) {
                             goto fail_unknown_memory;
                         }
 
+#if WASM_ENABLE_FAST_INTERP != 0
+                        emit_uint32(loader_ctx, mem_idx);
+#endif
                         POP_I32();
                         POP_I32();
                         POP_I32();
@@ -14254,10 +14270,6 @@ re_scan:
 #endif
                         break;
                     }
-                    fail_zero_byte_expected:
-                        set_error_buf(error_buf, error_buf_size,
-                                      "zero byte expected");
-                        goto fail;
 
                     fail_unknown_memory:
                         set_error_buf(error_buf, error_buf_size,
@@ -15168,12 +15180,16 @@ re_scan:
                 if (opcode1 != WASM_OP_ATOMIC_FENCE) {
                     CHECK_MEMORY();
                     read_leb_uint32(p, p_end, align);      /* align */
+                    if (parse_memarg_align(&align, &mem_idx)) { /* mem_idx + align */
+                      read_leb_uint32(p, p_end, mem_idx);
+                    }
                     read_leb_uint32(p, p_end, mem_offset); /* offset */
                     if (!check_memory_align_equal(opcode1, align, error_buf,
                                                   error_buf_size)) {
                         goto fail;
                     }
 #if WASM_ENABLE_FAST_INTERP != 0
+                    emit_uint32(loader_ctx, mem_idx);
                     emit_uint32(loader_ctx, mem_offset);
 #endif
                 }

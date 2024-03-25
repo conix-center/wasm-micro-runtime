@@ -3588,7 +3588,8 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
             /* memory load instructions */
             HANDLE_OP(WASM_OP_I32_LOAD)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 addr = GET_OPERAND(uint32, I32, 0);
                 frame_ip += 2;
@@ -3600,7 +3601,8 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I64_LOAD)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 addr = GET_OPERAND(uint32, I32, 0);
                 frame_ip += 2;
@@ -3612,7 +3614,8 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I32_LOAD8_S)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 addr = GET_OPERAND(uint32, I32, 0);
                 frame_ip += 2;
@@ -3624,7 +3627,8 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I32_LOAD8_U)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 addr = GET_OPERAND(uint32, I32, 0);
                 frame_ip += 2;
@@ -3636,7 +3640,8 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I32_LOAD16_S)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 addr = GET_OPERAND(uint32, I32, 0);
                 frame_ip += 2;
@@ -3648,7 +3653,8 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I32_LOAD16_U)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 addr = GET_OPERAND(uint32, I32, 0);
                 frame_ip += 2;
@@ -3660,7 +3666,8 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I64_LOAD8_S)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 addr = GET_OPERAND(uint32, I32, 0);
                 frame_ip += 2;
@@ -3673,7 +3680,8 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I64_LOAD8_U)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 addr = GET_OPERAND(uint32, I32, 0);
                 frame_ip += 2;
@@ -3685,7 +3693,8 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I64_LOAD16_S)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 addr = GET_OPERAND(uint32, I32, 0);
                 frame_ip += 2;
@@ -3698,7 +3707,8 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I64_LOAD16_U)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 addr = GET_OPERAND(uint32, I32, 0);
                 frame_ip += 2;
@@ -3710,7 +3720,8 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I64_LOAD32_S)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 addr = GET_OPERAND(uint32, I32, 0);
                 frame_ip += 2;
@@ -3723,7 +3734,8 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I64_LOAD32_U)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 addr = GET_OPERAND(uint32, I32, 0);
                 frame_ip += 2;
@@ -3735,8 +3747,9 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I32_STORE)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
                 uint32 sval;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 sval = GET_OPERAND(uint32, I32, 0);
                 addr = GET_OPERAND(uint32, I32, 2);
@@ -3748,8 +3761,9 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I32_STORE8)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
                 uint32 sval;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 sval = GET_OPERAND(uint32, I32, 0);
                 addr = GET_OPERAND(uint32, I32, 2);
@@ -3761,8 +3775,9 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I32_STORE16)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
                 uint32 sval;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 sval = GET_OPERAND(uint32, I32, 0);
                 addr = GET_OPERAND(uint32, I32, 2);
@@ -3774,8 +3789,9 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I64_STORE)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
                 uint64 sval;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 sval = GET_OPERAND(uint64, I64, 0);
                 addr = GET_OPERAND(uint32, I32, 2);
@@ -3787,8 +3803,9 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I64_STORE8)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
                 uint64 sval;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 sval = GET_OPERAND(uint64, I64, 0);
                 addr = GET_OPERAND(uint32, I32, 2);
@@ -3800,8 +3817,9 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I64_STORE16)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
                 uint64 sval;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 sval = GET_OPERAND(uint64, I64, 0);
                 addr = GET_OPERAND(uint32, I32, 2);
@@ -3813,8 +3831,9 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_I64_STORE32)
             {
-                uint32 offset, addr;
+                uint32 mem_idx, offset, addr;
                 uint64 sval;
+                mem_idx = read_uint32(frame_ip);
                 offset = read_uint32(frame_ip);
                 sval = GET_OPERAND(uint64, I64, 0);
                 addr = GET_OPERAND(uint32, I32, 2);
@@ -3827,17 +3846,19 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
             /* memory size and memory grow instructions */
             HANDLE_OP(WASM_OP_MEMORY_SIZE)
             {
-                uint32 reserved;
+                uint32 mem_idx;
+                mem_idx = read_uint32(frame_ip);
                 addr_ret = GET_OFFSET();
                 frame_lp[addr_ret] = memory->cur_page_count;
-                (void)reserved;
                 HANDLE_OP_END();
             }
 
             HANDLE_OP(WASM_OP_MEMORY_GROW)
             {
-                uint32 reserved, delta,
+                uint32 mem_idx, delta,
                     prev_page_count = memory->cur_page_count;
+
+                mem_idx = read_uint32(frame_ip);
 
                 addr1 = GET_OFFSET();
                 addr_ret = GET_OFFSET();
@@ -3859,7 +3880,6 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 #endif
                 }
 
-                (void)reserved;
                 HANDLE_OP_END();
             }
 
@@ -4969,11 +4989,12 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 #if WASM_ENABLE_BULK_MEMORY != 0
                     case WASM_OP_MEMORY_INIT:
                     {
-                        uint32 addr, segment;
+                        uint32 mem_idx, addr, segment;
                         uint64 bytes, offset, seg_len;
                         uint8 *data;
 
                         segment = read_uint32(frame_ip);
+                        mem_idx = read_uint32(frame_ip);
 
                         bytes = (uint64)(uint32)POP_I32();
                         offset = (uint64)(uint32)POP_I32();
@@ -5020,7 +5041,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
                     case WASM_OP_MEMORY_COPY:
                     {
                         uint32 dst, src, len;
+                        uint32 dst_mem_idx, src_mem_idx;
                         uint8 *mdst, *msrc;
+
+                        dst_mem_idx = read_uint32(frame_ip);
+                        src_mem_idx = read_uint32(frame_ip);
 
                         len = POP_I32();
                         src = POP_I32();
@@ -5051,7 +5076,10 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
                     case WASM_OP_MEMORY_FILL:
                     {
                         uint32 dst, len;
+                        uint32 mem_idx;
                         uint8 fill_val, *mdst;
+
+                        mem_idx = read_uint32(frame_ip);
 
                         len = POP_I32();
                         fill_val = POP_I32();
@@ -5287,11 +5315,12 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 #if WASM_ENABLE_SHARED_MEMORY != 0
             HANDLE_OP(WASM_OP_ATOMIC_PREFIX)
             {
-                uint32 offset = 0, addr;
+                uint32 mem_idx = 0, offset = 0, addr;
 
                 GET_OPCODE();
 
                 if (opcode != WASM_OP_ATOMIC_FENCE) {
+                    mem_idx = read_uint32(frame_ip);
                     offset = read_uint32(frame_ip);
                 }
 
