@@ -192,7 +192,7 @@ static void grow_memory_size(wasm_exec_env_t exec_env, uint32_t inc_wasm_pages) 
     VB("Used \'wasm_memory_grow\' export for grow query");
   } else {
     // Failure: Fallback to internal implementation
-    wasm_enlarge_memory((WASMModuleInstance*)module_inst, inc_wasm_pages, true);
+    wasm_enlarge_memory((WASMModuleInstance*)module_inst, 0, inc_wasm_pages, true);
   }
 }
 
@@ -388,7 +388,7 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
   if (extended_mmap_pagelen > WASM_PAGELEN * WASM_TO_NATIVE_PAGE) {
     int new_wasm_pagelen = ((extended_mmap_pagelen + WASM_TO_NATIVE_PAGE - 1) / WASM_TO_NATIVE_PAGE);
     inc_wasm_pages = new_wasm_pagelen - WASM_PAGELEN;
-    if (!wasm_can_enlarge_memory((WASMModuleInstance*)module_inst, inc_wasm_pages)) {
+    if (!wasm_can_enlarge_memory((WASMModuleInstance*)module_inst, 0, inc_wasm_pages)) {
       FATALSC(mmap, "Out of memory!\n");
       goto mmap_fail;
     }
@@ -405,7 +405,7 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
     MMAP_PAGELEN += num_pages;
     /* Expand wasm memory if needed */
     if (inc_wasm_pages) {
-      wasm_enlarge_memory((WASMModuleInstance*)module_inst, inc_wasm_pages, true);
+      wasm_enlarge_memory((WASMModuleInstance*)module_inst, 0, inc_wasm_pages, true);
       WASM_PAGELEN += inc_wasm_pages;
     }
   }
@@ -632,7 +632,7 @@ long wali_syscall_mremap (wasm_exec_env_t exec_env, long a1, long a2, long a3, l
   if (extended_mmap_pagelen > WASM_PAGELEN * WASM_TO_NATIVE_PAGE) {
     int new_wasm_pagelen = ((extended_mmap_pagelen + WASM_TO_NATIVE_PAGE - 1) / WASM_TO_NATIVE_PAGE);
     inc_wasm_pages = new_wasm_pagelen - WASM_PAGELEN;
-    if (!wasm_can_enlarge_memory((WASMModuleInstance*)module_inst, inc_wasm_pages)) {
+    if (!wasm_can_enlarge_memory((WASMModuleInstance*)module_inst, 0, inc_wasm_pages)) {
       FATALSC(mremap, "Out of memory!\n");
       goto mremap_fail;
     }
@@ -650,7 +650,7 @@ long wali_syscall_mremap (wasm_exec_env_t exec_env, long a1, long a2, long a3, l
     MMAP_PAGELEN += num_pages;
     /* Expand wasm memory if needed */
     if (inc_wasm_pages) {
-      wasm_enlarge_memory((WASMModuleInstance*)module_inst, inc_wasm_pages, true);
+      wasm_enlarge_memory((WASMModuleInstance*)module_inst, 0, inc_wasm_pages, true);
       WASM_PAGELEN += inc_wasm_pages;
     }
   }

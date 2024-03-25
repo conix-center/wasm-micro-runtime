@@ -2749,13 +2749,13 @@ aot_module_dup_data(AOTModuleInstance *module_inst, const char *src,
 bool
 aot_can_enlarge_memory(AOTModuleInstance *module_inst, uint32 inc_page_count)
 {
-    return wasm_can_enlarge_memory(module_inst, inc_page_count);
+    return wasm_can_enlarge_memory(module_inst, 0, inc_page_count);
 }
 
 bool
 aot_enlarge_memory(AOTModuleInstance *module_inst, uint32 inc_page_count)
 {
-    return wasm_enlarge_memory(module_inst, inc_page_count, false);
+    return wasm_enlarge_memory(module_inst, 0, inc_page_count, false);
 }
 
 bool

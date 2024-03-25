@@ -647,9 +647,9 @@ wasm_get_default_memory(WASMModuleInstance *module_inst)
 }
 
 bool
-wasm_can_enlarge_memory(WASMModuleInstance *module, uint32 inc_page_count)
+wasm_can_enlarge_memory(WASMModuleInstance *module, uint32 mem_idx, uint32 inc_page_count)
 {
-    WASMMemoryInstance *memory = wasm_get_default_memory(module);
+    WASMMemoryInstance *memory = module->memories[mem_idx];
     if (!memory)
         return false;
 
@@ -736,9 +736,9 @@ wasm_mmap_linear_memory(uint64_t map_size, uint64 commit_size)
 }
 
 bool
-wasm_enlarge_memory_internal(WASMModuleInstance *module, uint32 inc_page_count, bool pre_mapped)
+wasm_enlarge_memory_internal(WASMModuleInstance *module, uint32 mem_idx, uint32 inc_page_count, bool pre_mapped)
 {
-    WASMMemoryInstance *memory = wasm_get_default_memory(module);
+    WASMMemoryInstance *memory = module->memories[mem_idx];
     uint8 *memory_data_old, *memory_data_new, *heap_data_old;
     uint32 num_bytes_per_page, heap_size;
     uint32 cur_page_count, max_page_count, total_page_count;
@@ -895,18 +895,19 @@ wasm_runtime_set_enlarge_mem_error_callback(
 }
 
 bool
-wasm_enlarge_memory(WASMModuleInstance *module, uint32 inc_page_count, bool pre_mapped)
+wasm_enlarge_memory(WASMModuleInstance *module, uint32 mem_idx, uint32 inc_page_count, bool pre_mapped)
 {
     bool ret = false;
 
+    WASMMemoryInstance *memory = module->memories[mem_idx];
 #if WASM_ENABLE_SHARED_MEMORY != 0
     if (module->memory_count > 0)
-        shared_memory_lock(module->memories[0]);
+        shared_memory_lock(memory);
 #endif
-    ret = wasm_enlarge_memory_internal(module, inc_page_count, pre_mapped);
+    ret = wasm_enlarge_memory_internal(module, mem_idx, inc_page_count, pre_mapped);
 #if WASM_ENABLE_SHARED_MEMORY != 0
     if (module->memory_count > 0)
-        shared_memory_unlock(module->memories[0]);
+        shared_memory_unlock(memory);
 #endif
 
     return ret;
