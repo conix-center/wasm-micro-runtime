@@ -818,7 +818,7 @@ wasm_enlarge_memory_internal(WASMModuleInstance *module, uint32 inc_page_count, 
         memory->max_page_count = max_page_count;
         memory->memory_data_size += inc_bytes;
         memory->memory_data_end += inc_bytes;
-        return true;
+        goto set_bound_check;
         /* */
     }
     LOG_ERROR("NOTE: Enlarging memory without mmap... There might be errors here..");
@@ -852,7 +852,8 @@ wasm_enlarge_memory_internal(WASMModuleInstance *module, uint32 inc_page_count, 
     memory->max_page_count = max_page_count;
     memory->memory_data_size = (uint32)total_size_new;
     memory->memory_data_end = memory->memory_data + (uint32)total_size_new;
-
+    
+set_bound_check:
 #if WASM_ENABLE_FAST_JIT != 0 || WASM_ENABLE_JIT != 0 || WASM_ENABLE_AOT != 0
     memory->mem_bound_check_1byte.u64 = total_size_new - 1;
     memory->mem_bound_check_2bytes.u64 = total_size_new - 2;
