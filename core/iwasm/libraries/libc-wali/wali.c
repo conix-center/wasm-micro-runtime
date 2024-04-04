@@ -180,20 +180,17 @@ static uint32_t get_current_memory_size(wasm_exec_env_t exec_env) {
   return mem_size;
 }
 
-/* Not currently used since WAMR internal API for memory.grow performs 
- * additional OS protection when growing memory which may interfere with 
- * any mmap specifications */
+/* This grows memory and invokes a hook (if present) so that instrumentation schemes
+ * can detect whether memory is grown */
 static void grow_memory_size(wasm_exec_env_t exec_env, uint32_t inc_wasm_pages) {
   wasm_module_inst_t module_inst = get_module_inst(exec_env);
   wasm_function_inst_t memorygrow_fn = wasm_runtime_lookup_function(module_inst, "wasm_memory_grow");
   uint32_t prev_wasm_pages[1] = { inc_wasm_pages };
-  if (memorygrow_fn && wasm_runtime_call_wasm(exec_env, memorygrow_fn, 1, prev_wasm_pages)) {
-    // Success
-    VB("Used \'wasm_memory_grow\' export for grow query");
-  } else {
-    // Failure: Fallback to internal implementation
-    wasm_enlarge_memory((WASMModuleInstance*)module_inst, 0, inc_wasm_pages, true);
-  }
+  //if (memorygrow_fn && wasm_runtime_call_wasm(exec_env, memorygrow_fn, 0, prev_wasm_pages)) {
+  //  // Success in calling hook
+  //  VB("Invoked \'wasm_memory_grow\' export hook");
+  //}
+  wasm_enlarge_memory((WASMModuleInstance*)module_inst, 0, inc_wasm_pages, true);
 }
 
 
@@ -405,7 +402,7 @@ long wali_syscall_mmap (wasm_exec_env_t exec_env, long a1, long a2, long a3, lon
     MMAP_PAGELEN += num_pages;
     /* Expand wasm memory if needed */
     if (inc_wasm_pages) {
-      wasm_enlarge_memory((WASMModuleInstance*)module_inst, 0, inc_wasm_pages, true);
+      grow_memory_size(exec_env, inc_wasm_pages);
       WASM_PAGELEN += inc_wasm_pages;
     }
   }
@@ -650,7 +647,7 @@ long wali_syscall_mremap (wasm_exec_env_t exec_env, long a1, long a2, long a3, l
     MMAP_PAGELEN += num_pages;
     /* Expand wasm memory if needed */
     if (inc_wasm_pages) {
-      wasm_enlarge_memory((WASMModuleInstance*)module_inst, 0, inc_wasm_pages, true);
+      grow_memory_size(exec_env, inc_wasm_pages);
       WASM_PAGELEN += inc_wasm_pages;
     }
   }

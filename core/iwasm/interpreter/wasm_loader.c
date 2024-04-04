@@ -12812,11 +12812,11 @@ re_scan:
                 CHECK_MEMORY();
                 read_leb_uint32(p, p_end, mem_idx);
 
-                PUSH_I32();
-
 #if WASM_ENABLE_FAST_INTERP != 0
                 emit_uint32(loader_ctx, mem_idx);
 #endif
+                PUSH_I32();
+
                 module->possible_memory_grow = true;
 #if WASM_ENABLE_JIT != 0 || WASM_ENABLE_WAMR_COMPILER != 0
                 func->has_memory_operations = true;
@@ -12827,11 +12827,11 @@ re_scan:
                 CHECK_MEMORY();
                 read_leb_uint32(p, p_end, mem_idx);
 
-                POP_AND_PUSH(VALUE_TYPE_I32, VALUE_TYPE_I32);
-
 #if WASM_ENABLE_FAST_INTERP != 0
                 emit_uint32(loader_ctx, mem_idx);
 #endif
+                POP_AND_PUSH(VALUE_TYPE_I32, VALUE_TYPE_I32);
+
                 module->possible_memory_grow = true;
 #if WASM_ENABLE_FAST_JIT != 0 || WASM_ENABLE_JIT != 0 \
     || WASM_ENABLE_WAMR_COMPILER != 0
