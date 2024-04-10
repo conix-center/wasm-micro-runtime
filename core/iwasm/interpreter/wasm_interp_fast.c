@@ -3845,10 +3845,10 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
             HANDLE_OP(WASM_OP_MEMORY_GROW)
             {
-                uint32 mem_idx, delta,
-                    prev_page_count = memories[mem_idx]->cur_page_count;
+                uint32 mem_idx, delta, prev_page_count;
 
                 mem_idx = read_uint32(frame_ip);
+                prev_page_count = memories[mem_idx]->cur_page_count;
 
                 addr1 = GET_OFFSET();
                 addr_ret = GET_OFFSET();
