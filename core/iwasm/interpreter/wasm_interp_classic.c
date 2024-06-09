@@ -27,7 +27,9 @@
 #if WASM_ENABLE_FAST_JIT != 0
 #include "../fast-jit/jit_compiler.h"
 #endif
+#if WASM_ENABLE_LIBC_WALI != 0
 #include "sigtable.h"
+#endif
 
 typedef int32 CellType_I32;
 typedef int64 CellType_I64;
@@ -1306,10 +1308,14 @@ wasm_interp_call_func_import(WASMModuleInstance *module_inst,
 
 #if WASM_ENABLE_LABELS_AS_VALUES != 0
 
+#if WASM_ENABLE_LIBC_WALI != 0
 #define HANDLE_OP(opcode) HANDLE_##opcode: \
   {  \
     HANDLE_WALI_SIGNAL(); \
   };
+#else
+#define HANDLE_OP(opcode) HANDLE_##opcode:
+#endif
 
 #define FETCH_OPCODE_AND_DISPATCH() goto *handle_table[*frame_ip++]
 

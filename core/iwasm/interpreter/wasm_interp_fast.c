@@ -20,7 +20,9 @@
 #if WASM_ENABLE_SHARED_MEMORY != 0
 #include "../common/wasm_shared_memory.h"
 #endif
+#if WASM_ENABLE_LIBC_WALI != 0
 #include "sigtable.h"
+#endif
 
 typedef int32 CellType_I32;
 typedef int64 CellType_I64;
@@ -1371,18 +1373,31 @@ wasm_interp_dump_op_count()
 
 /* #define HANDLE_OP(opcode) HANDLE_##opcode:printf(#opcode"\n"); */
 #if WASM_ENABLE_OPCODE_COUNTER != 0
+#if WASM_ENABLE_LIBC_WALI != 0
 #define HANDLE_OP(opcode) HANDLE_##opcode : \
   { \
     /* opcode_table[opcode].count++; */ \
     module->e->opcode_table[opcode]++; \
     HANDLE_WALI_SIGNAL(); \
   };
-#else
+#else /* else of WASM_ENABLE_LIBC_WALI */
+#define HANDLE_OP(opcode) HANDLE_##opcode : \
+  { \
+    /* opcode_table[opcode].count++; */ \
+    module->e->opcode_table[opcode]++; \
+  };
+#endif /* end of WASM_ENABLE_LIBC_WALI */ 
+#else /* else of WASM_ENABLE_OPCODE_COUNTER */
+#if WASM_ENABLE_LIBC_WALI != 0
 #define HANDLE_OP(opcode) HANDLE_##opcode:  \
   {  \
     HANDLE_WALI_SIGNAL(); \
   };
+#else /* else of WASM_ENABLE_LIBC_WALI */
+#define HANDLE_OP(opcode) HANDLE_##opcode: 
+#endif /* end of WASM_ENABLE_LIBC_WALI */ 
 #endif
+
 #if WASM_CPU_SUPPORTS_UNALIGNED_ADDR_ACCESS != 0
 #define FETCH_OPCODE_AND_DISPATCH()                    \
     do {                                               \

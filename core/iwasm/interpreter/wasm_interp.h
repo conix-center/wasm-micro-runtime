@@ -18,7 +18,6 @@
     wasm_runtime_call_wasm(exec_env, sigfn, 1, (uint32_t*)&signo);  \
   } \
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif

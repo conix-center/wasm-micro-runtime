@@ -27,7 +27,9 @@
 #include "../libraries/debug-engine/debug_engine.h"
 #endif
 #endif
+#if WASM_ENABLE_LIBC_WALI != 0
 #include "../interpreter/sigtable.h"
+#endif
 
 
 WASMExecEnv *
@@ -70,9 +72,13 @@ wasm_exec_env_create_internal(struct WASMModuleInstanceCommon *module_inst,
         goto fail5;
 #endif
 
-    static _Atomic uint64 uid = 1;
+    static uint64 uid = 1;
     exec_env->uid = uid++;
+#if WASM_ENABLE_LIBC_WALI != 0
     exec_env->sigpending_ptr = &wali_sigpending;
+#else 
+    exec_env->sigpending_ptr = NULL;
+#endif
 
     exec_env->module_inst = module_inst;
     exec_env->wasm_stack_size = stack_size;
