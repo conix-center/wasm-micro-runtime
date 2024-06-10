@@ -36,6 +36,11 @@ get_libc_wasi_export_apis(NativeSymbol **p_libc_wasi_apis);
 uint32
 get_libc_wali_export_apis(NativeSymbol **p_libc_wali_apis);
 
+#if WASM_ENABLE_LIBC_WAZI != 0
+uint32
+get_libc_wazi_export_apis(NativeSymbol **p_libc_wazi_apis);
+#endif
+
 uint32_t
 get_wasi_nn_export_apis(NativeSymbol **p_libc_wasi_apis);
 
@@ -517,6 +522,13 @@ wasm_native_init()
 #if WASM_ENABLE_LIBC_WALI != 0
     n_native_symbols = get_libc_wali_export_apis(&native_symbols);
     if (!wasm_native_register_natives("wali", native_symbols,
+                                      n_native_symbols))
+        goto fail;
+#endif
+
+#if WASM_ENABLE_LIBC_WAZI != 0
+    n_native_symbols = get_libc_wazi_export_apis(&native_symbols);
+    if (!wasm_native_register_natives("wazi", native_symbols,
                                       n_native_symbols))
         goto fail;
 #endif

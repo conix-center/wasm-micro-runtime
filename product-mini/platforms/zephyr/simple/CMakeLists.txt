@@ -23,7 +23,7 @@ endif ()
 
 if (NOT DEFINED WAMR_BUILD_AOT)
   # Enable AOT by default.
-  set (WAMR_BUILD_AOT 1)
+  set (WAMR_BUILD_AOT 0)
 endif ()
 
 if (NOT DEFINED WAMR_BUILD_LIBC_BUILTIN)
@@ -53,6 +53,9 @@ endif ()
 set (WAMR_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../..)
 
 include (${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
+
+set(LOG_VERBOSITY "2" CACHE STRING "Set the verbosity level of logging")
+add_definitions(-DLOG_VERBOSITY=${LOG_VERBOSITY})
 
 target_sources(app PRIVATE
                ${WAMR_RUNTIME_LIB_SOURCE}

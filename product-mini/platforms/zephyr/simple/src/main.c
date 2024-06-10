@@ -12,7 +12,7 @@
 #if defined(BUILD_TARGET_RISCV64_LP64) || defined(BUILD_TARGET_RISCV32_ILP32)
 #include "test_wasm_riscv64.h"
 #else
-#include "test_wasm.h"
+#include "prog_wasm.h"
 #endif /* end of BUILD_TARGET_RISCV64_LP64 || BUILD_TARGET_RISCV32_ILP32 */
 
 #if defined(BUILD_TARGET_RISCV64_LP64) || defined(BUILD_TARGET_RISCV32_ILP32)
@@ -39,6 +39,10 @@
 #endif
 
 #endif /* end of BUILD_TARGET_RISCV64_LP64 || BUILD_TARGET_RISCV32_ILP32 */
+
+#ifndef LOG_VERBOSITY
+#define LOG_VERBOSITY 2
+#endif
 
 static int app_argc;
 static char **app_argv;
@@ -114,7 +118,7 @@ iwasm_main(void *arg1, void *arg2, void *arg3)
     RuntimeInitArgs init_args;
     char error_buf[128];
 #if WASM_ENABLE_LOG != 0
-    int log_verbose_level = 2;
+    int log_verbose_level = LOG_VERBOSITY;
 #endif
 
     (void)arg1;
@@ -146,8 +150,8 @@ iwasm_main(void *arg1, void *arg2, void *arg3)
 #endif
 
     /* load WASM byte buffer from byte buffer of include file */
-    wasm_file_buf = (uint8 *)wasm_test_file;
-    wasm_file_size = sizeof(wasm_test_file);
+    wasm_file_buf = (uint8 *)prog_wasm;
+    wasm_file_size = sizeof(prog_wasm);
 
     /* load WASM module */
     if (!(wasm_module = wasm_runtime_load(wasm_file_buf, wasm_file_size,
