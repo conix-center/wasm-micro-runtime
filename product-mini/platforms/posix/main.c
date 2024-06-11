@@ -30,6 +30,8 @@
 static int app_argc;
 static char **app_argv;
 static char *app_env_file;
+int strace = -1;
+FILE *strace_logfile = NULL;
 
 /* clang-format off */
 static int
@@ -114,6 +116,7 @@ print_help()
 #endif
     printf("  --env-file=<path>        WALI environment variables initialization file\n");
     printf("  --version                Show version information\n");
+    printf("  --strace=<file-name>     Print syscalls used\n");
     return 1;
 }
 /* clang-format on */
@@ -553,6 +556,14 @@ timeout_thread(void *vp)
 }
 #endif
 
+// strace close file at exit function
+void
+close_log_file(void)
+{
+    if (strace && strace_logfile != NULL)
+        fclose(strace_logfile);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -803,6 +814,28 @@ main(int argc, char *argv[])
                    patch);
             return 0;
         }
+
+        else if (!strncmp(argv[0], "--strace=", 9)) { // strace w/ log file
+            if (argv[0][9] == '\0')
+                return print_help();
+            char *the_file = argv[0] + 9;
+            strace = 1;
+            strace_logfile = fopen(the_file, "wb"); // test
+
+            if (strace_logfile == NULL) {
+                printf(strerror(errno));
+                fflush(stdout);
+            }
+
+            atexit(close_log_file);
+            printf("strace file: %s.\n", the_file);
+        }
+
+        else if (!strncmp(argv[0], "--strace", 8)) { // strace print to console
+            strace = 0;
+            strace_logfile = stdout; // STDOUT
+        }
+
         else {
 #if WASM_ENABLE_LIBC_WASI != 0
             libc_wasi_parse_result_t result =
@@ -828,11 +861,9 @@ main(int argc, char *argv[])
     app_argc = argc;
     app_argv = argv;
 
-    /* Set init args */
     memset(&init_args, 0, sizeof(RuntimeInitArgs));
 
     init_args.running_mode = running_mode;
-
 #if WASM_ENABLE_GLOBAL_HEAP_POOL != 0
     init_args.mem_alloc_type = Alloc_With_Pool;
     init_args.mem_alloc_option.pool.heap_buf = global_heap_buf;

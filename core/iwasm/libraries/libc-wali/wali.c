@@ -79,6 +79,10 @@ int WASM_TO_NATIVE_PAGE = 0;
 uint32_t BASE_MEMSIZE = 0;
 uint32_t THREAD_ID = 0; // unused atm
 
+/* strace */
+extern int strace;           // -1=no, 0=print to stdout, 1=print to file
+extern FILE *strace_logfile; // test
+
 inline void
 gettime(struct timespec *ts)
 {
@@ -281,7 +285,7 @@ int64_t total_native_time = 0;
     struct timespec vt_tstart = { 0, 0 }; \
     gettime(&vt_tstart);
 
-#define RETURN(v)                                                  \
+#define RETURN(v, syscall, num_args...)                            \
     {                                                              \
         long frv = v;                                              \
         struct timespec vt_tend = { 0, 0 };                        \
@@ -299,6 +303,9 @@ int64_t total_native_time = 0;
         total_native_time += nsys_exectime;                        \
         total_wali_time += (virtsys_exectime - nsys_exectime);     \
         pthread_mutex_unlock(&metrics_lock);                       \
+        if (strace == 0 || strace == 1) {                          \
+            strace_print(frv, syscall, num_args, __VA_ARGS__);     \
+        }                                                          \
         return frv;                                                \
     }
 
@@ -332,12 +339,16 @@ int64_t total_native_time = 0;
         }                                             \
     }
 
-#define RETURN(v)                          \
-    {                                      \
-        if (proc_exit_invoked) {           \
-            wali_thread_exit(exec_env, 0); \
-        }                                  \
-        return v;                          \
+#define RETURN(v, syscall, num_args, ...)                      \
+    {                                                          \
+        long res = v;                                          \
+        if (proc_exit_invoked) {                               \
+            wali_thread_exit(exec_env, 0);                     \
+        }                                                      \
+        if (strace == 0 || strace == 1) {                      \
+            strace_print(res, syscall, num_args, __VA_ARGS__); \
+        }                                                      \
+        return res;                                            \
     }
 
 #endif /* end of WALI_ENABLE_SYSCALL_PROFILE */
@@ -361,12 +372,42 @@ int64_t total_native_time = 0;
     }
 
 /***** WALI Methods *******/
+// strace helper
+void
+strace_print(long syscall_res, char *syscall_name, int num_args, ...)
+{
+    va_list args;
+    va_start(args, num_args);
+    long argv[6];
+    for (int i = 0; i < num_args; i++) {
+        argv[i] = va_arg(args, long);
+    }
+    va_end(args);
+    int strace_fd = strace_logfile->_fileno;
+    if (strace == 1 || strace == 0) {
+        unsigned int offset = 0;
+        char buf[2024];
+        offset = sprintf(buf, "%d, %d: ", getpid(), gettid());
+        offset += sprintf(&buf[offset], "%s(", syscall_name);
+        for (int i = 0; i < num_args; i++) {
+            if (i == num_args - 1) {
+                offset += sprintf(&buf[offset], "%lld", argv[i]);
+            }
+            else {
+                offset += sprintf(&buf[offset], "%lld, ", argv[i]);
+            }
+        }
+        offset += sprintf(&buf[offset], ") = %lld \n", syscall_res);
+        write(strace_fd, buf, offset);
+    }
+}
+
 // 0
 long
 wali_syscall_read(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(0, read);
-    RETURN(__syscall3(SYS_read, a1, MADDR(a2), a3));
+    RETURN(__syscall3(SYS_read, a1, MADDR(a2), a3), "read", 3, a1, a2, a3);
 }
 
 // 1
@@ -374,7 +415,7 @@ long
 wali_syscall_write(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(1, write);
-    RETURN(__syscall3(SYS_write, a1, MADDR(a2), a3));
+    RETURN(__syscall3(SYS_write, a1, MADDR(a2), a3), "write", 3, a1, a2, a3);
 }
 
 // 2
@@ -383,9 +424,10 @@ wali_syscall_open(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(2, open);
 #if __x86_64__
-    RETURN(__syscall3(SYS_open, MADDR(a1), a2, a3));
+    RETURN(__syscall3(SYS_open, MADDR(a1), a2, a3), "open", 3, a1, a2, a3);
 #elif __aarch64__ || __riscv64__
-    RETURN(wali_syscall_openat(exec_env, AT_FDCWD, a1, a2, a3));
+    RETURN(wali_syscall_openat(exec_env, AT_FDCWD, a1, a2, a3), "open", 3, a1,
+           a2, a3);
 #endif
 }
 
@@ -394,7 +436,7 @@ long
 wali_syscall_close(wasm_exec_env_t exec_env, long a1)
 {
     SC(3, close);
-    RETURN(__syscall1(SYS_close, a1));
+    RETURN(__syscall1(SYS_close, a1), "close", 1, a1);
 }
 
 // 4
@@ -403,9 +445,10 @@ wali_syscall_stat(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(4, stat);
 #if __x86_64__
-    RETURN(__syscall2(SYS_stat, MADDR(a1), MADDR(a2)));
+    RETURN(__syscall2(SYS_stat, MADDR(a1), MADDR(a2)), "stat", 2, a1, a2);
 #elif __aarch64__ || __riscv64__
-    RETURN(wali_syscall_fstatat(exec_env, AT_FDCWD, a1, a2, 0));
+    RETURN(wali_syscall_fstatat(exec_env, AT_FDCWD, a1, a2, 0), "stat", 2, a1,
+           a2);
 #endif
 }
 
@@ -414,7 +457,7 @@ long
 wali_syscall_fstat(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(5, fstat);
-    RETURN(__syscall2(SYS_fstat, a1, MADDR(a2)));
+    RETURN(__syscall2(SYS_fstat, a1, MADDR(a2)), "fstat", 2, a1, a2);
 }
 
 // 6
@@ -423,10 +466,11 @@ wali_syscall_lstat(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(6, lstat);
 #if __x86_64__
-    RETURN(__syscall2(SYS_lstat, MADDR(a1), MADDR(a2)));
+    RETURN(__syscall2(SYS_lstat, MADDR(a1), MADDR(a2)), "lstat", 2, a1, a2);
 #elif __aarch64__ || __riscv64__
     RETURN(
-        wali_syscall_fstatat(exec_env, AT_FDCWD, a1, a2, AT_SYMLINK_NOFOLLOW));
+        wali_syscall_fstatat(exec_env, AT_FDCWD, a1, a2, AT_SYMLINK_NOFOLLOW),
+        "lstat", 2, a1, a2);
 #endif
 }
 
@@ -440,10 +484,11 @@ wali_syscall_poll(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(7, poll);
 #if __x86_64__
-    RETURN(__syscall3(SYS_poll, MADDR(a1), a2, a3));
+    RETURN(__syscall3(SYS_poll, MADDR(a1), a2, a3), "poll", 3, a1, a2, a3);
 #elif __aarch64__ || __riscv64__
     RETURN(wali_syscall_ppoll_aliased(exec_env, a1, a2,
-                                      (long)CONV_TIME_TO_TS(a3), 0, _NSIG / 8));
+                                      (long)CONV_TIME_TO_TS(a3), 0, _NSIG / 8),
+           "poll", 3, a1, a2, a3);
 #endif
 }
 
@@ -452,7 +497,7 @@ long
 wali_syscall_lseek(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(8, lseek);
-    RETURN(__syscall3(SYS_lseek, a1, a2, a3));
+    RETURN(__syscall3(SYS_lseek, a1, a2, a3), "lseek", 3, a1, a2, a3);
 }
 
 // 9
@@ -513,11 +558,11 @@ wali_syscall_mmap(wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4,
     VB("New MMAP Pagelen: %d", MMAP_PAGELEN);
     pthread_mutex_unlock(&mmap_lock);
     VB("Ret Addr: 0x%x\n", retval);
-    RETURN(retval);
+    RETURN(retval, "mmap", 6, a1, a2, a3, a4, a5, a6);
 
 mmap_fail:
     pthread_mutex_unlock(&mmap_lock);
-    RETURN((long)MAP_FAILED);
+    RETURN((long)MAP_FAILED, "mmap", 6, a1, a2, a3, a4, a5, a6);
 }
 
 // 10
@@ -525,7 +570,8 @@ long
 wali_syscall_mprotect(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(10, mprotect);
-    RETURN(__syscall3(SYS_mprotect, MADDR(a1), a2, a3));
+    RETURN(__syscall3(SYS_mprotect, MADDR(a1), a2, a3), "mprotect", 3, a1, a2,
+           a3);
 }
 
 // 11
@@ -546,7 +592,7 @@ wali_syscall_munmap(wasm_exec_env_t exec_env, long a1, long a2)
         VB("End page unmapped | New MMAP_PAGELEN: %d", MMAP_PAGELEN);
     }
     pthread_mutex_unlock(&mmap_lock);
-    RETURN(__syscall2(SYS_munmap, mmap_addr, a2));
+    RETURN(__syscall2(SYS_munmap, mmap_addr, a2), "munmap", 2, a1, a2);
 }
 
 // 12
@@ -555,8 +601,7 @@ wali_syscall_brk(wasm_exec_env_t exec_env, long a1)
 {
     SC(12, brk);
     VB("brk syscall is a NOP in WASM");
-    return 0;
-    RETURN(0);
+    RETURN(0, "brk", 1, a1);
 }
 
 void
@@ -633,8 +678,7 @@ wali_syscall_rt_sigaction(wasm_exec_env_t exec_env, long a1, long a2, long a3,
     }
     /* Reset block signals */
     pthread_mutex_unlock(&sigtable_mut);
-
-    RETURN(retval);
+    RETURN(retval, "rt_sigaction", 4, a1, a2, a3, a4);
 }
 
 // 14
@@ -643,7 +687,8 @@ wali_syscall_rt_sigprocmask(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                             long a4)
 {
     SC(14, rt_sigprocmask);
-    RETURN(__syscall4(SYS_rt_sigprocmask, a1, MADDR(a2), MADDR(a3), a4));
+    RETURN(__syscall4(SYS_rt_sigprocmask, a1, MADDR(a2), MADDR(a3), a4),
+           "rt_sigprocmask", 4, a1, a2, a3, a4);
 }
 
 // 15: Never directly called; __libc_restore_rt is called by OS
@@ -652,7 +697,7 @@ wali_syscall_rt_sigreturn(wasm_exec_env_t exec_env, long a1)
 {
     SC(15, rt_sigreturn);
     ERRSC(rt_sigreturn, "rt_sigreturn should never be called by the user!");
-    RETURN(-1);
+    RETURN(-1, "rt_sigreturn", 1, a1);
 }
 
 // 16
@@ -660,7 +705,7 @@ long
 wali_syscall_ioctl(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(16, ioctl);
-    RETURN(__syscall3(SYS_ioctl, a1, a2, MADDR(a3)));
+    RETURN(__syscall3(SYS_ioctl, a1, a2, MADDR(a3)), "ioctl", 3, a1, a2, a3);
 }
 
 // 17
@@ -669,7 +714,8 @@ wali_syscall_pread64(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                      long a4)
 {
     SC(17, pread64);
-    RETURN(__syscall4(SYS_pread64, a1, MADDR(a2), a3, a4));
+    RETURN(__syscall4(SYS_pread64, a1, MADDR(a2), a3, a4), "pread64", 4, a1, a2,
+           a3, a4);
 }
 
 // 18
@@ -678,7 +724,8 @@ wali_syscall_pwrite64(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                       long a4)
 {
     SC(18, pwrite64);
-    RETURN(__syscall4(SYS_pwrite64, a1, MADDR(a2), a3, a4));
+    RETURN(__syscall4(SYS_pwrite64, a1, MADDR(a2), a3, a4), "pwrite64", 4, a1,
+           a2, a3, a4);
 }
 
 // 19
@@ -693,7 +740,7 @@ wali_syscall_readv(wasm_exec_env_t exec_env, long a1, long a2, long a3)
     long retval = __syscall3(SYS_readv, a1, native_iov, a3);
     free(native_iov);
 
-    RETURN(retval);
+    RETURN(retval, "readv", 3, a1, a2, a3);
 }
 
 // 20
@@ -707,7 +754,7 @@ wali_syscall_writev(wasm_exec_env_t exec_env, long a1, long a2, long a3)
     struct iovec *native_iov = copy_iovec(exec_env, wasm_iov, iov_cnt);
     long retval = __syscall3(SYS_writev, a1, native_iov, a3);
     free(native_iov);
-    RETURN(retval);
+    RETURN(retval, "writev", 3, a1, a2, a3);
 }
 
 // 21
@@ -716,9 +763,10 @@ wali_syscall_access(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(21, access);
 #if __x86_64__
-    RETURN(__syscall2(SYS_access, MADDR(a1), a2));
+    RETURN(__syscall2(SYS_access, MADDR(a1), a2), "access", 2, a1, a2);
 #elif __aarch64__ || __riscv64__
-    RETURN(wali_syscall_faccessat(exec_env, AT_FDCWD, a1, a2, 0));
+    RETURN(wali_syscall_faccessat(exec_env, AT_FDCWD, a1, a2, 0), "access", 2,
+           a1, a2);
 #endif
 }
 
@@ -728,9 +776,9 @@ wali_syscall_pipe(wasm_exec_env_t exec_env, long a1)
 {
     SC(22, pipe);
 #if __x86_64__
-    RETURN(__syscall1(SYS_pipe, MADDR(a1)));
+    RETURN(__syscall1(SYS_pipe, MADDR(a1)), "pipe", 1, a1);
 #elif __aarch64__ || __riscv64__
-    RETURN(wali_syscall_pipe2(exec_env, a1, 0));
+    RETURN(wali_syscall_pipe2(exec_env, a1, 0), "pipe", 1, a1);
 #endif
 }
 
@@ -742,10 +790,12 @@ wali_syscall_select(wasm_exec_env_t exec_env, long a1, long a2, long a3,
     SC(23, select);
 #if __x86_64__
     RETURN(
-        __syscall5(SYS_select, a1, MADDR(a2), MADDR(a3), MADDR(a4), MADDR(a5)));
+        __syscall5(SYS_select, a1, MADDR(a2), MADDR(a3), MADDR(a4), MADDR(a5)),
+        "select", 5, a1, a2, a3, a4, a5);
 #elif __aarch64__ || __riscv64__
     RETURN(wali_syscall_pselect6(exec_env, a1, a2, a3, a4, a5,
-                                 (long)((long[]){ 0, _NSIG / 8 })));
+                                 (long)((long[]){ 0, _NSIG / 8 })),
+           "select", 5, a1, a2, a3, a4, a5);
 #endif
 }
 
@@ -754,7 +804,7 @@ long
 wali_syscall_sched_yield(wasm_exec_env_t exec_env)
 {
     SC(24, sched_yield);
-    RETURN(__syscall0(SYS_sched_yield));
+    RETURN(__syscall0(SYS_sched_yield), "sched_yield", 0, 0);
 }
 
 // 25
@@ -816,11 +866,11 @@ wali_syscall_mremap(wasm_exec_env_t exec_env, long a1, long a2, long a3,
     VB("New MMAP Pagelen: %d\n", MMAP_PAGELEN);
     pthread_mutex_unlock(&mmap_lock);
     VB("Ret Addr: 0x%x", retval);
-    RETURN(retval);
+    RETURN(retval, "mremap", 5, a1, a2, a3, a4, a5);
 
 mremap_fail:
     pthread_mutex_unlock(&mmap_lock);
-    RETURN((long)MAP_FAILED);
+    RETURN((long)MAP_FAILED, "mremap", 5, a1, a2, a3, a4, a5);
 }
 
 // 26
@@ -828,7 +878,7 @@ long
 wali_syscall_msync(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(26, msync);
-    RETURN(__syscall3(SYS_msync, MADDR(a1), a2, a3));
+    RETURN(__syscall3(SYS_msync, MADDR(a1), a2, a3), "msync", 3, a1, a2, a3);
 }
 
 // 28
@@ -836,7 +886,8 @@ long
 wali_syscall_madvise(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(28, madvise);
-    RETURN(__syscall3(SYS_madvise, MADDR(a1), a2, a3));
+    RETURN(__syscall3(SYS_madvise, MADDR(a1), a2, a3), "madvise", 3, a1, a2,
+           a3);
 }
 
 // 32
@@ -844,7 +895,7 @@ long
 wali_syscall_dup(wasm_exec_env_t exec_env, long a1)
 {
     SC(32, dup);
-    RETURN(__syscall1(SYS_dup, a1));
+    RETURN(__syscall1(SYS_dup, a1), "dup", 1, a1);
 }
 
 // 33
@@ -853,15 +904,15 @@ wali_syscall_dup2(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(33, dup2);
 #if __x86_64__
-    RETURN(__syscall2(SYS_dup2, a1, a2));
+    RETURN(__syscall2(SYS_dup2, a1, a2), "dup2", 2, a1, a2);
 #elif __aarch64__ || __riscv64__
     /* Dup2 returns newfd while dup3 throws error, handle with case below */
     if (a1 == a2) {
         long r = wali_syscall_fcntl(exec_env, a1, F_GETFD, 0);
-        RETURN((r >= 0) ? a2 : r);
+        RETURN((r >= 0) ? a2 : r, "dup2", 2, a1, a2);
     }
     else {
-        RETURN(wali_syscall_dup3(exec_env, a1, a2, 0));
+        RETURN(wali_syscall_dup3(exec_env, a1, a2, 0), "dup2", 2, a1, a2);
     }
 #endif
 }
@@ -871,7 +922,8 @@ long
 wali_syscall_nanosleep(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(35, nanosleep);
-    RETURN(__syscall2(SYS_nanosleep, MADDR(a1), MADDR(a2)));
+    RETURN(__syscall2(SYS_nanosleep, MADDR(a1), MADDR(a2)), "nanosleep", 2, a1,
+           a2);
 }
 
 // 37
@@ -880,7 +932,7 @@ wali_syscall_alarm(wasm_exec_env_t exec_env, long a1)
 {
     SC(37, alarm);
 #if __x86_64__
-    RETURN(__syscall1(SYS_alarm, a1));
+    RETURN(__syscall1(SYS_alarm, a1), "alarm", 1, a1);
 #elif __aarch64__ || __riscv64__
     MISSC(alarm);
     wali_proc_exit(exec_env, 1);
@@ -892,7 +944,8 @@ long
 wali_syscall_setitimer(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(38, setitimer);
-    RETURN(__syscall3(SYS_setitimer, a1, MADDR(a2), MADDR(a3)));
+    RETURN(__syscall3(SYS_setitimer, a1, MADDR(a2), MADDR(a3)), "setitimer", 3,
+           a1, a2, a3);
 }
 
 // 39
@@ -900,7 +953,7 @@ long
 wali_syscall_getpid(wasm_exec_env_t exec_env)
 {
     SC(39, getpid);
-    RETURN(__syscall0(SYS_getpid));
+    RETURN(__syscall0(SYS_getpid), "getpid", 0, 0);
 }
 
 // 41
@@ -908,7 +961,7 @@ long
 wali_syscall_socket(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(41, socket);
-    RETURN(__syscall3(SYS_socket, a1, a2, a3));
+    RETURN(__syscall3(SYS_socket, a1, a2, a3), "socket", 3, a1, a2, a3);
 }
 
 // 42
@@ -916,7 +969,8 @@ long
 wali_syscall_connect(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(42, connect);
-    RETURN(__syscall3(SYS_connect, a1, MADDR(a2), a3));
+    RETURN(__syscall3(SYS_connect, a1, MADDR(a2), a3), "connect", 3, a1, a2,
+           a3);
 }
 
 // 43
@@ -924,7 +978,8 @@ long
 wali_syscall_accept(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(43, accept);
-    RETURN(__syscall3(SYS_accept, a1, MADDR(a2), MADDR(a3)));
+    RETURN(__syscall3(SYS_accept, a1, MADDR(a2), MADDR(a3)), "accept", 3, a1,
+           a2, a3);
 }
 
 // 44
@@ -933,7 +988,8 @@ wali_syscall_sendto(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                     long a4, long a5, long a6)
 {
     SC(44, sendto);
-    RETURN(__syscall6(SYS_sendto, a1, MADDR(a2), a3, a4, MADDR(a5), a6));
+    RETURN(__syscall6(SYS_sendto, a1, MADDR(a2), a3, a4, MADDR(a5), a6),
+           "sendto", 6, a1, a2, a3, a4, a5, a6);
 }
 
 // 45
@@ -943,7 +999,8 @@ wali_syscall_recvfrom(wasm_exec_env_t exec_env, long a1, long a2, long a3,
 {
     SC(45, recvfrom);
     RETURN(
-        __syscall6(SYS_recvfrom, a1, MADDR(a2), a3, a4, MADDR(a5), MADDR(a6)));
+        __syscall6(SYS_recvfrom, a1, MADDR(a2), a3, a4, MADDR(a5), MADDR(a6)),
+        "recvfrom", 6, a1, a2, a3, a4, a5, a6);
 }
 
 // 46
@@ -955,7 +1012,7 @@ wali_syscall_sendmsg(wasm_exec_env_t exec_env, long a1, long a2, long a3)
     struct msghdr *native_msghdr = copy_msghdr(exec_env, wasm_msghdr);
     long retval = __syscall3(SYS_sendmsg, a1, native_msghdr, a3);
     free(native_msghdr);
-    RETURN(retval);
+    RETURN(retval, "sendmsg", 3, a1, a2, a3);
 }
 
 // 47
@@ -967,7 +1024,7 @@ wali_syscall_recvmsg(wasm_exec_env_t exec_env, long a1, long a2, long a3)
     struct msghdr *native_msghdr = copy_msghdr(exec_env, wasm_msghdr);
     long retval = __syscall3(SYS_recvmsg, a1, native_msghdr, a3);
     free(native_msghdr);
-    RETURN(retval);
+    RETURN(retval, "recvmsg", 3, a1, a2, a3);
 }
 
 // 48
@@ -975,7 +1032,7 @@ long
 wali_syscall_shutdown(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(48, shutdown);
-    RETURN(__syscall2(SYS_shutdown, a1, a2));
+    RETURN(__syscall2(SYS_shutdown, a1, a2), "shutdown", 2, a1, a2);
 }
 
 // 49
@@ -983,7 +1040,7 @@ long
 wali_syscall_bind(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(49, bind);
-    RETURN(__syscall3(SYS_bind, a1, MADDR(a2), a3));
+    RETURN(__syscall3(SYS_bind, a1, MADDR(a2), a3), "bind", 3, a1, a2, a3);
 }
 
 // 50
@@ -991,7 +1048,7 @@ long
 wali_syscall_listen(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(50, listen);
-    RETURN(__syscall2(SYS_listen, a1, a2));
+    RETURN(__syscall2(SYS_listen, a1, a2), "listen", 2, a1, a2);
 }
 
 // 51
@@ -999,7 +1056,8 @@ long
 wali_syscall_getsockname(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(51, getsockname);
-    RETURN(__syscall3(SYS_getsockname, a1, MADDR(a2), MADDR(a3)));
+    RETURN(__syscall3(SYS_getsockname, a1, MADDR(a2), MADDR(a3)), "getsockname",
+           3, a1, a2, a3);
 }
 
 // 52
@@ -1007,7 +1065,8 @@ long
 wali_syscall_getpeername(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(52, getpeername);
-    RETURN(__syscall3(SYS_getpeername, a1, MADDR(a2), MADDR(a3)));
+    RETURN(__syscall3(SYS_getpeername, a1, MADDR(a2), MADDR(a3)), "getpeername",
+           3, a1, a2, a3);
 }
 
 // 53
@@ -1016,7 +1075,8 @@ wali_syscall_socketpair(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                         long a4)
 {
     SC(53, socketpair);
-    RETURN(__syscall4(SYS_socketpair, a1, a2, a3, MADDR(a4)));
+    RETURN(__syscall4(SYS_socketpair, a1, a2, a3, MADDR(a4)), "socketpair", 4,
+           a1, a2, a3, a4);
 }
 
 // 54
@@ -1025,7 +1085,8 @@ wali_syscall_setsockopt(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                         long a4, long a5)
 {
     SC(54, setsockopt);
-    RETURN(__syscall5(SYS_setsockopt, a1, a2, a3, MADDR(a4), a5));
+    RETURN(__syscall5(SYS_setsockopt, a1, a2, a3, MADDR(a4), a5), "setsockopt",
+           5, a1, a2, a3, a4, a5);
 }
 
 // 55
@@ -1034,7 +1095,8 @@ wali_syscall_getsockopt(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                         long a4, long a5)
 {
     SC(55, getsockopt);
-    RETURN(__syscall5(SYS_getsockopt, a1, a2, a3, MADDR(a4), MADDR(a5)));
+    RETURN(__syscall5(SYS_getsockopt, a1, a2, a3, MADDR(a4), MADDR(a5)),
+           "getsockopt", 5, a1, a2, a3, a4, a5);
 }
 
 // 57
@@ -1043,9 +1105,9 @@ wali_syscall_fork(wasm_exec_env_t exec_env)
 {
     SC(57, fork);
 #if __x86_64__
-    RETURN(__syscall0(SYS_fork));
+    RETURN(__syscall0(SYS_fork), "fork", 0, 0);
 #elif __aarch64__ || __riscv64__
-    RETURN(__syscall2(SYS_clone, SIGCHLD, 0));
+    RETURN(__syscall2(SYS_clone, SIGCHLD, 0), "fork", 0, 0);
 #endif
 }
 
@@ -1084,7 +1146,7 @@ wali_syscall_execve(wasm_exec_env_t exec_env, long a1, long a2, long a3)
     long retval = __syscall3(SYS_execve, MADDR(a1), argv, envp);
     free(argv);
     free(envp);
-    RETURN(retval);
+    RETURN(retval, "execve", 3, a1, a2, a3);
 }
 
 // 60 TODO
@@ -1104,7 +1166,7 @@ wali_syscall_exit(wasm_exec_env_t exec_env, long a1)
                     "to exit program");
         wali_proc_exit(exec_env, a1);
     }
-    return 0;
+    RETURN(0, "exit", 1, a1);
 }
 
 // 61
@@ -1112,7 +1174,8 @@ long
 wali_syscall_wait4(wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4)
 {
     SC(61, wait4);
-    RETURN(__syscall4(SYS_wait4, a1, MADDR(a2), a3, MADDR(a4)));
+    RETURN(__syscall4(SYS_wait4, a1, MADDR(a2), a3, MADDR(a4)), "wait4", 4, a1,
+           a2, a3, a4);
 }
 
 // 62
@@ -1120,7 +1183,7 @@ long
 wali_syscall_kill(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(62, kill);
-    RETURN(__syscall2(SYS_kill, a1, a2));
+    RETURN(__syscall2(SYS_kill, a1, a2), "kill", 2, a1, a2);
 }
 
 // 63
@@ -1128,7 +1191,7 @@ long
 wali_syscall_uname(wasm_exec_env_t exec_env, long a1)
 {
     SC(63, uname);
-    RETURN(__syscall1(SYS_uname, MADDR(a1)));
+    RETURN(__syscall1(SYS_uname, MADDR(a1)), "uname", 1, a1);
 }
 
 // 72
@@ -1148,9 +1211,10 @@ wali_syscall_fcntl(wasm_exec_env_t exec_env, long a1, long a2, long a3)
         case F_SETLK:
         case F_GETOWN_EX:
         case F_SETOWN_EX:
-            RETURN(__syscall3(SYS_fcntl, a1, a2, MADDR(a3)));
+            RETURN(__syscall3(SYS_fcntl, a1, a2, MADDR(a3)), "fcntl", 3, a1, a2,
+                   a3);
         default:
-            RETURN(__syscall3(SYS_fcntl, a1, a2, a3));
+            RETURN(__syscall3(SYS_fcntl, a1, a2, a3), "fcntl", 3, a1, a2, a3);
     }
 }
 
@@ -1159,7 +1223,7 @@ long
 wali_syscall_flock(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(73, flock);
-    RETURN(__syscall2(SYS_flock, a1, a2));
+    RETURN(__syscall2(SYS_flock, a1, a2), "flock", 2, a1, a2);
 }
 
 // 74
@@ -1167,7 +1231,7 @@ long
 wali_syscall_fsync(wasm_exec_env_t exec_env, long a1)
 {
     SC(74, fsync);
-    RETURN(__syscall1(SYS_fsync, a1));
+    RETURN(__syscall1(SYS_fsync, a1), "fsync", 1, a1);
 }
 
 // 75
@@ -1175,7 +1239,7 @@ long
 wali_syscall_fdatasync(wasm_exec_env_t exec_env, long a1)
 {
     SC(75, fdatasync);
-    RETURN(__syscall1(SYS_fdatasync, a1));
+    RETURN(__syscall1(SYS_fdatasync, a1), "fdatasync", 1, a1);
 }
 
 // 77
@@ -1183,7 +1247,7 @@ long
 wali_syscall_ftruncate(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(77, ftruncate);
-    RETURN(__syscall2(SYS_ftruncate, a1, a2));
+    RETURN(__syscall2(SYS_ftruncate, a1, a2), "ftruncate", 2, a1, a2);
 }
 
 // 78
@@ -1193,9 +1257,10 @@ wali_syscall_getdents(wasm_exec_env_t exec_env, long a1, long a2, long a3)
     SC(78, getdents);
     FATALSC(getdents, "Not going to support this legacy call; use getdents64");
 #if __x86_64__
-    RETURN(__syscall3(SYS_getdents, a1, MADDR(a2), a3));
+    RETURN(__syscall3(SYS_getdents, a1, MADDR(a2), a3), "getdents", 3, a1, a2,
+           a3);
 #elif __aarch64__ || __riscv64__
-    RETURN(-1);
+    RETURN(-1, "getdents", 3, a1, a2, a3);
 #endif
 }
 
@@ -1204,7 +1269,7 @@ long
 wali_syscall_getcwd(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(79, getcwd);
-    RETURN(__syscall2(SYS_getcwd, MADDR(a1), a2));
+    RETURN(__syscall2(SYS_getcwd, MADDR(a1), a2), "getcwd", 2, a1, a2);
 }
 
 // 80
@@ -1212,7 +1277,7 @@ long
 wali_syscall_chdir(wasm_exec_env_t exec_env, long a1)
 {
     SC(80, chdir);
-    RETURN(__syscall1(SYS_chdir, MADDR(a1)));
+    RETURN(__syscall1(SYS_chdir, MADDR(a1)), "chdir", 1, a1);
 }
 
 // 81
@@ -1220,7 +1285,7 @@ long
 wali_syscall_fchdir(wasm_exec_env_t exec_env, long a1)
 {
     SC(81, fchdir);
-    RETURN(__syscall1(SYS_fchdir, a1));
+    RETURN(__syscall1(SYS_fchdir, a1), "fchdir", 1, a1);
 }
 
 // 82
@@ -1229,9 +1294,10 @@ wali_syscall_rename(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(82, rename);
 #if __x86_64__
-    RETURN(__syscall2(SYS_rename, MADDR(a1), MADDR(a2)));
+    RETURN(__syscall2(SYS_rename, MADDR(a1), MADDR(a2)), "rename", 2, a1, a2);
 #elif __aarch64__ || __riscv64__
-    RETURN(wali_syscall_renameat2(exec_env, AT_FDCWD, a1, AT_FDCWD, a2, 0));
+    RETURN(wali_syscall_renameat2(exec_env, AT_FDCWD, a1, AT_FDCWD, a2, 0),
+           "rename", 2, a1, a2);
 #endif
 }
 
@@ -1241,9 +1307,10 @@ wali_syscall_mkdir(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(83, mkdir);
 #if __x86_64__
-    RETURN(__syscall2(SYS_mkdir, MADDR(a1), a2));
+    RETURN(__syscall2(SYS_mkdir, MADDR(a1), a2), "mkdir", 2, a1, a2);
 #elif __aarch64__ || __riscv64__
-    RETURN(wali_syscall_mkdirat(exec_env, AT_FDCWD, a1, a2));
+    RETURN(wali_syscall_mkdirat(exec_env, AT_FDCWD, a1, a2), "mkdir", 2, a1,
+           a2);
 #endif
 }
 
@@ -1253,9 +1320,10 @@ wali_syscall_rmdir(wasm_exec_env_t exec_env, long a1)
 {
     SC(84, rmdir);
 #if __x86_64__
-    RETURN(__syscall1(SYS_rmdir, MADDR(a1)));
+    RETURN(__syscall1(SYS_rmdir, MADDR(a1)), "rmdir", 1, a1);
 #elif __aarch64__ || __riscv64__
-    RETURN(wali_syscall_unlinkat(exec_env, AT_FDCWD, a1, AT_REMOVEDIR));
+    RETURN(wali_syscall_unlinkat(exec_env, AT_FDCWD, a1, AT_REMOVEDIR), "rmdir",
+           1, a1);
 #endif
 }
 
@@ -1265,9 +1333,10 @@ wali_syscall_link(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(86, link);
 #if __x86_64__
-    RETURN(__syscall2(SYS_link, MADDR(a1), MADDR(a2)));
+    RETURN(__syscall2(SYS_link, MADDR(a1), MADDR(a2)), "link", 2, a1, a2);
 #elif __aarch64__ || __riscv64__
-    RETURN(wali_syscall_linkat(exec_env, AT_FDCWD, a1, AT_FDCWD, a2, 0));
+    RETURN(wali_syscall_linkat(exec_env, AT_FDCWD, a1, AT_FDCWD, a2, 0), "link",
+           2, a1, a2);
 #endif
 }
 
@@ -1277,9 +1346,9 @@ wali_syscall_unlink(wasm_exec_env_t exec_env, long a1)
 {
     SC(87, unlink);
 #if __x86_64__
-    RETURN(__syscall1(SYS_unlink, MADDR(a1)));
+    RETURN(__syscall1(SYS_unlink, MADDR(a1)), "unlink", 1, a1);
 #elif __aarch64__ || __riscv64__
-    RETURN(wali_syscall_unlinkat(exec_env, AT_FDCWD, a1, 0));
+    RETURN(wali_syscall_unlinkat(exec_env, AT_FDCWD, a1, 0), "unlink", 1, a1);
 #endif
 }
 
@@ -1289,9 +1358,10 @@ wali_syscall_symlink(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(88, symlink);
 #if __x86_64__
-    RETURN(__syscall2(SYS_symlink, MADDR(a1), MADDR(a2)));
+    RETURN(__syscall2(SYS_symlink, MADDR(a1), MADDR(a2)), "symlink", 2, a1, a2);
 #elif __aarch64__ || __riscv64__
-    RETURN(wali_syscall_symlinkat(exec_env, a1, AT_FDCWD, a2));
+    RETURN(wali_syscall_symlinkat(exec_env, a1, AT_FDCWD, a2), "symlink", 2, a1,
+           a2);
 #endif
 }
 
@@ -1301,9 +1371,11 @@ wali_syscall_readlink(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(89, readlink);
 #if __x86_64__
-    RETURN(__syscall3(SYS_readlink, MADDR(a1), MADDR(a2), a3));
+    RETURN(__syscall3(SYS_readlink, MADDR(a1), MADDR(a2), a3), "readlink", 3,
+           a1, a2, a3);
 #elif __aarch64__ || __riscv64__
-    RETURN(wali_syscall_readlinkat(exec_env, AT_FDCWD, a1, a2, a3));
+    RETURN(wali_syscall_readlinkat(exec_env, AT_FDCWD, a1, a2, a3), "readlink",
+           3, a1, a2, a3);
 #endif
 }
 
@@ -1313,9 +1385,10 @@ wali_syscall_chmod(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(90, chmod);
 #if __x86_64__
-    RETURN(__syscall2(SYS_chmod, MADDR(a1), a2));
+    RETURN(__syscall2(SYS_chmod, MADDR(a1), a2), "chmod", 2, a1, a2);
 #elif __aarch64__ || __riscv64__
-    RETURN(wali_syscall_fchmodat(exec_env, AT_FDCWD, a1, a2, 0));
+    RETURN(wali_syscall_fchmodat(exec_env, AT_FDCWD, a1, a2, 0), "chmod", 2, a1,
+           a2);
 #endif
 }
 
@@ -1324,7 +1397,7 @@ long
 wali_syscall_fchmod(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(91, fchmod);
-    RETURN(__syscall2(SYS_fchmod, a1, a2));
+    RETURN(__syscall2(SYS_fchmod, a1, a2), "fchmod", 2, a1, a2);
 }
 
 // 92
@@ -1333,9 +1406,10 @@ wali_syscall_chown(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(92, chown);
 #if __x86_64__
-    RETURN(__syscall3(SYS_chown, MADDR(a1), a2, a3));
+    RETURN(__syscall3(SYS_chown, MADDR(a1), a2, a3), "chown", 3, a1, a2, a3);
 #elif __aarch64__ || __riscv64__
-    RETURN(wali_syscall_fchownat(exec_env, AT_FDCWD, a1, a2, a3, 0));
+    RETURN(wali_syscall_fchownat(exec_env, AT_FDCWD, a1, a2, a3, 0), "chown", 3,
+           a1, a2, a3);
 #endif
 }
 
@@ -1344,7 +1418,7 @@ long
 wali_syscall_fchown(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(93, fchown);
-    RETURN(__syscall3(SYS_fchown, a1, a2, a3));
+    RETURN(__syscall3(SYS_fchown, a1, a2, a3), "fchown", 3, a1, a2, a3);
 }
 
 // 95
@@ -1352,7 +1426,7 @@ long
 wali_syscall_umask(wasm_exec_env_t exec_env, long a1)
 {
     SC(95, umask);
-    RETURN(__syscall1(SYS_umask, a1));
+    RETURN(__syscall1(SYS_umask, a1), "umask", 1, a1);
 }
 
 // 97
@@ -1360,7 +1434,7 @@ long
 wali_syscall_getrlimit(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(97, getrlimit);
-    RETURN(__syscall2(SYS_getrlimit, a1, MADDR(a2)));
+    RETURN(__syscall2(SYS_getrlimit, a1, MADDR(a2)), "getrlimit", 2, a1, a2);
 }
 
 // 98
@@ -1368,7 +1442,7 @@ long
 wali_syscall_getrusage(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(98, getrusage);
-    RETURN(__syscall2(SYS_getrusage, a1, MADDR(a2)));
+    RETURN(__syscall2(SYS_getrusage, a1, MADDR(a2)), "getrusage", 2, a1, a2);
 }
 
 // 99
@@ -1376,7 +1450,7 @@ long
 wali_syscall_sysinfo(wasm_exec_env_t exec_env, long a1)
 {
     SC(99, sysinfo);
-    RETURN(__syscall1(SYS_sysinfo, MADDR(a1)));
+    RETURN(__syscall1(SYS_sysinfo, MADDR(a1)), "sysinfo", 1, a1);
 }
 
 // 102
@@ -1384,7 +1458,7 @@ long
 wali_syscall_getuid(wasm_exec_env_t exec_env)
 {
     SC(102, getuid);
-    RETURN(__syscall0(SYS_getuid));
+    RETURN(__syscall0(SYS_getuid), "getuid", 0, 0);
 }
 
 // 104
@@ -1392,7 +1466,7 @@ long
 wali_syscall_getgid(wasm_exec_env_t exec_env)
 {
     SC(104, getgid);
-    RETURN(__syscall0(SYS_getgid));
+    RETURN(__syscall0(SYS_getgid), "getgid", 0, 0);
 }
 
 // 105
@@ -1400,7 +1474,7 @@ long
 wali_syscall_setuid(wasm_exec_env_t exec_env, long a1)
 {
     SC(105, setuid);
-    RETURN(__syscall1(SYS_setuid, a1));
+    RETURN(__syscall1(SYS_setuid, a1), "setuid", 1, a1);
 }
 
 // 106
@@ -1408,7 +1482,7 @@ long
 wali_syscall_setgid(wasm_exec_env_t exec_env, long a1)
 {
     SC(106, setgid);
-    RETURN(__syscall1(SYS_setgid, a1));
+    RETURN(__syscall1(SYS_setgid, a1), "setgid", 1, a1);
 }
 
 // 107
@@ -1416,7 +1490,7 @@ long
 wali_syscall_geteuid(wasm_exec_env_t exec_env)
 {
     SC(107, geteuid);
-    RETURN(__syscall0(SYS_geteuid));
+    RETURN(__syscall0(SYS_geteuid), "geteuid", 0, 0);
 }
 
 // 108
@@ -1424,7 +1498,7 @@ long
 wali_syscall_getegid(wasm_exec_env_t exec_env)
 {
     SC(108, getegid);
-    RETURN(__syscall0(SYS_getegid));
+    RETURN(__syscall0(SYS_getegid), "getegid", 0, 0);
 }
 
 // 109
@@ -1432,7 +1506,7 @@ long
 wali_syscall_setpgid(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(109, setpgid);
-    RETURN(__syscall2(SYS_setpgid, a1, a2));
+    RETURN(__syscall2(SYS_setpgid, a1, a2), "setpgid", 2, a1, a2);
 }
 
 // 110
@@ -1440,7 +1514,7 @@ long
 wali_syscall_getppid(wasm_exec_env_t exec_env)
 {
     SC(110, getppid);
-    RETURN(__syscall0(SYS_getppid));
+    RETURN(__syscall0(SYS_getppid), "getppid", 0, 0);
 }
 
 // 112
@@ -1448,7 +1522,7 @@ long
 wali_syscall_setsid(wasm_exec_env_t exec_env)
 {
     SC(112, setsid);
-    RETURN(__syscall0(SYS_setsid));
+    RETURN(__syscall0(SYS_setsid), "setsid", 0, 0);
 }
 
 // 113
@@ -1456,7 +1530,7 @@ long
 wali_syscall_setreuid(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(113, setreuid);
-    RETURN(__syscall2(SYS_setreuid, a1, a2));
+    RETURN(__syscall2(SYS_setreuid, a1, a2), "setreuid", 2, a1, a2);
 }
 
 // 114
@@ -1464,7 +1538,7 @@ long
 wali_syscall_setregid(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(114, setregid);
-    RETURN(__syscall2(SYS_setregid, a1, a2));
+    RETURN(__syscall2(SYS_setregid, a1, a2), "setregid", 2, a1, a2);
 }
 
 // 115
@@ -1472,7 +1546,7 @@ long
 wali_syscall_getgroups(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(115, getgroups);
-    RETURN(__syscall2(SYS_getgroups, a1, MADDR(a2)));
+    RETURN(__syscall2(SYS_getgroups, a1, MADDR(a2)), "getgroups", 2, a1, a2);
 }
 
 // 116
@@ -1480,7 +1554,7 @@ long
 wali_syscall_setgroups(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(116, setgroups);
-    RETURN(__syscall2(SYS_setgroups, a1, MADDR(a2)));
+    RETURN(__syscall2(SYS_setgroups, a1, MADDR(a2)), "setgroups", 2, a1, a2);
 }
 
 // 117
@@ -1488,7 +1562,7 @@ long
 wali_syscall_setresuid(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(117, setresuid);
-    RETURN(__syscall3(SYS_setresuid, a1, a2, a3));
+    RETURN(__syscall3(SYS_setresuid, a1, a2, a3), "setresuid", 3, a1, a2, a3);
 }
 
 // 119
@@ -1496,7 +1570,7 @@ long
 wali_syscall_setresgid(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(119, setresgid);
-    RETURN(__syscall3(SYS_setresgid, a1, a2, a3));
+    RETURN(__syscall3(SYS_setresgid, a1, a2, a3), "setresgid", 3, a1, a2, a3);
 }
 
 // 121
@@ -1504,7 +1578,7 @@ long
 wali_syscall_getpgid(wasm_exec_env_t exec_env, long a1)
 {
     SC(121, getpgid);
-    RETURN(__syscall1(SYS_getpgid, a1));
+    RETURN(__syscall1(SYS_getpgid, a1), "getpgid", 1, a1);
 }
 
 // 124
@@ -1512,7 +1586,7 @@ long
 wali_syscall_getsid(wasm_exec_env_t exec_env, long a1)
 {
     SC(124, getsid);
-    RETURN(__syscall1(SYS_getsid, a1));
+    RETURN(__syscall1(SYS_getsid, a1), "getsid", 1, a1);
 }
 
 // 127
@@ -1520,7 +1594,8 @@ long
 wali_syscall_rt_sigpending(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(127, rt_sigpending);
-    RETURN(__syscall2(SYS_rt_sigpending, MADDR(a1), a2));
+    RETURN(__syscall2(SYS_rt_sigpending, MADDR(a1), a2), "rt_sigpending", 2, a1,
+           a2);
 }
 
 // 130
@@ -1528,7 +1603,8 @@ long
 wali_syscall_rt_sigsuspend(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(130, rt_sigsuspend);
-    RETURN(__syscall2(SYS_rt_sigsuspend, MADDR(a1), a2));
+    RETURN(__syscall2(SYS_rt_sigsuspend, MADDR(a1), a2), "rt_sigsuspend", 2, a1,
+           a2);
 }
 
 // 131
@@ -1542,7 +1618,8 @@ wali_syscall_sigaltstack(wasm_exec_env_t exec_env, long a1, long a2)
     stack_t *ss_ptr = copy_sigstack(exec_env, wasm_ss, &ss);
     stack_t *old_ss_ptr = copy_sigstack(exec_env, wasm_old_ss, &old_ss);
 
-    RETURN(__syscall2(SYS_sigaltstack, ss_ptr, old_ss_ptr));
+    RETURN(__syscall2(SYS_sigaltstack, ss_ptr, old_ss_ptr), "sigaltstack", 2,
+           a1, a2);
 }
 
 // 132
@@ -1554,7 +1631,7 @@ wali_syscall_utime(wasm_exec_env_t exec_env, long a1, long a2)
 #if __x86_64__
 #elif __aarch64__ || __riscv64__
 #endif
-    RETURN(-1);
+    RETURN(-1, "utime", 2, a1, a2);
 }
 
 // 137
@@ -1562,7 +1639,7 @@ long
 wali_syscall_statfs(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(137, statfs);
-    RETURN(__syscall2(SYS_statfs, MADDR(a1), MADDR(a2)));
+    RETURN(__syscall2(SYS_statfs, MADDR(a1), MADDR(a2)), "statfs", 2, a1, a2);
 }
 
 // 138
@@ -1570,7 +1647,7 @@ long
 wali_syscall_fstatfs(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(138, fstatfs);
-    RETURN(__syscall2(SYS_fstatfs, a1, MADDR(a2)));
+    RETURN(__syscall2(SYS_fstatfs, a1, MADDR(a2)), "fstatfs", 2, a1, a2);
 }
 
 // 157
@@ -1579,7 +1656,8 @@ wali_syscall_prctl(wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4,
                    long a5)
 {
     SC(157, prctl);
-    RETURN(__syscall5(SYS_prctl, a1, a2, a3, a4, a5));
+    RETURN(__syscall5(SYS_prctl, a1, a2, a3, a4, a5), "prctl", 5, a1, a2, a3,
+           a4, a5);
 }
 
 // 160
@@ -1587,7 +1665,7 @@ long
 wali_syscall_setrlimit(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(160, setrlimit);
-    RETURN(__syscall2(SYS_setrlimit, a1, MADDR(a2)));
+    RETURN(__syscall2(SYS_setrlimit, a1, MADDR(a2)), "setrlimit", 2, a1, a2);
 }
 
 // 161
@@ -1595,7 +1673,7 @@ long
 wali_syscall_chroot(wasm_exec_env_t exec_env, long a1)
 {
     SC(161, chroot);
-    RETURN(__syscall1(SYS_chroot, MADDR(a1)));
+    RETURN(__syscall1(SYS_chroot, MADDR(a1)), "chroot", 1, a1);
 }
 
 // 186
@@ -1603,7 +1681,7 @@ long
 wali_syscall_gettid(wasm_exec_env_t exec_env)
 {
     SC(186, gettid);
-    RETURN(__syscall0(SYS_gettid));
+    RETURN(__syscall0(SYS_gettid), "gettid", 0, 0);
 }
 
 // 200
@@ -1611,7 +1689,7 @@ long
 wali_syscall_tkill(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(200, tkill);
-    RETURN(__syscall2(SYS_tkill, a1, a2));
+    RETURN(__syscall2(SYS_tkill, a1, a2), "tkill", 2, a1, a2);
 }
 
 // 202
@@ -1620,7 +1698,8 @@ wali_syscall_futex(wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4,
                    long a5, long a6)
 {
     SC(202, futex);
-    RETURN(__syscall6(SYS_futex, MADDR(a1), a2, a3, MADDR(a4), MADDR(a5), a6));
+    RETURN(__syscall6(SYS_futex, MADDR(a1), a2, a3, MADDR(a4), MADDR(a5), a6),
+           "futex", 6, a1, a2, a3, a4, a5, a6);
 }
 
 // 204
@@ -1629,7 +1708,8 @@ wali_syscall_sched_getaffinity(wasm_exec_env_t exec_env, long a1, long a2,
                                long a3)
 {
     SC(204, sched_getaffinity);
-    RETURN(__syscall3(SYS_sched_getaffinity, a1, a2, MADDR(a3)));
+    RETURN(__syscall3(SYS_sched_getaffinity, a1, a2, MADDR(a3)),
+           "sched_getaffinity", 3, a1, a2, a3);
 }
 
 // 217
@@ -1637,7 +1717,8 @@ long
 wali_syscall_getdents64(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(217, getdents64);
-    RETURN(__syscall3(SYS_getdents64, a1, MADDR(a2), a3));
+    RETURN(__syscall3(SYS_getdents64, a1, MADDR(a2), a3), "getdents64", 3, a1,
+           a2, a3);
 }
 
 // 218
@@ -1645,7 +1726,8 @@ long
 wali_syscall_set_tid_address(wasm_exec_env_t exec_env, long a1)
 {
     SC(218, set_tid_address);
-    RETURN(__syscall1(SYS_set_tid_address, MADDR(a1)));
+    RETURN(__syscall1(SYS_set_tid_address, MADDR(a1)), "set_tid_address", 1,
+           a1);
 }
 
 // 221 TODO
@@ -1655,7 +1737,8 @@ wali_syscall_fadvise(wasm_exec_env_t exec_env, long a1, long a2, long a3,
 {
     SC(221, fadvise);
     ERRSC(fadvise);
-    RETURN(__syscall4(SYS_fadvise64, a1, a2, a3, a4));
+    RETURN(__syscall4(SYS_fadvise64, a1, a2, a3, a4), "fadvise", 4, a1, a2, a3,
+           a4);
 }
 
 // 228
@@ -1663,7 +1746,8 @@ long
 wali_syscall_clock_gettime(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(228, clock_gettime);
-    RETURN(__syscall2(SYS_clock_gettime, a1, MADDR(a2)));
+    RETURN(__syscall2(SYS_clock_gettime, a1, MADDR(a2)), "clock_gettime", 2, a1,
+           a2);
 }
 
 // 229
@@ -1671,7 +1755,8 @@ long
 wali_syscall_clock_getres(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(229, clock_getres);
-    RETURN(__syscall2(SYS_clock_getres, a1, MADDR(a2)));
+    RETURN(__syscall2(SYS_clock_getres, a1, MADDR(a2)), "clock_getres", 2, a1,
+           a2);
 }
 
 // 230
@@ -1680,7 +1765,8 @@ wali_syscall_clock_nanosleep(wasm_exec_env_t exec_env, long a1, long a2,
                              long a3, long a4)
 {
     SC(230, clock_nanosleep);
-    RETURN(__syscall4(SYS_clock_nanosleep, a1, a2, MADDR(a3), MADDR(a4)));
+    RETURN(__syscall4(SYS_clock_nanosleep, a1, a2, MADDR(a3), MADDR(a4)),
+           "clock_nanosleep", 4, a1, a2, a3, a4);
 }
 
 // 231
@@ -1689,7 +1775,7 @@ wali_syscall_exit_group(wasm_exec_env_t exec_env, long a1)
 {
     SC(231, exit_group);
     wali_proc_exit(exec_env, a1);
-    RETURN(-1);
+    RETURN(-1, "exit_group", 1, a1);
 }
 
 // 233
@@ -1700,7 +1786,8 @@ wali_syscall_epoll_ctl(wasm_exec_env_t exec_env, long a1, long a2, long a3,
     SC(233, epoll_ctl);
     struct epoll_event *nev =
         copy_epoll_event(exec_env, MADDR(a4), &(struct epoll_event){ 0 });
-    RETURN(__syscall4(SYS_epoll_ctl, a1, a2, a3, nev));
+    RETURN(__syscall4(SYS_epoll_ctl, a1, a2, a3, nev), "epoll_ctl", 4, a1, a2,
+           a3, a4);
 }
 
 // 257
@@ -1709,10 +1796,16 @@ wali_syscall_openat(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                     long a4)
 {
     SC(257, openat);
+    // security check
+    if (strncmp((char *)MADDR(a2), "/proc/self/mem", 15) == 0) {
+        printf("Unpermitted attempt to open /proc/self/mem.");
+        RETURN(-1, "openat", 4, a1, a2, a3, a4);
+    }
 #if __aarch64__
     RETURN(__syscall4(SYS_openat, a1, MADDR(a2), swap_open_flags(a3), a4));
 #else
-    RETURN(__syscall4(SYS_openat, a1, MADDR(a2), a3, a4));
+    RETURN(__syscall4(SYS_openat, a1, MADDR(a2), a3, a4), "openat", 4, a1, a2,
+           a3, a4);
 #endif
 }
 
@@ -1721,7 +1814,8 @@ long
 wali_syscall_mkdirat(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(258, mkdirat);
-    RETURN(__syscall3(SYS_mkdirat, a1, MADDR(a2), a3));
+    RETURN(__syscall3(SYS_mkdirat, a1, MADDR(a2), a3), "mkdirat", 3, a1, a2,
+           a3);
 }
 
 // 260
@@ -1730,7 +1824,8 @@ wali_syscall_fchownat(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                       long a4, long a5)
 {
     SC(260, fchownat);
-    RETURN(__syscall5(SYS_fchownat, a1, MADDR(a2), a3, a4, a5));
+    RETURN(__syscall5(SYS_fchownat, a1, MADDR(a2), a3, a4, a5), "fchownat", 5,
+           a1, a2, a3, a4, a5);
 }
 
 // 262
@@ -1740,13 +1835,14 @@ wali_syscall_fstatat(wasm_exec_env_t exec_env, long a1, long a2, long a3,
 {
     SC(262, fstatat);
 #if __x86_64__
-    RETURN(__syscall4(SYS_newfstatat, a1, MADDR(a2), MADDR(a3), a4));
+    RETURN(__syscall4(SYS_newfstatat, a1, MADDR(a2), MADDR(a3), a4), "fstatat",
+           4, a1, a2, a3, a4);
 #elif __aarch64__ || __riscv64__
     Addr wasm_stat = MADDR(a3);
     struct stat sb;
     long retval = __syscall4(SYS_newfstatat, a1, MADDR(a2), &sb, a4);
     copy2wasm_stat_struct(exec_env, wasm_stat, &sb);
-    RETURN(retval);
+    RETURN(retval, "fstatat", 4, a1, a2, a3, a4);
 #endif
 }
 
@@ -1755,7 +1851,8 @@ long
 wali_syscall_unlinkat(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(263, unlinkat);
-    RETURN(__syscall3(SYS_unlinkat, a1, MADDR(a2), a3));
+    RETURN(__syscall3(SYS_unlinkat, a1, MADDR(a2), a3), "unlinkat", 3, a1, a2,
+           a3);
 }
 
 // 265
@@ -1764,7 +1861,8 @@ wali_syscall_linkat(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                     long a4, long a5)
 {
     SC(265, linkat);
-    RETURN(__syscall5(SYS_linkat, a1, MADDR(a2), a3, MADDR(a4), a5));
+    RETURN(__syscall5(SYS_linkat, a1, MADDR(a2), a3, MADDR(a4), a5), "linkat",
+           5, a1, a2, a3, a4, a5);
 }
 
 // 266
@@ -1772,7 +1870,8 @@ long
 wali_syscall_symlinkat(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(266, symlinkat);
-    RETURN(__syscall3(SYS_symlinkat, MADDR(a1), a2, MADDR(a3)));
+    RETURN(__syscall3(SYS_symlinkat, MADDR(a1), a2, MADDR(a3)), "symlinkat", 3,
+           a1, a2, a3);
 }
 
 // 267
@@ -1781,7 +1880,8 @@ wali_syscall_readlinkat(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                         long a4)
 {
     SC(267, readlinkat);
-    RETURN(__syscall4(SYS_readlinkat, a1, MADDR(a2), MADDR(a3), a4));
+    RETURN(__syscall4(SYS_readlinkat, a1, MADDR(a2), MADDR(a3), a4),
+           "readlinkat", 4, a1, a2, a3, a4);
 }
 
 // 268
@@ -1790,7 +1890,8 @@ wali_syscall_fchmodat(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                       long a4)
 {
     SC(268, fchmodat);
-    RETURN(__syscall4(SYS_fchmodat, a1, MADDR(a2), a3, a4));
+    RETURN(__syscall4(SYS_fchmodat, a1, MADDR(a2), a3, a4), "fchmodat", 4, a1,
+           a2, a3, a4);
 }
 
 // 269
@@ -1799,7 +1900,8 @@ wali_syscall_faccessat(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                        long a4)
 {
     SC(269, faccessat);
-    RETURN(__syscall4(SYS_faccessat, a1, MADDR(a2), a3, a4));
+    RETURN(__syscall4(SYS_faccessat, a1, MADDR(a2), a3, a4), "faccessat", 4, a1,
+           a2, a3, a4);
 }
 
 // 270
@@ -1815,7 +1917,8 @@ wali_syscall_pselect6(wasm_exec_env_t exec_env, long a1, long a2, long a3,
     long *sm_struct_ptr =
         copy_pselect6_sigmask(exec_env, wasm_psel_sm, sm_struct);
     RETURN(__syscall6(SYS_pselect6, a1, MADDR(a2), MADDR(a3), MADDR(a4),
-                      MADDR(a5), sm_struct_ptr));
+                      MADDR(a5), sm_struct_ptr),
+           "pselect6", 6, a1, a2, a3, a4, a5, a6);
 }
 
 // 271
@@ -1824,7 +1927,8 @@ wali_syscall_ppoll(wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4,
                    long a5)
 {
     SC(271, ppoll);
-    RETURN(__syscall5(SYS_ppoll, MADDR(a1), a2, MADDR(a3), MADDR(a4), a5));
+    RETURN(__syscall5(SYS_ppoll, MADDR(a1), a2, MADDR(a3), MADDR(a4), a5),
+           "ppoll", 5, a1, a2, a3, a4, a5);
 }
 /* Since poll needs a time conversion on pointer, need to use a different alias
  * call */
@@ -1833,7 +1937,8 @@ wali_syscall_ppoll_aliased(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                            long a4, long a5)
 {
     SC(271, ppoll - alias);
-    RETURN(__syscall5(SYS_ppoll, MADDR(a1), a2, a3, MADDR(a4), a5));
+    RETURN(__syscall5(SYS_ppoll, MADDR(a1), a2, a3, MADDR(a4), a5),
+           "ppoll_aliased", 5, a1, a2, a3, a4, a5);
 }
 
 // 280
@@ -1842,7 +1947,8 @@ wali_syscall_utimensat(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                        long a4)
 {
     SC(280, utimensat);
-    RETURN(__syscall4(SYS_utimensat, a1, MADDR(a2), MADDR(a3), a4));
+    RETURN(__syscall4(SYS_utimensat, a1, MADDR(a2), MADDR(a3), a4), "utimensat",
+           4, a1, a2, a3, a4);
 }
 
 // 281
@@ -1856,7 +1962,7 @@ wali_syscall_epoll_pwait(wasm_exec_env_t exec_env, long a1, long a2, long a3,
         copy_epoll_event(exec_env, wasm_epoll, &(struct epoll_event){ 0 });
     long retval = __syscall6(SYS_epoll_pwait, a1, nev, a3, a4, MADDR(a5), a6);
     copy2wasm_epoll_event(exec_env, wasm_epoll, nev);
-    RETURN(retval);
+    RETURN(retval, "epoll_pwait", 6, a1, a2, a3, a4, a5, a6);
 }
 
 // 284
@@ -1865,9 +1971,9 @@ wali_syscall_eventfd(wasm_exec_env_t exec_env, long a1)
 {
     SC(284, eventfd);
 #if __x86_64__
-    RETURN(__syscall1(SYS_eventfd, a1));
+    RETURN(__syscall1(SYS_eventfd, a1), "eventfd", 1, a1);
 #elif __aarch64__ || __riscv64__
-    RETURN(wali_syscall_eventfd2(exec_env, a1, 0));
+    RETURN(wali_syscall_eventfd2(exec_env, a1, 0), "eventfd", 1, a1);
 #endif
 }
 
@@ -1877,7 +1983,8 @@ wali_syscall_accept4(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                      long a4)
 {
     SC(288, accept4);
-    RETURN(__syscall4(SYS_accept4, a1, MADDR(a2), MADDR(a3), a4));
+    RETURN(__syscall4(SYS_accept4, a1, MADDR(a2), MADDR(a3), a4), "accept4", 4,
+           a1, a2, a3, a4);
 }
 
 // 290 TODO
@@ -1886,7 +1993,7 @@ wali_syscall_eventfd2(wasm_exec_env_t exec_env, long a1, long a2)
 {
     SC(290, eventfd2);
     ERRSC(eventfd2);
-    RETURN(__syscall2(SYS_eventfd2, a1, a2));
+    RETURN(__syscall2(SYS_eventfd2, a1, a2), "eventfd2", 2, a1, a2);
 }
 
 // 291
@@ -1894,7 +2001,7 @@ long
 wali_syscall_epoll_create1(wasm_exec_env_t exec_env, long a1)
 {
     SC(291, epoll_create1);
-    RETURN(__syscall1(SYS_epoll_create1, a1));
+    RETURN(__syscall1(SYS_epoll_create1, a1), "epoll_create1", 1, a1);
 }
 
 // 292
@@ -1905,7 +2012,7 @@ wali_syscall_dup3(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 #if __aarch64__
     RETURN(__syscall3(SYS_dup3, a1, a2, swap_open_flags(a3)));
 #else
-    RETURN(__syscall3(SYS_dup3, a1, a2, a3));
+    RETURN(__syscall3(SYS_dup3, a1, a2, a3), "dup3", 3, a1, a2, a3);
 #endif
 }
 
@@ -1917,7 +2024,7 @@ wali_syscall_pipe2(wasm_exec_env_t exec_env, long a1, long a2)
 #if __aarch64__
     RETURN(__syscall2(SYS_pipe2, MADDR(a1), swap_open_flags(a2)));
 #else
-    RETURN(__syscall2(SYS_pipe2, MADDR(a1), a2));
+    RETURN(__syscall2(SYS_pipe2, MADDR(a1), a2), "pipe2", 2, a1, a2);
 #endif
 }
 
@@ -1927,7 +2034,8 @@ wali_syscall_prlimit64(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                        long a4)
 {
     SC(302, prlimit64);
-    RETURN(__syscall4(SYS_prlimit64, a1, a2, MADDR(a3), MADDR(a4)));
+    RETURN(__syscall4(SYS_prlimit64, a1, a2, MADDR(a3), MADDR(a4)), "prlimit64",
+           4, a1, a2, a3, a4);
 }
 
 // 316
@@ -1936,7 +2044,8 @@ wali_syscall_renameat2(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                        long a4, long a5)
 {
     SC(316, renameat2);
-    RETURN(__syscall5(SYS_renameat2, a1, MADDR(a2), a3, MADDR(a4), a5));
+    RETURN(__syscall5(SYS_renameat2, a1, MADDR(a2), a3, MADDR(a4), a5),
+           "renameat2", 5, a1, a2, a3, a4, a5);
 }
 
 // 318
@@ -1944,7 +2053,8 @@ long
 wali_syscall_getrandom(wasm_exec_env_t exec_env, long a1, long a2, long a3)
 {
     SC(318, getrandom);
-    RETURN(__syscall3(SYS_getrandom, MADDR(a1), a2, a3));
+    RETURN(__syscall3(SYS_getrandom, MADDR(a1), a2, a3), "getrandom", 3, a1, a2,
+           a3);
 }
 
 // 332
@@ -1953,7 +2063,8 @@ wali_syscall_statx(wasm_exec_env_t exec_env, long a1, long a2, long a3, long a4,
                    long a5)
 {
     SC(332, statx);
-    RETURN(__syscall5(SYS_statx, a1, MADDR(a2), a3, a4, MADDR(a5)));
+    RETURN(__syscall5(SYS_statx, a1, MADDR(a2), a3, a4, MADDR(a5)), "statx", 5,
+           a1, a2, a3, a4, a5);
 }
 
 // 439
@@ -1962,7 +2073,8 @@ wali_syscall_faccessat2(wasm_exec_env_t exec_env, long a1, long a2, long a3,
                         long a4)
 {
     SC(439, faccessat2);
-    RETURN(__syscall4(439, a1, MADDR(a2), a3, a4));
+    RETURN(__syscall4(439, a1, MADDR(a2), a3, a4), "faccessat2", 4, a1, a2, a3,
+           a4);
 }
 
 /***** Non-syscall methods *****/
@@ -2232,7 +2344,7 @@ wali_wasm_thread_spawn(wasm_exec_env_t exec_env, int setup_fnptr, int arg_wasm)
 
     FUNC_FREE(setup_wasm_fn);
 
-    RETURN(child_tid);
+    RETURN(child_tid, 0, 0, 0);
 
 thread_spawn_fail_post_clone:
     pthread_mutex_unlock(&clone_lock);
@@ -2242,7 +2354,7 @@ thread_spawn_fail:
     if (thread_start_arg)
         wasm_runtime_free(thread_start_arg);
 
-    RETURN(-1);
+    RETURN(-1, 0, 0, 0);
 }
 
 /* Native WALI Symbols */
