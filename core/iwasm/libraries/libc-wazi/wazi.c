@@ -27,7 +27,9 @@
 
 #include <zephyr/device.h>
 #include <zephyr/kernel.h>
+#ifdef CONFIG_MINIMAL_LIBC
 #include <zephyr/posix/time.h>
+#endif
 #include <zephyr/net/socket_select.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/auxdisplay.h>
@@ -4577,6 +4579,7 @@ void wazi_syscall_xtensa_user_fault (wasm_exec_env_t exec_env, unsigned int sca1
 	RETURN_VOID(xtensa_user_fault(reason));
 }
 
+#ifdef CONFIG_MINIMAL_LIBC
 // 491 
 int wazi_syscall_zephyr_fputc (wasm_exec_env_t exec_env, int sca1, int32_t sca2) {
 	SC(491, zephyr_fputc);
@@ -4595,7 +4598,9 @@ uint32_t wazi_syscall_zephyr_fwrite (wasm_exec_env_t exec_env, int32_t sca1, uin
 	FILE *stream = (FILE*) MADDR_FILE(sca4);
 	RETURN((uint32_t) zephyr_fwrite(ptr,size,nitems,stream));
 }
+#endif
 
+#ifdef CONFIG_NEWLIB_LIBC
 // 493 TODO
 int wazi_syscall_zephyr_read_stdin (wasm_exec_env_t exec_env, int32_t sca1, int sca2) {
 	SC(493, zephyr_read_stdin);
@@ -4613,6 +4618,7 @@ int wazi_syscall_zephyr_write_stdout (wasm_exec_env_t exec_env, int32_t sca1, in
 	int nbytes = sca2;
 	RETURN((int) zephyr_write_stdout(buf,nbytes));
 }
+#endif
 
 // 495 TODO
 int wazi_syscall_zsock_accept (wasm_exec_env_t exec_env, int sca1, int32_t sca2, int32_t sca3) {
@@ -5446,10 +5452,14 @@ static NativeSymbol wazi_native_symbols[] = {
 	//NSYMBOL (                             SYS_wdt_feed,                                   wazi_syscall_wdt_feed,      "(ii)i" ),
 	//NSYMBOL (                            SYS_wdt_setup,                                  wazi_syscall_wdt_setup,      "(ii)i" ),
 	//NSYMBOL (                    SYS_xtensa_user_fault,                          wazi_syscall_xtensa_user_fault,        "(i)" ),
+#ifdef CONFIG_MINIMAL_LIBC
 	NSYMBOL (                         SYS_zephyr_fputc,                               wazi_syscall_zephyr_fputc,      "(ii)i" ),
 	//NSYMBOL (                        SYS_zephyr_fwrite,                              wazi_syscall_zephyr_fwrite,    "(iiii)i" ),
-	//NSYMBOL (                    SYS_zephyr_read_stdin,                          wazi_syscall_zephyr_read_stdin,      "(ii)i" ),
-	//NSYMBOL (                  SYS_zephyr_write_stdout,                        wazi_syscall_zephyr_write_stdout,      "(ii)i" ),
+#endif
+#ifdef CONFIG_NEWLIB_LIBC
+	NSYMBOL (                    SYS_zephyr_read_stdin,                          wazi_syscall_zephyr_read_stdin,      "(ii)i" ),
+	NSYMBOL (                  SYS_zephyr_write_stdout,                        wazi_syscall_zephyr_write_stdout,      "(ii)i" ),
+#endif
 	//NSYMBOL (                         SYS_zsock_accept,                               wazi_syscall_zsock_accept,     "(iii)i" ),
 	//NSYMBOL (                           SYS_zsock_bind,                                 wazi_syscall_zsock_bind,     "(iii)i" ),
 	//NSYMBOL (                          SYS_zsock_close,                                wazi_syscall_zsock_close,       "(i)i" ),
