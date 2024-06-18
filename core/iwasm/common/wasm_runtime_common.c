@@ -3627,54 +3627,6 @@ wasm_runtime_is_wasi_mode(WASMModuleInstanceCommon *module_inst)
     return false;
 }
 
-WASMFunctionInstanceCommon *
-wasm_runtime_lookup_wasi_start_function(WASMModuleInstanceCommon *module_inst)
-{
-    uint32 i;
-
-#if WASM_ENABLE_INTERP != 0
-    if (module_inst->module_type == Wasm_Module_Bytecode) {
-        WASMModuleInstance *wasm_inst = (WASMModuleInstance *)module_inst;
-        WASMFunctionInstance *func;
-        for (i = 0; i < wasm_inst->export_func_count; i++) {
-            if (!strcmp(wasm_inst->export_functions[i].name, "_start")) {
-                func = wasm_inst->export_functions[i].function;
-                if (func->u.func->func_type->param_count != 0
-                    || func->u.func->func_type->result_count != 0) {
-                    LOG_ERROR("Lookup wasi _start function failed: "
-                              "invalid function type.\n");
-                    return NULL;
-                }
-                return (WASMFunctionInstanceCommon *)func;
-            }
-        }
-        return NULL;
-    }
-#endif
-
-#if WASM_ENABLE_AOT != 0
-    if (module_inst->module_type == Wasm_Module_AoT) {
-        AOTModuleInstance *aot_inst = (AOTModuleInstance *)module_inst;
-        AOTFunctionInstance *export_funcs =
-            (AOTFunctionInstance *)aot_inst->export_functions;
-        for (i = 0; i < aot_inst->export_func_count; i++) {
-            if (!strcmp(export_funcs[i].func_name, "_start")) {
-                AOTFuncType *func_type = export_funcs[i].u.func.func_type;
-                if (func_type->param_count != 0
-                    || func_type->result_count != 0) {
-                    LOG_ERROR("Lookup wasi _start function failed: "
-                              "invalid function type.\n");
-                    return NULL;
-                }
-                return (WASMFunctionInstanceCommon *)&export_funcs[i];
-            }
-        }
-        return NULL;
-    }
-#endif /* end of WASM_ENABLE_AOT */
-
-    return NULL;
-}
 
 #if WASM_ENABLE_UVWASI == 0
 void
@@ -3750,6 +3702,55 @@ wasm_runtime_get_wasi_exit_code(WASMModuleInstanceCommon *module_inst)
     return wasi_ctx->exit_code;
 }
 #endif /* end of WASM_ENABLE_LIBC_WASI */
+
+WASMFunctionInstanceCommon *
+wasm_runtime_lookup_wasi_start_function(WASMModuleInstanceCommon *module_inst)
+{
+    uint32 i;
+
+#if WASM_ENABLE_INTERP != 0
+    if (module_inst->module_type == Wasm_Module_Bytecode) {
+        WASMModuleInstance *wasm_inst = (WASMModuleInstance *)module_inst;
+        WASMFunctionInstance *func;
+        for (i = 0; i < wasm_inst->export_func_count; i++) {
+            if (!strcmp(wasm_inst->export_functions[i].name, "_start")) {
+                func = wasm_inst->export_functions[i].function;
+                if (func->u.func->func_type->param_count != 0
+                    || func->u.func->func_type->result_count != 0) {
+                    LOG_ERROR("Lookup wasi _start function failed: "
+                              "invalid function type.\n");
+                    return NULL;
+                }
+                return (WASMFunctionInstanceCommon *)func;
+            }
+        }
+        return NULL;
+    }
+#endif
+
+#if WASM_ENABLE_AOT != 0
+    if (module_inst->module_type == Wasm_Module_AoT) {
+        AOTModuleInstance *aot_inst = (AOTModuleInstance *)module_inst;
+        AOTFunctionInstance *export_funcs =
+            (AOTFunctionInstance *)aot_inst->export_functions;
+        for (i = 0; i < aot_inst->export_func_count; i++) {
+            if (!strcmp(export_funcs[i].func_name, "_start")) {
+                AOTFuncType *func_type = export_funcs[i].u.func.func_type;
+                if (func_type->param_count != 0
+                    || func_type->result_count != 0) {
+                    LOG_ERROR("Lookup wasi _start function failed: "
+                              "invalid function type.\n");
+                    return NULL;
+                }
+                return (WASMFunctionInstanceCommon *)&export_funcs[i];
+            }
+        }
+        return NULL;
+    }
+#endif /* end of WASM_ENABLE_AOT */
+
+    return NULL;
+}
 
 #if WASM_ENABLE_LIBC_WALI
 

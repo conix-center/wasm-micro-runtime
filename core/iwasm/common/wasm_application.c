@@ -113,7 +113,7 @@ execute_main(WASMModuleInstanceCommon *module_inst, int32 argc, char *argv[])
         return false;
     }
 
-#if WASM_ENABLE_LIBC_WASI != 0 || WASM_ENABLE_LIBC_WALI != 0
+#if WASM_ENABLE_LIBC_WASI != 0 || WASM_ENABLE_LIBC_WALI != 0 || WASM_ENABLE_LIBC_WAZI != 0
     /* In wasi mode, we should call the function named "_start"
        which initializes the wasi envrionment and then calls
        the actual main function. Directly calling main function
@@ -135,9 +135,11 @@ execute_main(WASMModuleInstanceCommon *module_inst, int32 argc, char *argv[])
                  returns w/o calling `proc_exit`.
                - A process termination should terminate threads in
                  the process. */
+#if WASM_ENABLE_LIBC_WALI != 0
             if (invoked_wali)
               wasm_runtime_set_exception(module_inst, wali_proc_exit_exception);
             else
+#endif
               wasm_runtime_set_exception(module_inst, wasi_proc_exit_exception);
             /* exit_code is zero-initialized */
             ret = false;

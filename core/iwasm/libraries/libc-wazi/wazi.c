@@ -4579,7 +4579,7 @@ void wazi_syscall_xtensa_user_fault (wasm_exec_env_t exec_env, unsigned int sca1
 	RETURN_VOID(xtensa_user_fault(reason));
 }
 
-#ifdef CONFIG_MINIMAL_LIBC
+#if defined(CONFIG_MINIMAL_LIBC) || defined(CONFIG_PICOLIBC)
 // 491 
 int wazi_syscall_zephyr_fputc (wasm_exec_env_t exec_env, int sca1, int32_t sca2) {
 	SC(491, zephyr_fputc);
@@ -5452,7 +5452,7 @@ static NativeSymbol wazi_native_symbols[] = {
 	//NSYMBOL (                             SYS_wdt_feed,                                   wazi_syscall_wdt_feed,      "(ii)i" ),
 	//NSYMBOL (                            SYS_wdt_setup,                                  wazi_syscall_wdt_setup,      "(ii)i" ),
 	//NSYMBOL (                    SYS_xtensa_user_fault,                          wazi_syscall_xtensa_user_fault,        "(i)" ),
-#ifdef CONFIG_MINIMAL_LIBC
+#if defined(CONFIG_MINIMAL_LIBC) || defined(CONFIG_PICOLIBC)
 	NSYMBOL (                         SYS_zephyr_fputc,                               wazi_syscall_zephyr_fputc,      "(ii)i" ),
 	//NSYMBOL (                        SYS_zephyr_fwrite,                              wazi_syscall_zephyr_fwrite,    "(iiii)i" ),
 #endif
