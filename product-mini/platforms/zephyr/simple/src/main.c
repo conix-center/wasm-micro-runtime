@@ -65,12 +65,8 @@ static void *
 app_instance_main(wasm_module_inst_t module_inst)
 {
     const char *exception;
-    wasm_function_inst_t func;
-    wasm_exec_env_t exec_env;
-    unsigned argv[2] = { 0 };
-
     LOG_VERBOSE("Calling main function\n");
-    wasm_application_execute_main(module_inst, app_argc, app_argv)'
+    wasm_application_execute_main(module_inst, app_argc, app_argv);
 
     if ((exception = wasm_runtime_get_exception(module_inst)))
         os_printf("%s\n", exception);
