@@ -4510,8 +4510,10 @@ wasm_const_str_list_insert(const uint8 *str, uint32 len, WASMModule *module,
         /* As the file buffer can be referred to after loading, we use
            the previous byte of leb encoded size to adjust the string:
            move string 1 byte backward and then append '\0' */
-        char *c_str = (char *)str - 1;
-        bh_memmove_s(c_str, len + 1, c_str + 1, len);
+        char *c_str = (char*) runtime_malloc(len + 1, error_buf, error_buf_size);
+        bh_memcpy_s(c_str, len + 1, str, len);
+        //char *c_str = (char *)str - 1;
+        //bh_memmove_s(c_str, len + 1, c_str + 1, len);
         c_str[len] = '\0';
         return c_str;
     }

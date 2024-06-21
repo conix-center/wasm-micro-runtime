@@ -8,10 +8,6 @@
 #include "bh_platform.h"
 #include "wazi_defs.h"
 
-#if !__arm__
-#error "Unsupported architecture for WAZI -- Only supports [arm]"
-#endif
-
 #define VB(fmt, ...) LOG_VERBOSE("WAZI: " fmt, gettid(), ## __VA_ARGS__)
 #define WARN(fmt, ...)  LOG_WARNING("WAZI: " fmt, ## __VA_ARGS__)
 #define ERR(fmt, ...) LOG_ERROR("WAZI: " fmt, ## __VA_ARGS__)
