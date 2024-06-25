@@ -23,6 +23,7 @@
 */
 
 #include "wazi.h"
+#include "copy.h"
 #include "wazi_conversions.h"
 
 #include <zephyr/device.h>
@@ -30,7 +31,6 @@
 #ifdef CONFIG_MINIMAL_LIBC
 #include <zephyr/posix/time.h>
 #endif
-#include <zephyr/net/socket_select.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/auxdisplay.h>
 #include <zephyr/drivers/can.h>
@@ -65,6 +65,9 @@
 #include <zephyr/drivers/led.h>
 #include <zephyr/drivers/virtualization/ivshmem.h>
 #include <zephyr/drivers/misc/devmux/devmux.h>
+
+#include <zephyr/net/socket_select.h>
+#include <zephyr/net/socket.h>
 
 
 #define SC(nr, f)   LOG_VERBOSE("WAZI: SC | " # f);
@@ -4620,87 +4623,78 @@ int wazi_syscall_zephyr_write_stdout (wasm_exec_env_t exec_env, int32_t sca1, in
 }
 #endif
 
-// 495 TODO
+// 495 
 int wazi_syscall_zsock_accept (wasm_exec_env_t exec_env, int sca1, int32_t sca2, int32_t sca3) {
 	SC(495, zsock_accept);
-	ERRSC(zsock_accept);
 	int sock = sca1;
 	struct sockaddr *addr = (struct sockaddr*) MADDR(sca2);
 	socklen_t *addrlen = (socklen_t*) MADDR(sca3);
 	RETURN((int) zsock_accept(sock,addr,addrlen));
 }
 
-// 496 TODO
+// 496 
 int wazi_syscall_zsock_bind (wasm_exec_env_t exec_env, int sca1, int32_t sca2, uint32_t sca3) {
 	SC(496, zsock_bind);
-	ERRSC(zsock_bind);
 	int sock = sca1;
 	struct sockaddr *addr = (struct sockaddr*) MADDR(sca2);
 	socklen_t addrlen = sca3;
 	RETURN((int) zsock_bind(sock,addr,addrlen));
 }
 
-// 497 TODO
+// 497 
 int wazi_syscall_zsock_close (wasm_exec_env_t exec_env, int sca1) {
 	SC(497, zsock_close);
-	ERRSC(zsock_close);
 	int sock = sca1;
 	RETURN((int) zsock_close(sock));
 }
 
-// 498 TODO
+// 498 
 int wazi_syscall_zsock_connect (wasm_exec_env_t exec_env, int sca1, int32_t sca2, uint32_t sca3) {
 	SC(498, zsock_connect);
-	ERRSC(zsock_connect);
 	int sock = sca1;
 	struct sockaddr *addr = (struct sockaddr*) MADDR(sca2);
 	socklen_t addrlen = sca3;
 	RETURN((int) zsock_connect(sock,addr,addrlen));
 }
 
-// 499 TODO
+// 499 
 int wazi_syscall_zsock_fcntl (wasm_exec_env_t exec_env, int sca1, int sca2, int sca3) {
 	SC(499, zsock_fcntl);
-	ERRSC(zsock_fcntl);
 	int sock = sca1;
 	int cmd = sca2;
 	int flags = sca3;
 	RETURN((int) zsock_fcntl(sock,cmd,flags));
 }
 
-// 500 TODO
+// 500 
 int wazi_syscall_zsock_gethostname (wasm_exec_env_t exec_env, int32_t sca1, uint32_t sca2) {
 	SC(500, zsock_gethostname);
-	ERRSC(zsock_gethostname);
 	char *buf = (char*) MADDR(sca1);
 	size_t len = sca2;
 	RETURN((int) zsock_gethostname(buf,len));
 }
 
-// 501 TODO
+// 501 
 int wazi_syscall_zsock_getpeername (wasm_exec_env_t exec_env, int sca1, int32_t sca2, int32_t sca3) {
 	SC(501, zsock_getpeername);
-	ERRSC(zsock_getpeername);
 	int sock = sca1;
 	struct sockaddr *addr = (struct sockaddr*) MADDR(sca2);
 	socklen_t *addrlen = (socklen_t*) MADDR(sca3);
 	RETURN((int) zsock_getpeername(sock,addr,addrlen));
 }
 
-// 502 TODO
+// 502 
 int wazi_syscall_zsock_getsockname (wasm_exec_env_t exec_env, int sca1, int32_t sca2, int32_t sca3) {
 	SC(502, zsock_getsockname);
-	ERRSC(zsock_getsockname);
 	int sock = sca1;
 	struct sockaddr *addr = (struct sockaddr*) MADDR(sca2);
 	socklen_t *addrlen = (socklen_t*) MADDR(sca3);
 	RETURN((int) zsock_getsockname(sock,addr,addrlen));
 }
 
-// 503 TODO
+// 503 
 int wazi_syscall_zsock_getsockopt (wasm_exec_env_t exec_env, int sca1, int sca2, int sca3, int32_t sca4, int32_t sca5) {
 	SC(503, zsock_getsockopt);
-	ERRSC(zsock_getsockopt);
 	int sock = sca1;
 	int level = sca2;
 	int optname = sca3;
@@ -4717,10 +4711,9 @@ int32_t wazi_syscall_zsock_get_context_object (wasm_exec_env_t exec_env, int sca
 	RETURN((int32_t) zsock_get_context_object(sock));
 }
 
-// 505 TODO
+// 505 
 int wazi_syscall_zsock_inet_pton (wasm_exec_env_t exec_env, uint16_t sca1, int32_t sca2, int32_t sca3) {
 	SC(505, zsock_inet_pton);
-	ERRSC(zsock_inet_pton);
 	sa_family_t family = sca1;
 	char *src = (char*) MADDR(sca2);
 	void *dst = (void*) MADDR(sca3);
@@ -4737,29 +4730,26 @@ int wazi_syscall_zsock_ioctl (wasm_exec_env_t exec_env, int sca1, uint32_t sca2,
 	RETURN((int) zsock_ioctl(sock,request,ap));
 }
 
-// 507 TODO
+// 507 
 int wazi_syscall_zsock_listen (wasm_exec_env_t exec_env, int sca1, int sca2) {
 	SC(507, zsock_listen);
-	ERRSC(zsock_listen);
 	int sock = sca1;
 	int backlog = sca2;
 	RETURN((int) zsock_listen(sock,backlog));
 }
 
-// 508 TODO
+// 508 
 int wazi_syscall_zsock_poll (wasm_exec_env_t exec_env, int32_t sca1, int sca2, int sca3) {
 	SC(508, zsock_poll);
-	ERRSC(zsock_poll);
 	struct zsock_pollfd *fds = (struct zsock_pollfd*) MADDR(sca1);
 	int nfds = sca2;
 	int timeout = sca3;
 	RETURN((int) zsock_poll(fds,nfds,timeout));
 }
 
-// 509 TODO
+// 509 
 uint32_t wazi_syscall_zsock_recvfrom (wasm_exec_env_t exec_env, int sca1, int32_t sca2, uint32_t sca3, int sca4, int32_t sca5, int32_t sca6) {
 	SC(509, zsock_recvfrom);
-	ERRSC(zsock_recvfrom);
 	int sock = sca1;
 	void *buf = (void*) MADDR(sca2);
 	size_t max_len = sca3;
@@ -4769,20 +4759,20 @@ uint32_t wazi_syscall_zsock_recvfrom (wasm_exec_env_t exec_env, int sca1, int32_
 	RETURN((uint32_t) zsock_recvfrom(sock,buf,max_len,flags,src_addr,addrlen));
 }
 
-// 510 TODO
+// 510 
 uint32_t wazi_syscall_zsock_recvmsg (wasm_exec_env_t exec_env, int sca1, int32_t sca2, int sca3) {
 	SC(510, zsock_recvmsg);
-	ERRSC(zsock_recvmsg);
 	int sock = sca1;
-	struct msghdr *msg = (struct msghdr*) MADDR(sca2);
+	struct msghdr *msg = (struct msghdr*) copy_msghdr(exec_env, MADDR(sca2));
 	int flags = sca3;
-	RETURN((uint32_t) zsock_recvmsg(sock,msg,flags));
+  uint32_t retval = (uint32_t) zsock_recvmsg(sock,msg,flags);
+  free(msg);
+	RETURN(retval);
 }
 
-// 511 TODO
+// 511 
 int wazi_syscall_zsock_select (wasm_exec_env_t exec_env, int sca1, int32_t sca2, int32_t sca3, int32_t sca4, int32_t sca5) {
 	SC(511, zsock_select);
-	ERRSC(zsock_select);
 	int nfds = sca1;
 	zsock_fd_set *readfds = (zsock_fd_set*) MADDR(sca2);
 	zsock_fd_set *writefds = (zsock_fd_set*) MADDR(sca3);
@@ -4791,20 +4781,20 @@ int wazi_syscall_zsock_select (wasm_exec_env_t exec_env, int sca1, int32_t sca2,
 	RETURN((int) zsock_select(nfds,readfds,writefds,exceptfds,timeout));
 }
 
-// 512 TODO
+// 512 
 uint32_t wazi_syscall_zsock_sendmsg (wasm_exec_env_t exec_env, int sca1, int32_t sca2, int sca3) {
 	SC(512, zsock_sendmsg);
-	ERRSC(zsock_sendmsg);
 	int sock = sca1;
-	struct msghdr *msg = (struct msghdr*) MADDR(sca2);
+	struct msghdr *msg = (struct msghdr*) copy_msghdr(exec_env, MADDR(sca2));
 	int flags = sca3;
-	RETURN((uint32_t) zsock_sendmsg(sock,msg,flags));
+  uint32_t retval = (uint32_t) zsock_sendmsg(sock,msg,flags);
+  free(msg);
+	RETURN(retval);
 }
 
-// 513 TODO
+// 513 
 uint32_t wazi_syscall_zsock_sendto (wasm_exec_env_t exec_env, int sca1, int32_t sca2, uint32_t sca3, int sca4, int32_t sca5, uint32_t sca6) {
 	SC(513, zsock_sendto);
-	ERRSC(zsock_sendto);
 	int sock = sca1;
 	void *buf = (void*) MADDR(sca2);
 	size_t len = sca3;
@@ -4814,10 +4804,9 @@ uint32_t wazi_syscall_zsock_sendto (wasm_exec_env_t exec_env, int sca1, int32_t 
 	RETURN((uint32_t) zsock_sendto(sock,buf,len,flags,dest_addr,addrlen));
 }
 
-// 514 TODO
+// 514 
 int wazi_syscall_zsock_setsockopt (wasm_exec_env_t exec_env, int sca1, int sca2, int sca3, int32_t sca4, uint32_t sca5) {
 	SC(514, zsock_setsockopt);
-	ERRSC(zsock_setsockopt);
 	int sock = sca1;
 	int level = sca2;
 	int optname = sca3;
@@ -4826,29 +4815,26 @@ int wazi_syscall_zsock_setsockopt (wasm_exec_env_t exec_env, int sca1, int sca2,
 	RETURN((int) zsock_setsockopt(sock,level,optname,optval,optlen));
 }
 
-// 515 TODO
+// 515 
 int wazi_syscall_zsock_shutdown (wasm_exec_env_t exec_env, int sca1, int sca2) {
 	SC(515, zsock_shutdown);
-	ERRSC(zsock_shutdown);
 	int sock = sca1;
 	int how = sca2;
 	RETURN((int) zsock_shutdown(sock,how));
 }
 
-// 516 TODO
+// 516 
 int wazi_syscall_zsock_socket (wasm_exec_env_t exec_env, int sca1, int sca2, int sca3) {
 	SC(516, zsock_socket);
-	ERRSC(zsock_socket);
 	int family = sca1;
 	int type = sca2;
 	int proto = sca3;
 	RETURN((int) zsock_socket(family,type,proto));
 }
 
-// 517 TODO
+// 517 
 int wazi_syscall_zsock_socketpair (wasm_exec_env_t exec_env, int sca1, int sca2, int sca3, int32_t sca4) {
 	SC(517, zsock_socketpair);
-	ERRSC(zsock_socketpair);
 	int family = sca1;
 	int type = sca2;
 	int proto = sca3;
@@ -5460,29 +5446,29 @@ static NativeSymbol wazi_native_symbols[] = {
 	NSYMBOL (                    SYS_zephyr_read_stdin,                          wazi_syscall_zephyr_read_stdin,      "(ii)i" ),
 	NSYMBOL (                  SYS_zephyr_write_stdout,                        wazi_syscall_zephyr_write_stdout,      "(ii)i" ),
 #endif
-	//NSYMBOL (                         SYS_zsock_accept,                               wazi_syscall_zsock_accept,     "(iii)i" ),
-	//NSYMBOL (                           SYS_zsock_bind,                                 wazi_syscall_zsock_bind,     "(iii)i" ),
-	//NSYMBOL (                          SYS_zsock_close,                                wazi_syscall_zsock_close,       "(i)i" ),
-	//NSYMBOL (                        SYS_zsock_connect,                              wazi_syscall_zsock_connect,     "(iii)i" ),
-	//NSYMBOL (                          SYS_zsock_fcntl,                                wazi_syscall_zsock_fcntl,     "(iii)i" ),
-	//NSYMBOL (                    SYS_zsock_gethostname,                          wazi_syscall_zsock_gethostname,      "(ii)i" ),
-	//NSYMBOL (                    SYS_zsock_getpeername,                          wazi_syscall_zsock_getpeername,     "(iii)i" ),
-	//NSYMBOL (                    SYS_zsock_getsockname,                          wazi_syscall_zsock_getsockname,     "(iii)i" ),
-	//NSYMBOL (                     SYS_zsock_getsockopt,                           wazi_syscall_zsock_getsockopt,   "(iiiii)i" ),
+	NSYMBOL (                         SYS_zsock_accept,                               wazi_syscall_zsock_accept,     "(iii)i" ),
+	NSYMBOL (                           SYS_zsock_bind,                                 wazi_syscall_zsock_bind,     "(iii)i" ),
+	NSYMBOL (                          SYS_zsock_close,                                wazi_syscall_zsock_close,       "(i)i" ),
+	NSYMBOL (                        SYS_zsock_connect,                              wazi_syscall_zsock_connect,     "(iii)i" ),
+	NSYMBOL (                          SYS_zsock_fcntl,                                wazi_syscall_zsock_fcntl,     "(iii)i" ),
+	NSYMBOL (                    SYS_zsock_gethostname,                          wazi_syscall_zsock_gethostname,      "(ii)i" ),
+	NSYMBOL (                    SYS_zsock_getpeername,                          wazi_syscall_zsock_getpeername,     "(iii)i" ),
+	NSYMBOL (                    SYS_zsock_getsockname,                          wazi_syscall_zsock_getsockname,     "(iii)i" ),
+	NSYMBOL (                     SYS_zsock_getsockopt,                           wazi_syscall_zsock_getsockopt,   "(iiiii)i" ),
 	//NSYMBOL (             SYS_zsock_get_context_object,                   wazi_syscall_zsock_get_context_object,       "(i)i" ),
-	//NSYMBOL (                      SYS_zsock_inet_pton,                            wazi_syscall_zsock_inet_pton,     "(iii)i" ),
+	NSYMBOL (                      SYS_zsock_inet_pton,                            wazi_syscall_zsock_inet_pton,     "(iii)i" ),
 	//NSYMBOL (                          SYS_zsock_ioctl,                                wazi_syscall_zsock_ioctl,     "(iii)i" ),
-	//NSYMBOL (                         SYS_zsock_listen,                               wazi_syscall_zsock_listen,      "(ii)i" ),
-	//NSYMBOL (                           SYS_zsock_poll,                                 wazi_syscall_zsock_poll,     "(iii)i" ),
-	//NSYMBOL (                       SYS_zsock_recvfrom,                             wazi_syscall_zsock_recvfrom,  "(iiiiii)i" ),
-	//NSYMBOL (                        SYS_zsock_recvmsg,                              wazi_syscall_zsock_recvmsg,     "(iii)i" ),
-	//NSYMBOL (                         SYS_zsock_select,                               wazi_syscall_zsock_select,   "(iiiii)i" ),
-	//NSYMBOL (                        SYS_zsock_sendmsg,                              wazi_syscall_zsock_sendmsg,     "(iii)i" ),
-	//NSYMBOL (                         SYS_zsock_sendto,                               wazi_syscall_zsock_sendto,  "(iiiiii)i" ),
-	//NSYMBOL (                     SYS_zsock_setsockopt,                           wazi_syscall_zsock_setsockopt,   "(iiiii)i" ),
-	//NSYMBOL (                       SYS_zsock_shutdown,                             wazi_syscall_zsock_shutdown,      "(ii)i" ),
-	//NSYMBOL (                         SYS_zsock_socket,                               wazi_syscall_zsock_socket,     "(iii)i" ),
-	//NSYMBOL (                     SYS_zsock_socketpair,                           wazi_syscall_zsock_socketpair,    "(iiii)i" ),
+	NSYMBOL (                         SYS_zsock_listen,                               wazi_syscall_zsock_listen,      "(ii)i" ),
+	NSYMBOL (                           SYS_zsock_poll,                                 wazi_syscall_zsock_poll,     "(iii)i" ),
+	NSYMBOL (                       SYS_zsock_recvfrom,                             wazi_syscall_zsock_recvfrom,  "(iiiiii)i" ),
+	NSYMBOL (                        SYS_zsock_recvmsg,                              wazi_syscall_zsock_recvmsg,     "(iii)i" ),
+	NSYMBOL (                         SYS_zsock_select,                               wazi_syscall_zsock_select,   "(iiiii)i" ),
+	NSYMBOL (                        SYS_zsock_sendmsg,                              wazi_syscall_zsock_sendmsg,     "(iii)i" ),
+	NSYMBOL (                         SYS_zsock_sendto,                               wazi_syscall_zsock_sendto,  "(iiiiii)i" ),
+	NSYMBOL (                     SYS_zsock_setsockopt,                           wazi_syscall_zsock_setsockopt,   "(iiiii)i" ),
+	NSYMBOL (                       SYS_zsock_shutdown,                             wazi_syscall_zsock_shutdown,      "(ii)i" ),
+	NSYMBOL (                         SYS_zsock_socket,                               wazi_syscall_zsock_socket,     "(iii)i" ),
+	NSYMBOL (                     SYS_zsock_socketpair,                           wazi_syscall_zsock_socketpair,    "(iiii)i" ),
 	//NSYMBOL (                              SYS_z_errno,                                    wazi_syscall_z_errno,        "()i" ),
 	//NSYMBOL (            SYS_z_log_msg_simple_create_0,                  wazi_syscall_z_log_msg_simple_create_0,      "(iii)" ),
 	//NSYMBOL (            SYS_z_log_msg_simple_create_1,                  wazi_syscall_z_log_msg_simple_create_1,     "(iiii)" ),
