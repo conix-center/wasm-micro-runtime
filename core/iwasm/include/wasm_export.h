@@ -234,7 +234,15 @@ typedef enum {
     WASM_LOG_LEVEL_VERBOSE = 4
 } log_level_t;
 
-/* Custom WALI methods */
+/* Custom WALI method exports */
+/**
+ * Cancel thread instance; usable when WASM_ENABLE_THREAD_MGR is defined
+ * @param exec_env the execution environment
+ * @return 0
+ */
+WASM_RUNTIME_API_EXTERN int32_t
+wasm_cluster_cancel_thread(wasm_exec_env_t exec_env);
+
 WASM_RUNTIME_API_EXTERN wasm_function_inst_t
 wasm_runtime_get_indirect_function(wasm_module_inst_t module_inst, 
                                 uint32_t tbl_idx, uint32_t elem_idx);
