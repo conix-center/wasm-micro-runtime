@@ -823,7 +823,7 @@ main(int argc, char *argv[])
             strace_logfile = fopen(the_file, "wb"); // test
 
             if (strace_logfile == NULL) {
-                printf(strerror(errno));
+                printf("%s\n", strerror(errno));
                 fflush(stdout);
             }
 

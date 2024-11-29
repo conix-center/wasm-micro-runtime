@@ -391,14 +391,15 @@ strace_print(long syscall_res, char *syscall_name, int num_args, ...)
         offset += sprintf(&buf[offset], "%s(", syscall_name);
         for (int i = 0; i < num_args; i++) {
             if (i == num_args - 1) {
-                offset += sprintf(&buf[offset], "%lld", argv[i]);
+                offset += sprintf(&buf[offset], "%lld", (long long int) argv[i]);
             }
             else {
-                offset += sprintf(&buf[offset], "%lld, ", argv[i]);
+                offset += sprintf(&buf[offset], "%lld, ", (long long int) argv[i]);
             }
         }
-        offset += sprintf(&buf[offset], ") = %lld \n", syscall_res);
-        write(strace_fd, buf, offset);
+        offset += sprintf(&buf[offset], ") = %lld \n", (long long int) syscall_res);
+        int num_written_bytes = write(strace_fd, buf, offset);
+        (void) num_written_bytes;
     }
 }
 
