@@ -383,7 +383,7 @@ strace_print(long syscall_res, char *syscall_name, int num_args, ...)
         argv[i] = va_arg(args, long);
     }
     va_end(args);
-    int strace_fd = strace_logfile->_fileno;
+    int strace_fd = fileno(strace_logfile);
     if (strace == 1 || strace == 0) {
         unsigned int offset = 0;
         char buf[2024];
