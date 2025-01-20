@@ -31,6 +31,7 @@
 
 #if WASM_ENABLE_LIBC_WALI != 0
 extern int64 proc_exit_primary_tid;
+extern bool proc_exit_invoked;
 #endif
 
 typedef int32 CellType_I32;
@@ -7094,7 +7095,7 @@ wasm_interp_call_wasm(WASMModuleInstance *module_inst, WASMExecEnv *exec_env,
     }
     else {
 #if WASM_ENABLE_LIBC_WALI != 0
-        if (proc_exit_primary_tid == gettid()) {
+        if (!proc_exit_invoked  || (proc_exit_primary_tid == gettid())) {
 #if WASM_ENABLE_DUMP_CALL_STACK != 0
             if (wasm_interp_create_call_stack(exec_env)) {
                 wasm_interp_dump_call_stack(exec_env, true, NULL, 0);
