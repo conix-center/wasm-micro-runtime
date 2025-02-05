@@ -25,13 +25,13 @@
 
 #if WASM_ENABLE_LIBC_WALI != 0
 #include "../libraries/libc-wali/wali_defs.h"
+extern int strace;
+extern FILE *strace_logfile;
 #endif
 
 static int app_argc;
 static char **app_argv;
 static char *app_env_file;
-int strace = -1;
-FILE *strace_logfile = NULL;
 
 /* clang-format off */
 static int

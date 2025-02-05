@@ -80,8 +80,8 @@ uint32_t BASE_MEMSIZE = 0;
 uint32_t THREAD_ID = 0; // unused atm
 
 /* strace */
-extern int strace;           // -1=no, 0=print to stdout, 1=print to file
-extern FILE *strace_logfile; // test
+int strace = -1;             // -1=no, 0=print to stdout, 1=print to file
+FILE *strace_logfile = NULL; // test
 
 inline void
 gettime(struct timespec *ts)
